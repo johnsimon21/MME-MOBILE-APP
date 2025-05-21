@@ -175,6 +175,10 @@ export function MessagesScreen() {
   const navigation = useNavigation<NavigationProp>();
   const scrollX = useRef(new Animated.Value(0)).current;
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [hideHeader, setHideHeader] = useState(false);
+
+
   const handleChatOpen = (user: User) => {
     navigation.navigate('ChatScreen', {
       user: {
@@ -183,6 +187,17 @@ export function MessagesScreen() {
       }
     });
   };
+
+  useEffect(() => {
+    const listener = scrollY.addListener(({ value }) => {
+      setHideHeader(value > 20);
+    });
+
+    return () => {
+      scrollY.removeListener(listener);
+    };
+  }, []);
+
 
   const getLastMessage = (messages: Message[]) => {
     const lastMessage = messages[messages.length - 1];
@@ -232,7 +247,17 @@ export function MessagesScreen() {
         </View>
 
         {/* Active Users */}
-        <View style={tw`bg-white py-4`}>
+        <Animated.View
+          style={[
+            tw`bg-white overflow-hidden`,
+            {
+              height: hideHeader ? 0 : undefined,
+              opacity: hideHeader ? 0 : 1,
+              transform: [{ scaleY: hideHeader ? 0.95 : 1 }],
+            }
+          ]}
+        >
+
           <Animated.ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -274,142 +299,151 @@ export function MessagesScreen() {
             end={{ x: 1, y: 0 }}
             style={tw`absolute right-0 top-0 bottom-0 w-10`}
           />
-        </View>
+        </Animated.View>
 
-        {/* Search Bar */}
-        <View style={tw`mt-1 flex-row items-center bg-gray-100 px-4 py-2 rounded-full mx-5`}>
-          <Feather name="search" size={20} color="gray" />
-          <TextInput
-            placeholder="Buscar conversas..."
-            style={tw`flex-1 ml-2 text-gray-700`}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Feather name="x" size={20} color="gray" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {/* Filter Tabs */}
-        <View style={tw`flex-row mt-4 mx-5`}>
-          <TouchableOpacity
-            style={tw`mr-4 pb-2 ${selectedFilter === "all" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("all")}
-          >
-            <Text style={tw`${selectedFilter === "all" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Todas
-            </Text>
+      {/* Search Bar */}
+      <View style={tw`mt-1 flex-row items-center bg-gray-100 px-4 py-2 rounded-full mx-5`}>
+        <Feather name="search" size={20} color="gray" />
+        <TextInput
+          placeholder="Buscar conversas..."
+          style={tw`flex-1 ml-2 text-gray-700`}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Feather name="x" size={20} color="gray" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`mr-4 pb-2 ${selectedFilter === "unread" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("unread")}
-          >
-            <Text style={tw`${selectedFilter === "unread" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Não lidas
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`pb-2 ${selectedFilter === "read" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("read")}
-          >
-            <Text style={tw`${selectedFilter === "read" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Lidas
-            </Text>
-          </TouchableOpacity>
-        </View>
+        ) : null}
       </View>
 
-      {/* Conversation List */}
-      <ScrollView style={tw`flex-1`}>
-        {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => (
-            <TouchableOpacity
-              key={user.id}
-              onPress={() => handleChatOpen(user)}
-              style={tw`px-5 py-4 bg-white mb-1 border-l-4 ${getUnreadCount(user.messages) > 0 ? 'border-indigo-600' : 'border-transparent'}`}
-            >
-              <View style={tw`flex-row items-center`}>
-                {/* Avatar */}
-                <View style={tw`relative`}>
-                  {user.image ? (
-                    <Image source={{ uri: user.image }} style={tw`w-14 h-14 rounded-full`} />
-                  ) : (
-                    <View style={tw`w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center`}>
-                      <Text style={tw`text-xl font-bold text-indigo-600`}>{user.name[0]}</Text>
+      {/* Filter Tabs */}
+      <View style={tw`flex-row mt-4 mx-5`}>
+        <TouchableOpacity
+          style={tw`mr-4 pb-2 ${selectedFilter === "all" ? "border-b-2 border-indigo-600" : ""}`}
+          onPress={() => setSelectedFilter("all")}
+        >
+          <Text style={tw`${selectedFilter === "all" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+            Todas
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={tw`mr-4 pb-2 ${selectedFilter === "unread" ? "border-b-2 border-indigo-600" : ""}`}
+          onPress={() => setSelectedFilter("unread")}
+        >
+          <Text style={tw`${selectedFilter === "unread" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+            Não lidas
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={tw`pb-2 ${selectedFilter === "read" ? "border-b-2 border-indigo-600" : ""}`}
+          onPress={() => setSelectedFilter("read")}
+        >
+          <Text style={tw`${selectedFilter === "read" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+            Lidas
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+
+      {/* Conversation List */ }
+  <Animated.ScrollView
+    style={tw`flex-1`}
+    scrollEventThrottle={16}
+    onScroll={Animated.event(
+      [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+      { useNativeDriver: false }
+    )}
+  >
+    <ScrollView style={tw`flex-1`}>
+      {filteredUsers.length > 0 ? (
+        filteredUsers.map((user) => (
+          <TouchableOpacity
+            key={user.id}
+            onPress={() => handleChatOpen(user)}
+            style={tw`px-5 py-4 bg-white mb-1 border-l-4 ${getUnreadCount(user.messages) > 0 ? 'border-indigo-600' : 'border-transparent'}`}
+          >
+            <View style={tw`flex-row items-center`}>
+              {/* Avatar */}
+              <View style={tw`relative`}>
+                {user.image ? (
+                  <Image source={{ uri: user.image }} style={tw`w-14 h-14 rounded-full`} />
+                ) : (
+                  <View style={tw`w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center`}>
+                    <Text style={tw`text-xl font-bold text-indigo-600`}>{user.name[0]}</Text>
+                  </View>
+                )}
+                <View style={tw`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${getStatusColor(user.status)} border-2 border-white`} />
+              </View>
+
+              {/* Message Content */}
+              <View style={tw`ml-4 flex-1`}>
+                <View style={tw`flex-row justify-between items-center`}>
+                  <Text style={tw`text-lg font-semibold text-gray-800`}>{user.name}</Text>
+                  <Text style={tw`text-xs text-gray-500`}>
+                    {formatMessageTime(user.messages[user.messages.length - 1]?.timestamp)}
+                  </Text>
+                </View>
+
+                <View style={tw`flex-row items-center mt-1`}>
+                  {user.messages[user.messages.length - 1]?.isSent && (
+                    <Ionicons
+                      name={user.messages[user.messages.length - 1]?.isRead ? "checkmark-done" : "checkmark"}
+                      size={16}
+                      color={user.messages[user.messages.length - 1]?.isRead ? "#4CAF50" : "#9CA3AF"}
+                      style={tw`mr-1`}
+                    />
+                  )}
+                  <Text
+                    style={tw`${user.isTyping ? "text-indigo-600 font-medium" : "text-gray-600"} flex-1`}
+                    numberOfLines={1}
+                  >
+                    {user.isTyping ? "escrevendo..." : getLastMessage(user.messages)}
+                  </Text>
+
+                  {getUnreadCount(user.messages) > 0 && (
+                    <View style={tw`bg-indigo-600 min-w-5 h-5 rounded-full flex items-center justify-center ml-2`}>
+                      <Text style={tw`text-white text-xs font-medium`}>{getUnreadCount(user.messages)}</Text>
                     </View>
                   )}
-                  <View style={tw`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${getStatusColor(user.status)} border-2 border-white`} />
                 </View>
 
-                {/* Message Content */}
-                <View style={tw`ml-4 flex-1`}>
-                  <View style={tw`flex-row justify-between items-center`}>
-                    <Text style={tw`text-lg font-semibold text-gray-800`}>{user.name}</Text>
-                    <Text style={tw`text-xs text-gray-500`}>
-                      {formatMessageTime(user.messages[user.messages.length - 1]?.timestamp)}
-                    </Text>
-                  </View>
-
-                  <View style={tw`flex-row items-center mt-1`}>
-                    {user.messages[user.messages.length - 1]?.isSent && (
-                      <Ionicons
-                        name={user.messages[user.messages.length - 1]?.isRead ? "checkmark-done" : "checkmark"}
-                        size={16}
-                        color={user.messages[user.messages.length - 1]?.isRead ? "#4CAF50" : "#9CA3AF"}
-                        style={tw`mr-1`}
-                      />
-                    )}
-                    <Text
-                      style={tw`${user.isTyping ? "text-indigo-600 font-medium" : "text-gray-600"} flex-1`}
-                      numberOfLines={1}
-                    >
-                      {user.isTyping ? "escrevendo..." : getLastMessage(user.messages)}
-                    </Text>
-
-                    {getUnreadCount(user.messages) > 0 && (
-                      <View style={tw`bg-indigo-600 min-w-5 h-5 rounded-full flex items-center justify-center ml-2`}>
-                        <Text style={tw`text-white text-xs font-medium`}>{getUnreadCount(user.messages)}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {user.status === "away" && user.lastSeen && (
-                    <Text style={tw`text-xs text-gray-400 mt-1`}>
-                      Visto por último: {user.lastSeen}
-                    </Text>
-                  )}
-                </View>
+                {user.status === "away" && user.lastSeen && (
+                  <Text style={tw`text-xs text-gray-400 mt-1`}>
+                    Visto por último: {user.lastSeen}
+                  </Text>
+                )}
               </View>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <View style={tw`flex-1 items-center justify-center py-20`}>
-            <Ionicons name="chatbubble-ellipses-outline" size={70} color="#CBD5E0" />
-            <Text style={tw`mt-4 text-gray-500 text-lg font-medium`}>Nenhuma conversa encontrada</Text>
-            <Text style={tw`mt-2 text-gray-400 text-center px-10`}>
-              {searchQuery ?
-                `Não encontramos resultados para "${searchQuery}"` :
-                "Inicie uma nova conversa para começar a mensagem"}
-            </Text>
-            <TouchableOpacity
-              style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full flex-row items-center`}
-            >
-              <Feather name="edit" size={20} color="white" />
-              <Text style={tw`ml-2 text-white font-medium`}>Nova Mensagem</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+            </View>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <View style={tw`flex-1 items-center justify-center py-20`}>
+          <Ionicons name="chatbubble-ellipses-outline" size={70} color="#CBD5E0" />
+          <Text style={tw`mt-4 text-gray-500 text-lg font-medium`}>Nenhuma conversa encontrada</Text>
+          <Text style={tw`mt-2 text-gray-400 text-center px-10`}>
+            {searchQuery ?
+              `Não encontramos resultados para "${searchQuery}"` :
+              "Inicie uma nova conversa para começar a mensagem"}
+          </Text>
+          <TouchableOpacity
+            style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full flex-row items-center`}
+          >
+            <Feather name="edit" size={20} color="white" />
+            <Text style={tw`ml-2 text-white font-medium`}>Nova Mensagem</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  </Animated.ScrollView>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={tw`absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg`}
-      >
-        <Feather name="edit" size={24} color="white" />
-      </TouchableOpacity>
-    </View>
+  {/* Floating Action Button */ }
+  <TouchableOpacity
+    style={tw`absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg`}
+  >
+    <Feather name="edit" size={24} color="white" />
+  </TouchableOpacity>
+    </View >
   );
 }
 
