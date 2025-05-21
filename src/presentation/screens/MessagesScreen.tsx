@@ -218,21 +218,66 @@ export function MessagesScreen() {
   return (
     <View style={tw`flex-1 bg-gray-50`}>
       {/* Header */}
-      <View style={tw`px-5 pt-12 pb-4 bg-white shadow-sm`}>
-        <View style={tw`flex-row justify-between items-center`}>
+      <View style={tw` pt-10 pb-4 bg-white shadow-sm`}>
+        <View style={tw`flex-row justify-between items-center mx-5`}>
           <Text style={tw`text-2xl font-bold text-gray-800`}>Mensagens</Text>
-          <View style={tw`flex-row`}>
+          {/* <View style={tw`flex-row`}>
             <TouchableOpacity style={tw`mr-4`}>
               <Feather name="edit" size={24} color="#4F46E5" />
             </TouchableOpacity>
             <TouchableOpacity>
               <Feather name="more-vertical" size={24} color="#4F46E5" />
             </TouchableOpacity>
-          </View>
+          </View> */}
+        </View>
+
+        {/* Active Users */}
+        <View style={tw`bg-white py-4`}>
+          <Animated.ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={tw`px-5`}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: true }
+            )}
+            scrollEventThrottle={16}
+          >
+            {activeUsers.map((user, index) => (
+              <TouchableOpacity
+                key={user.id}
+                style={tw`items-center mr-6`}
+                onPress={() => {
+                  const fullUser = users.find(u => u.id === user.id);
+                  if (fullUser) handleChatOpen(fullUser);
+                }}
+              >
+                <View style={tw`relative`}>
+                  {user.image ? (
+                    <Image source={{ uri: user.image }} style={tw`w-16 h-16 rounded-full border-2 border-white`} />
+                  ) : (
+                    <View style={tw`w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-white`}>
+                      <Text style={tw`text-xl font-bold text-indigo-600`}>{user.name[0]}</Text>
+                    </View>
+                  )}
+                  <View style={tw`absolute bottom-0 right-0 w-4 h-4 rounded-full ${getStatusColor(user.status)} border-2 border-white`} />
+                </View>
+                <Text style={tw`text-sm mt-1 font-medium text-gray-800`}>{user.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </Animated.ScrollView>
+
+          {/* Gradient fade effect for scroll indication */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
+            start={{ x: 0.9, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={tw`absolute right-0 top-0 bottom-0 w-10`}
+          />
         </View>
 
         {/* Search Bar */}
-        <View style={tw`mt-4 flex-row items-center bg-gray-100 px-4 py-3 rounded-full`}>
+        <View style={tw`mt-1 flex-row items-center bg-gray-100 px-4 py-2 rounded-full mx-5`}>
           <Feather name="search" size={20} color="gray" />
           <TextInput
             placeholder="Buscar conversas..."
@@ -248,7 +293,7 @@ export function MessagesScreen() {
         </View>
 
         {/* Filter Tabs */}
-        <View style={tw`flex-row mt-4`}>
+        <View style={tw`flex-row mt-4 mx-5`}>
           <TouchableOpacity
             style={tw`mr-4 pb-2 ${selectedFilter === "all" ? "border-b-2 border-indigo-600" : ""}`}
             onPress={() => setSelectedFilter("all")}
@@ -274,51 +319,6 @@ export function MessagesScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Active Users */}
-      <View style={tw`bg-white py-4 shadow-sm mb-2`}>
-        <Animated.ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={tw`px-5`}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: true }
-          )}
-          scrollEventThrottle={16}
-        >
-          {activeUsers.map((user, index) => (
-            <TouchableOpacity
-              key={user.id}
-              style={tw`items-center mr-6`}
-              onPress={() => {
-                const fullUser = users.find(u => u.id === user.id);
-                if (fullUser) handleChatOpen(fullUser);
-              }}
-            >
-              <View style={tw`relative`}>
-                {user.image ? (
-                  <Image source={{ uri: user.image }} style={tw`w-16 h-16 rounded-full border-2 border-white`} />
-                ) : (
-                  <View style={tw`w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-white`}>
-                    <Text style={tw`text-xl font-bold text-indigo-600`}>{user.name[0]}</Text>
-                  </View>
-                )}
-                <View style={tw`absolute bottom-0 right-0 w-4 h-4 rounded-full ${getStatusColor(user.status)} border-2 border-white`} />
-              </View>
-              <Text style={tw`text-sm mt-1 font-medium text-gray-800`}>{user.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </Animated.ScrollView>
-
-        {/* Gradient fade effect for scroll indication */}
-        <LinearGradient
-          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
-          start={{ x: 0.9, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={tw`absolute right-0 top-0 bottom-0 w-10`}
-        />
       </View>
 
       {/* Conversation List */}
