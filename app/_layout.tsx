@@ -32,6 +32,14 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen 
+          name="voice-call" 
+          options={{ 
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom'
+          }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

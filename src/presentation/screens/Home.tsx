@@ -1,10 +1,11 @@
-import * as React from "react";
-import { View, Text, TextInput, ScrollView, Pressable, Image } from "react-native";
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
+import * as React from "react";
+import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import tw from "twrnc";
-import { SlidersHorizontal } from 'lucide-react-native';
+
+import { FilterModal } from "@/src/presentation/components/ui/FilterModal";
 import { Navbar } from "../components/ui/navbar";
-import { FilterModal } from "@/src/presentation/components/ui/FilterModal"
 
 interface Mentor {
   id: number;
@@ -124,7 +125,7 @@ export function HomeScreen() {
         <Pressable
           onPress={() => setFilterModalVisible(true)}
         >
-          <SlidersHorizontal size={20} style={tw`text-[#4A4852]`} />
+          <Feather name="sliders" size={20} color="#4A4852" />
         </Pressable>
       </View>
 

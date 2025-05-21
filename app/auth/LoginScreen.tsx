@@ -1,5 +1,4 @@
 import React, { useContext, useState } from "react";
-import "@/src/presentation/styles/global.css";
 import { View, TextInput, Text, Button, TouchableOpacity } from "react-native";
 import tw from "twrnc";
 import AuthHeader from "../../src/presentation/components/AuthHeader";
