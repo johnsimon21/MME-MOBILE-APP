@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Pressable, Image, TouchableOpacity, BackHandler, Platform, StatusBar } from "react-native";
+import { View, Text, Pressable, Image, TouchableOpacity, BackHandler, Platform, StatusBar, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -70,16 +70,40 @@ export function Navbar({
   return () => backHandler.remove();
 }, [menuVisible]);
 
-  const handleLogout = async () => {
-   confirm("Tens a certeza que queres sair?")
+   const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Tens a certeza que queres sair?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Sim",
+          onPress: async () => {
+            try {
+              // Keep user data but clear session/token
+              // await AsyncStorage.removeItem('token');
+              // Navigate to login screen
+              // navigation.reset({
+              //   index: 0,
+              //   routes: [{ name: 'Login' }],
+              // });
+              Alert.alert("Logout", "Logout functionality will be implemented here");
+            } catch (error) {
+              console.error("Error during logout:", error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleProfileView = () => {
     setMenuVisible(false);
-    // navigation.navigate('Profile');
-    alert("Ver perfil");
+    navigation.navigate('Profile' as never);
   };
-
   const handleBackButton = () => {
     if (onBackPress) {
       onBackPress();

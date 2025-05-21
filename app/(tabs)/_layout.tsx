@@ -9,6 +9,11 @@ import { AnalyticsScreen } from "@/src/presentation/screens/AnalyticsScreen";
 import Home from ".";
 import { SessionManagementScreen } from "@/src/presentation/screens/SessionManagementScreen";
 import { EducationalResourcesScreen } from "@/src/presentation/screens/EducationalResourcesScreen";
+import { ProfileScreen } from "@/src/presentation/screens/ProfileScreen";
+
+// Create Stack & Tabs
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 function MessagesStack() {
   return (
@@ -19,12 +24,18 @@ function MessagesStack() {
   );
 }
 
-// Create Stack & Tabs
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+// Main Stack Navigator that includes the Profile screen
+function MainStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+}
 
 // Bottom Tab Navigator
-export default function TabLayout() {
+function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -62,3 +73,7 @@ export default function TabLayout() {
   );
 }
 
+// Export the MainStack instead of TabNavigator
+export default function TabLayout() {
+  return <MainStack />;
+}
