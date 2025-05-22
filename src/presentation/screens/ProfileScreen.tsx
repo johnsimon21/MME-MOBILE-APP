@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Modal, FlatList, Dimensions } from "react-native";
 import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
@@ -9,54 +10,121 @@ import { Feather } from "@expo/vector-icons";
 interface UserData {
     name: string;
     email: string;
-    phone?: string;
-    address?: string;
-    portfolio?: string;
-    role?: string;
-    difficulties?: string[];
-    skills?: string[];
-    emotions?: string[];
+    phone: string;
+    address: string;
+    image: string;
+    portfolio: string;
+    role: string;
+    difficulties: string[];
+    skills: string[];
+    emotions: string[];
+    programs: string[];
 }
+
+interface Connection {
+    id: string;
+    name: string;
+    role: "Mentor" | "Mentorado";
+    avatar: string;
+}
+
+const defaultUserData: UserData = {
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    image: "",
+    portfolio: "",
+    role: "Mentorado",
+    difficulties: ["Gestão de tempo", "Organização"],
+    skills: ["Empatia", "Ouvir", "Análise"],
+    emotions: ["Nenhum"],
+    programs: ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"]
+};
 
 
 export const ProfileScreen = () => {
-    const [userData, setUserData] = useState<UserData | null>(null);
+    // Initialize state with default values
+    const [userData, setUserData] = useState<UserData>(defaultUserData);
+    const [editedData, setEditedData] = useState<UserData>(defaultUserData);
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [editedData, setEditedData] = useState<UserData | null>(null);
+    const [connections, setConnections] = useState<Connection[]>([]);
+    const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
+    const [filterModalVisible, setFilterModalVisible] = useState(false);
+    const [activeFilter, setActiveFilter] = useState<"Todos" | "Mentor" | "Mentorado">("Todos");
+
     const navigation = useNavigation();
 
     const difficultyOptions = ["Gestão de tempo", "Organização", "Cálculos", "Línguas", "Teoria", "Outro"];
     const skillOptions = ["Informática", "Cálculos", "Línguas", "Teoria", "Empatia", "Ouvir", "Análise"];
     const emotionOptions = ["Ansiedade", "Depressão", "Estresse", "Nenhum", "Outro"];
+    const programsOptions = ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"];
     const [selectedEmotions, setSelectedEmotions] = useState<string[]>(["Nenhum"]);
 
     // Add these state variables to your component
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(["Gestão de tempo", "Organização"]);
     const [selectedSkills, setSelectedSkills] = useState<string[]>(["Empatia", "Ouvir", "Análise"]);
+    const [selectedPrograms, setSelectedPrograms] = useState<string[]>(["Programação", "Plano de Carreira"]);
 
+    const loadMockConnections = () => {
+        const mockConnections: Connection[] = [
+            { id: '1', name: 'Ana Silva', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
+            { id: '2', name: 'Carlos Mendes', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
+            { id: '3', name: 'Maria Luísa', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/women/3.jpg' },
+            { id: '4', name: 'João Paulo', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/4.jpg' },
+            { id: '5', name: 'Sofia Costa', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/5.jpg' },
+            { id: '6', name: 'Pedro Santos', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/6.jpg' },
+            { id: '7', name: 'Luísa Ferreira', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/7.jpg' },
+            { id: '8', name: 'Miguel Oliveira', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/8.jpg' },
+            { id: '9', name: 'Catarina Alves', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/9.jpg' },
+            { id: '10', name: 'Ricardo Nunes', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/10.jpg' },
+        ];
+        setConnections(mockConnections);
+        setFilteredConnections(mockConnections);
+    };
+
+    // Function to apply filters
+    const applyFilter = (filter: "Todos" | "Mentor" | "Mentorado") => {
+        setActiveFilter(filter);
+        if (filter === "Todos") {
+            setFilteredConnections(connections);
+        } else {
+            setFilteredConnections(connections.filter(conn => conn.role === filter));
+        }
+        setFilterModalVisible(false);
+    };
+
+    // Load connections when the component mounts
     useEffect(() => {
         loadUserData();
+        loadMockConnections();
     }, []);
 
     const loadUserData = async () => {
         try {
             setIsLoading(true);
-            // For demo purposes, create some mock data if none exists
             const userDataString = await AsyncStorage.getItem('user');
             if (userDataString) {
                 const parsedData = JSON.parse(userDataString);
-                setUserData(parsedData);
-                setEditedData(parsedData);
+                // Ensure all required fields exist by merging with default data
+                const completeData = { ...defaultUserData, ...parsedData };
+                setUserData(completeData);
+                setEditedData(completeData);
             } else {
                 // Mock data for demonstration
-                const mockData = {
+                const mockData: UserData = {
                     name: "Lukombo Afonso",
                     email: "johnmiradojr@gmail.com",
+                    image: "https://randomuser.me/api/portraits/men/1.jpg",
                     phone: "+244 942 032 806",
                     address: "Cazenga, Luanda, Angola",
                     portfolio: "https://lukomiron.vercel.app",
-                    role: "Mentorado"
+                    role: "Mentorado",
+                    difficulties: ["Gestão de tempo", "Organização"],
+                    skills: ["Empatia", "Ouvir", "Análise"],
+                    emotions: ["Nenhum"],
+                    programs: ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"]
                 };
                 setUserData(mockData);
                 setEditedData(mockData);
@@ -65,6 +133,9 @@ export const ProfileScreen = () => {
         } catch (error) {
             console.error("Error loading user data:", error);
             Alert.alert("Error", "Failed to load profile data");
+            // Even on error, set default data to prevent null values
+            setUserData(defaultUserData);
+            setEditedData(defaultUserData);
         } finally {
             setIsLoading(false);
         }
@@ -72,23 +143,17 @@ export const ProfileScreen = () => {
 
     const toggleEditMode = async () => {
         if (isEditing) {
-            // If currently editing, save changes
-            if (!editedData) return;
-
             try {
                 setIsLoading(true);
-                await AsyncStorage.setItem('user', JSON.stringify({
+                const updatedUserData: UserData = {
                     ...editedData,
                     difficulties: selectedDifficulties,
                     skills: selectedSkills,
-                    emotions: selectedEmotions  // Add this line
-                }));
-                setUserData({
-                    ...editedData,
-                    difficulties: selectedDifficulties,
-                    skills: selectedSkills,
-                    emotions: selectedEmotions  // Add this line
-                });
+                    emotions: selectedEmotions,
+                    programs: editedData.programs
+                };
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+                setUserData(updatedUserData);
                 setIsEditing(false);
                 Alert.alert("Success", "Profile updated successfully");
             } catch (error) {
@@ -98,14 +163,11 @@ export const ProfileScreen = () => {
                 setIsLoading(false);
             }
         } else {
-            // If not editing, enter edit mode
             setIsEditing(true);
         }
     };
 
     const handleSaveChanges = async () => {
-        if (!editedData) return;
-
         try {
             setIsLoading(true);
             await AsyncStorage.setItem('user', JSON.stringify(editedData));
@@ -121,7 +183,7 @@ export const ProfileScreen = () => {
     };
 
     const handleCancel = () => {
-        setEditedData(userData);
+        setEditedData({ ...userData });
         setIsEditing(false);
     };
 
@@ -135,6 +197,9 @@ export const ProfileScreen = () => {
             </View>
         );
     }
+
+    const windowHeight = Dimensions.get('window').height;
+    const maxConnectionsHeight = windowHeight * 0.82; // 82% of screen height
 
     return (
         <ScrollView style={tw`bg-gray-200 h-full`}>
@@ -301,10 +366,10 @@ export const ProfileScreen = () => {
                 <TextInput
                     style={tw`bg-white border border-gray-200 p-2 rounded-md text-xs`}
                     placeholder="Descreva aqui..."
-                    maxLength={125}
+                    maxLength={25}
                     multiline
                 />
-                <Text style={tw`text-right text-xs text-gray-400`}>0/125</Text>
+                <Text style={tw`text-right text-xs text-gray-400`}>0/25</Text>
             </View>
 
             {/* Informações */}
@@ -317,7 +382,7 @@ export const ProfileScreen = () => {
                         <TextInput
                             style={tw`text-xs text-blue-500 border-b border-gray-300 p-1 w-1/2 text-right`}
                             value={editedData?.portfolio || ""}
-                            onChangeText={(text) => setEditedData({ ...editedData, portfolio: text })}
+                            onChangeText={(text: string) => setEditedData({ ...editedData, portfolio: text })}
                             placeholder="Seu portfólio"
                         />
                     ) : (
@@ -372,10 +437,57 @@ export const ProfileScreen = () => {
                 {/* Programas */}
                 <View style={tw`mt-4 mx-2 border-t border-gray-200 pt-4`}>
                     <Text style={tw`font-semibold mb-2`}>Programas</Text>
+
+                    {isEditing && (
+                        <View style={tw`flex-row items-center mb-2`}>
+                            <TextInput
+                                style={tw`flex-1 px-2 py-1 border border-gray-300 rounded-md text-xs`}
+                                placeholder="Adicionar novo programa..."
+                                onSubmitEditing={(e) => {
+                                    if (editedData) {  // Check if editedData is not null
+                                        const newProgram = e.nativeEvent.text.trim();
+                                        if (newProgram && !editedData.programs?.includes(newProgram)) {
+                                            const updatedPrograms = [...(editedData.programs || []), newProgram];
+                                            setEditedData({
+                                                ...editedData,  // This preserves name, email and other required fields
+                                                programs: updatedPrograms
+                                            });
+                                            e.currentTarget.setNativeProps({ text: '' });
+                                        }
+                                    }
+                                }}
+                                returnKeyType="done"
+                            />
+                        </View>
+                    )}
+
                     <View style={tw`flex-row flex-wrap gap-2`}>
-                        {['Programação', 'Plano de Carreira', 'Empreendedorismo', 'Educação Financeira', 'Comunicação Eficiente'].map((tag, index) => (
-                            <Text key={index} style={tw`px-2 py-1 bg-[#EDF1F8] border-[0.6px] border-[#D8D8D8] text-xs rounded-md text-gray-700`}>{tag}</Text>
-                        ))}
+                        {(isEditing ? (editedData?.programs || programsOptions) :
+                            (userData?.programs || programsOptions))
+                            .map((tag, index) => (
+                                <View key={index} style={tw`flex-row items-center px-2 py-1 bg-[#EDF1F8] border-[0.6px] border-[#D8D8D8] rounded-md`}>
+                                    <Text style={tw`text-xs text-gray-700`}>{tag}</Text>
+                                    {isEditing && (
+                                        <TouchableOpacity
+                                            style={tw`ml-1`}
+                                            onPress={() => {
+                                                if (editedData) {  // Check if editedData is not null
+                                                    const defaultPrograms = programsOptions;
+                                                    const currentPrograms = editedData.programs || defaultPrograms;
+                                                    const updatedPrograms = currentPrograms.filter((_, i) => i !== index);
+                                                    setEditedData({
+                                                        ...editedData,  // This preserves name, email and other required fields
+                                                        programs: updatedPrograms
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            <Feather name="x" size={12} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            ))
+                        }
                     </View>
                 </View>
             </View>
@@ -383,28 +495,95 @@ export const ProfileScreen = () => {
 
             {/* Conexões */}
             <View style={tw`p-4 bg-white my-4 rounded-xl mx-2`}>
-                <View style={tw`flex-row justify-between items-center mb-4`}>
-                    <Text style={tw`font-semibold`}>Conexões 102</Text>
-                    <TouchableOpacity>
-                        <Feather name="filter" size={16} color="gray" />
+                <View style={tw`flex-row justify-between items-center mb-4 shadow-sm`}>
+                    <Text style={tw`font-semibold`}>Conexões {filteredConnections.length}</Text>
+                    <TouchableOpacity onPress={() => setFilterModalVisible(true)}>
+                        <View style={tw`flex-row items-center`}>
+                            <Text style={tw`text-xs text-gray-500 mr-1`}>{activeFilter}</Text>
+                            <Feather name="filter" size={16} color="gray" />
+                        </View>
                     </TouchableOpacity>
                 </View>
 
-                {[1, 2, 3, 4, 5].map((_, i) => (
-                    <View key={i} style={tw`flex-row justify-between items-center py-2 border-b border-gray-100`}>
-                        <View style={tw`flex-row items-center`}>
-                            <View style={tw`w-10 h-10 bg-gray-300 rounded-full mr-3`} />
-                            <View>
-                                <Text style={tw`text-sm`}>Nome do Mentor</Text>
-                                <Text style={tw`text-xs text-blue-500`}>Mentor</Text>
+                <ScrollView
+                    style={[tw``, { maxHeight: maxConnectionsHeight, }]}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                >
+                    {filteredConnections.map((connection, i) => (
+                        <View key={connection.id} style={tw`flex-row justify-between items-center py-2 border-b border-gray-100`}>
+                            <View style={tw`flex-row items-center`}>
+                                <Image
+                                    source={{ uri: connection.avatar }}
+                                    style={tw`w-10 h-10 rounded-full mr-3`}
+                                />
+                                <View>
+                                    <Text style={tw`text-sm`}>{connection.name}</Text>
+                                    <Text style={tw`text-xs ${connection.role === 'Mentor' ? 'text-blue-500' : 'text-green-500'}`}>
+                                        {connection.role}
+                                    </Text>
+                                </View>
                             </View>
+                            <TouchableOpacity>
+                                <Feather name="more-vertical" size={16} color="gray" />
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity>
-                            <Feather name="more-vertical" size={16} color="gray" />
-                        </TouchableOpacity>
-                    </View>
-                ))}
+                    ))}
+                </ScrollView>
+
+                {/* Filter Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={filterModalVisible}
+                    onRequestClose={() => setFilterModalVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={tw`flex-1 bg-black bg-opacity-50 justify-center items-center`}
+                        activeOpacity={1}
+                        onPress={() => setFilterModalVisible(false)}
+                    >
+                        <View style={tw`bg-white rounded-xl p-4 w-3/4 mx-4`}>
+                            <Text style={tw`text-lg font-bold mb-4 text-center`}>Filtrar Conexões</Text>
+
+                            <TouchableOpacity
+                                style={tw`py-3 px-4 ${activeFilter === 'Todos' ? 'bg-blue-100' : ''} rounded-md mb-2`}
+                                onPress={() => applyFilter('Todos')}
+                            >
+                                <Text style={tw`${activeFilter === 'Todos' ? 'text-blue-500 font-bold' : 'text-gray-700'}`}>
+                                    Todos
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={tw`py-3 px-4 ${activeFilter === 'Mentor' ? 'bg-blue-100' : ''} rounded-md mb-2`}
+                                onPress={() => applyFilter('Mentor')}
+                            >
+                                <Text style={tw`${activeFilter === 'Mentor' ? 'text-blue-500 font-bold' : 'text-gray-700'}`}>
+                                    Mentores
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={tw`py-3 px-4 ${activeFilter === 'Mentorado' ? 'bg-blue-100' : ''} rounded-md mb-2`}
+                                onPress={() => applyFilter('Mentorado')}
+                            >
+                                <Text style={tw`${activeFilter === 'Mentorado' ? 'text-blue-500 font-bold' : 'text-gray-700'}`}>
+                                    Mentorados
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={tw`mt-4 py-2 bg-gray-200 rounded-md`}
+                                onPress={() => setFilterModalVisible(false)}
+                            >
+                                <Text style={tw`text-center font-semibold`}>Cancelar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
             </View>
+
         </ScrollView>
     );
 };
