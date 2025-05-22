@@ -308,43 +308,82 @@ export const ProfileScreen = () => {
             </View>
 
             {/* Informações */}
-            <View style={tw`p-4 mt-4 mx-2 border border-gray-100 rounded-xl`}>
-                <Text style={tw`font-semibold mb-2`}>Informações</Text>
+            <View style={tw`p-4 bg-white mt-4 rounded-xl mx-2`}>
+                <Text style={tw`font-semibold mb-4`}>Informações</Text>
 
-                <Text style={tw`text-xs text-gray-500`}>🔗 Portfólio</Text>
+                <View style={tw`flex-row items-center justify-between mb-2`}>
+                    <Text style={tw`text-xs text-[#999CA1]`}>🔗 Portfólio</Text>
+                    {isEditing ? (
+                        <TextInput
+                            style={tw`text-xs text-blue-500 border-b border-gray-300 p-1 w-1/2 text-right`}
+                            value={editedData?.portfolio || ""}
+                            onChangeText={(text) => setEditedData({ ...editedData, portfolio: text })}
+                            placeholder="Seu portfólio"
+                        />
+                    ) : (
+                        <Text style={tw`text-xs text-blue-500`}>{userData?.portfolio || "Não fornecido"}</Text>
+                    )}
+                </View>
 
-                <Text style={tw`text-xs text-blue-500 mb-2`}>{userData?.portfolio || "Não fornecido"}</Text>
+                <View style={tw`flex-row items-center justify-between mb-2`}>
+                    <Text style={tw`text-xs text-[#999CA1]`}>✉️ Email</Text>
+                    {isEditing ? (
+                        <TextInput
+                            style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                            value={editedData?.email || ""}
+                            onChangeText={(text) => setEditedData({ ...editedData, email: text })}
+                            placeholder="Seu email"
+                            keyboardType="email-address"
+                        />
+                    ) : (
+                        <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.email}</Text>
+                    )}
+                </View>
 
+                <View style={tw`flex-row items-center justify-between mb-2`}>
+                    <Text style={tw`text-xs text-[#999CA1]`}>📞 Telefone</Text>
+                    {isEditing ? (
+                        <TextInput
+                            style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                            value={editedData?.phone || ""}
+                            onChangeText={(text) => setEditedData({ ...editedData, phone: text })}
+                            placeholder="Seu telefone"
+                            keyboardType="phone-pad"
+                        />
+                    ) : (
+                        <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.phone}</Text>
+                    )}
+                </View>
 
-                <Text style={tw`text-xs text-gray-500`}>✉️ Email</Text>
+                <View style={tw`flex-row items-center justify-between mb-2`}>
+                    <Text style={tw`text-xs text-[#999CA1]`}>📍 Endereço</Text>
+                    {isEditing ? (
+                        <TextInput
+                            style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                            value={editedData?.address || ""}
+                            onChangeText={(text) => setEditedData({ ...editedData, address: text })}
+                            placeholder="Seu endereço"
+                        />
+                    ) : (
+                        <Text style={tw`text-xs text-gray-800`}>{userData?.address}</Text>
+                    )}
+                </View>
 
-                <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.email}</Text>
-
-
-                <Text style={tw`text-xs text-gray-500`}>📞 Telefone</Text>
-
-                <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.phone}</Text>
-
-
-                <Text style={tw`text-xs text-gray-500`}>📍 Endereço</Text>
-
-                <Text style={tw`text-xs text-gray-800`}>{userData?.address}</Text>
-
-            </View>
-
-            {/* Programas */}
-            <View style={tw`p-4 mt-4 mx-2`}>
-                <Text style={tw`font-semibold mb-2`}>Programas</Text>
-                <View style={tw`flex-row flex-wrap gap-2`}>
-                    {['Programação', 'Plano de Carreira', 'Empreendedorismo', 'Educação Financeira', 'Comunicação Eficiente'].map((tag, index) => (
-                        <Text key={index} style={tw`px-2 py-1 bg-gray-200 text-xs rounded-md text-gray-700`}>{tag}</Text>
-                    ))}
+                {/* Programas */}
+                <View style={tw`mt-4 mx-2 border-t border-gray-200 pt-4`}>
+                    <Text style={tw`font-semibold mb-2`}>Programas</Text>
+                    <View style={tw`flex-row flex-wrap gap-2`}>
+                        {['Programação', 'Plano de Carreira', 'Empreendedorismo', 'Educação Financeira', 'Comunicação Eficiente'].map((tag, index) => (
+                            <Text key={index} style={tw`px-2 py-1 bg-[#EDF1F8] border-[0.6px] border-[#D8D8D8] text-xs rounded-md text-gray-700`}>{tag}</Text>
+                        ))}
+                    </View>
                 </View>
             </View>
 
+
             {/* Conexões */}
-            <View style={tw`p-4 mt-4 mx-2 mb-8`}>
-                <View style={tw`flex-row justify-between items-center mb-2`}>
+            <View style={tw`p-4 bg-white my-4 rounded-xl mx-2`}>
+                <View style={tw`flex-row justify-between items-center mb-4`}>
                     <Text style={tw`font-semibold`}>Conexões 102</Text>
                     <TouchableOpacity>
                         <Feather name="filter" size={16} color="gray" />
