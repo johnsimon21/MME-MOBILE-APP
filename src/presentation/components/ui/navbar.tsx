@@ -3,6 +3,7 @@ import { View, Text, Pressable, Image, TouchableOpacity, BackHandler, Platform, 
 import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 
 interface NavbarProps {
   title: string;
@@ -131,7 +132,7 @@ export function Navbar({
             onPress={handleBackButton}
             style={tw`px-2 ml-2`}
           >
-            <Text style={tw`text-2xl ${textColor}`}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#4F46E5" />
           </TouchableOpacity>
         )}
         <Text style={tw`text-lg font-semibold px-4 ${textColor}`}>{title}</Text>

@@ -24,6 +24,8 @@ interface UserData {
 interface Connection {
     id: string;
     name: string;
+    country: string;
+    province: string;
     role: "Mentor" | "Mentorado";
     avatar: string;
 }
@@ -69,16 +71,16 @@ export const ProfileScreen = () => {
 
     const loadMockConnections = () => {
         const mockConnections: Connection[] = [
-            { id: '1', name: 'Ana Silva', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
-            { id: '2', name: 'Carlos Mendes', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
-            { id: '3', name: 'Maria Luísa', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/women/3.jpg' },
-            { id: '4', name: 'João Paulo', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/4.jpg' },
-            { id: '5', name: 'Sofia Costa', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/5.jpg' },
-            { id: '6', name: 'Pedro Santos', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/6.jpg' },
-            { id: '7', name: 'Luísa Ferreira', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/7.jpg' },
-            { id: '8', name: 'Miguel Oliveira', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/8.jpg' },
-            { id: '9', name: 'Catarina Alves', role: 'Mentor', avatar: 'https://randomuser.me/api/portraits/women/9.jpg' },
-            { id: '10', name: 'Ricardo Nunes', role: 'Mentorado', avatar: 'https://randomuser.me/api/portraits/men/10.jpg' },
+            { id: '1', name: 'Ana Silva', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
+            { id: '2', name: 'Carlos Mendes', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
+            { id: '3', name: 'Maria Luísa', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/3.jpg' },
+            { id: '4', name: 'João Paulo', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/4.jpg' },
+            { id: '5', name: 'Sofia Costa', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/5.jpg' },
+            { id: '6', name: 'Pedro Santos', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/6.jpg' },
+            { id: '7', name: 'Luísa Ferreira', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/7.jpg' },
+            { id: '8', name: 'Miguel Oliveira', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/8.jpg' },
+            { id: '9', name: 'Catarina Alves', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/9.jpg' },
+            { id: '10', name: 'Ricardo Nunes', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/10.jpg' },
         ];
         setConnections(mockConnections);
         setFilteredConnections(mockConnections);
@@ -202,10 +204,10 @@ export const ProfileScreen = () => {
     const maxConnectionsHeight = windowHeight * 0.82; // 82% of screen height
 
     return (
-        <ScrollView style={tw`bg-gray-200 h-full`}>
+        <ScrollView style={tw`bg-[#F7F7F7] h-full`}>
             <Navbar title="Meu Perfil" showBackButton={true} theme="light" />
 
-            <View style={tw`relative px-4`}>
+            <View style={tw`relative px-2`}>
                 {/* Two-color background */}
                 <View style={tw`bg-[#75A5F5] h-24 rounded-t-4`} />
                 <View style={tw`bg-white h-32 rounded-b-4`} />
@@ -519,14 +521,14 @@ export const ProfileScreen = () => {
                                 />
                                 <View>
                                     <Text style={tw`text-sm`}>{connection.name}</Text>
-                                    <Text style={tw`text-xs ${connection.role === 'Mentor' ? 'text-blue-500' : 'text-green-500'}`}>
-                                        {connection.role}
-                                    </Text>
+                                    <Text style={tw`text-sm text-gray-500 `}>{connection.country}, {connection.province}</Text>
                                 </View>
                             </View>
-                            <TouchableOpacity>
-                                <Feather name="more-vertical" size={16} color="gray" />
-                            </TouchableOpacity>
+                            <View> 
+                                <Text style={tw`text-xs ${connection.role === 'Mentor' ? 'text-blue-500' : 'text-green-500'}`}>
+                                    {connection.role}
+                                </Text>
+                            </View>
                         </View>
                     ))}
                 </ScrollView>
