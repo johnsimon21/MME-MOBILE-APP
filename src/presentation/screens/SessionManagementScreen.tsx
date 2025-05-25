@@ -163,11 +163,6 @@ export function SessionManagementScreen() {
                 )}
             />
 
-            {/* Floating Add Button */}
-            <Pressable style={tw`absolute bottom-6 right-6 bg-blue-500 p-4 rounded-full shadow-lg`}>
-                <Ionicons name="add" size={24} color="white" />
-            </Pressable>
-
             <UserDrawer
                 visible={userDrawerVisible}
                 onClose={() => setUserDrawerVisible(false)}

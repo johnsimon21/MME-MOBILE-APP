@@ -4,6 +4,7 @@ import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { formatMessageTime } from '@/src/utils/dateFormatter';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
+import { useRouter } from 'expo-router';
 
 interface Notification {
     id: string;
@@ -18,10 +19,13 @@ interface Notification {
         userName?: string;
         sessionId?: string;
         chatId?: string;
+        userPhoto?: string | null;
     };
 }
 
 export default function NotificationScreen() {
+    const router = useRouter();
+
     const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: '1',
@@ -31,7 +35,12 @@ export default function NotificationScreen() {
             timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
             isRead: false,
             priority: 'high',
-            actionData: { userId: 1, userName: 'Lukombo Afonso', sessionId: 'session_1' }
+            actionData: {
+                userId: 1,
+                userName: 'Lukombo Afonso',
+                sessionId: 'session_1',
+                userPhoto: null
+            }
         },
         {
             id: '2',
@@ -41,7 +50,12 @@ export default function NotificationScreen() {
             timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
             isRead: false,
             priority: 'medium',
-            actionData: { userId: 2, userName: 'Cardoso Manuel', chatId: 'chat_2' }
+            actionData: {
+                userId: 2,
+                userName: 'Cardoso Manuel',
+                chatId: 'chat_2',
+                userPhoto: null
+            }
         },
         {
             id: '3',
@@ -51,7 +65,11 @@ export default function NotificationScreen() {
             timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
             isRead: true,
             priority: 'high',
-            actionData: { userId: 3, userName: 'Lucy Script' }
+            actionData: {
+                userId: 3,
+                userName: 'Lucy Script',
+                userPhoto: null
+            }
         },
         {
             id: '4',
@@ -61,7 +79,12 @@ export default function NotificationScreen() {
             timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
             isRead: true,
             priority: 'medium',
-            actionData: { userId: 4, userName: 'Java Simon', sessionId: 'session_4' }
+            actionData: {
+                userId: 4,
+                userName: 'Java Simon',
+                sessionId: 'session_4',
+                userPhoto: null
+            }
         },
         {
             id: '5',
@@ -89,7 +112,12 @@ export default function NotificationScreen() {
             timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
             isRead: true,
             priority: 'medium',
-            actionData: { userId: 1, userName: 'Lukombo Afonso', chatId: 'chat_1' }
+            actionData: {
+                userId: 1,
+                userName: 'Lukombo Afonso',
+                chatId: 'chat_1',
+                userPhoto: null
+            }
         }
     ]);
 
@@ -139,27 +167,50 @@ export default function NotificationScreen() {
         );
     };
 
-    // Handle notification action
+    // Enhanced navigation handler
     const handleNotificationAction = (notification: Notification) => {
         markAsRead(notification.id);
 
         switch (notification.type) {
             case 'message':
-                // Navigate to chat
-                console.log('Navigate to chat:', notification.actionData?.chatId);
+                router.push('/(tabs)/messages');
                 break;
+
             case 'call':
-                // Show call options or call back
-                console.log('Call back:', notification.actionData?.userName);
+                if (notification.actionData?.userId && notification.actionData?.userName) {
+                    router.push({
+                        pathname: '/normal-call',
+                        params: {
+                            userId: notification.actionData.userId.toString(),
+                            userName: notification.actionData.userName,
+                            userPhoto: notification.actionData.userPhoto || ''
+                        }
+                    });
+                }
                 break;
+
             case 'session':
-                // Navigate to session details or resume session
-                console.log('Navigate to session:', notification.actionData?.sessionId);
+                router.push('/(tabs)/session');
                 break;
+
+            case 'reminder':
+                if (notification.message.includes('sessão agendada')) {
+                    router.push('/(tabs)/session');
+                } else {
+                    Alert.alert("Lembrete", notification.message, [{ text: "OK" }]);
+                }
+                break;
+
+            case 'system':
+                router.push('/settings');
+                break;
+
             default:
+                console.log('Unknown notification type:', notification.type);
                 break;
         }
     };
+
 
     // Get notification icon
     const getNotificationIcon = (type: string, priority: string) => {
@@ -192,7 +243,7 @@ export default function NotificationScreen() {
         count?: number
     }) => (
         <TouchableOpacity
-            style={tw`flex justify-center items-center px-4 rounded-full mr-2 ${filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
+            style={tw`flex justify-center items-center px-4 py-2 rounded-full mr-2 ${filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
                 }`}
             onPress={() => setFilter(filterType)}
         >
@@ -239,11 +290,20 @@ export default function NotificationScreen() {
                                         item.type === 'call' ? 'Chamada' :
                                             item.type === 'reminder' ? 'Lembrete' : 'Sistema'}
                             </Text>
+                            {/* Show target user name if available */}
+                            {item.actionData?.userName && (
+                                <Text style={tw`text-xs text-gray-400 ml-1`}>
+                                    • {item.actionData.userName}
+                                </Text>
+                            )}
                         </View>
 
                         <TouchableOpacity
                             style={tw`p-1`}
-                            onPress={() => deleteNotification(item.id)}
+                            onPress={(e) => {
+                                e.stopPropagation(); // Prevent navigation when deleting
+                                deleteNotification(item.id);
+                            }}
                         >
                             <Feather name="x" size={16} color="#9CA3AF" />
                         </TouchableOpacity>
@@ -274,11 +334,12 @@ export default function NotificationScreen() {
             </View>
 
             {/* Filters */}
-            <View style={tw`mb-4 h-9`}>
+            <View style={tw`mb-4 h-12`}>
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    style={tw`px-4 h-full`} // Fixed height
+                    style={tw`px-4 h-full`}
+                    contentContainerStyle={tw`items-center`}
                 >
                     <FilterButton filterType="all" label="Todas" />
                     <FilterButton
@@ -324,3 +385,4 @@ export default function NotificationScreen() {
         </View>
     );
 }
+

@@ -42,12 +42,11 @@ function TabNavigator() {
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === "Tarefas") iconName = "bar-chart";
-          else if (route.name === "Mensagens") iconName = "chatbubble-ellipses";
-          else if (route.name === "Emparelhamento") iconName = "apps";
-          else if (route.name === "Gerenciamento de sessões")
-            iconName = "reader";
-          else if (route.name === "Recursos educacionais") iconName = "library";
+          if (route.name === "tasks") iconName = "bar-chart";
+          else if (route.name === "messages") iconName = "chatbubble-ellipses";
+          else if (route.name === "pairing") iconName = "apps";
+          else if (route.name === "session") iconName = "reader";
+          else if (route.name === "educational-resources") iconName = "library";
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
@@ -58,17 +57,11 @@ function TabNavigator() {
         tabBarLabelStyle: { display: "none" },
       })}
     >
-      <Tab.Screen name="Tarefas" component={AnalyticsScreen} />
-      <Tab.Screen name="Mensagens" component={MessagesStack} />
-      <Tab.Screen name="Emparelhamento" component={Home} />
-      <Tab.Screen
-        name="Gerenciamento de sessões"
-        component={SessionManagementScreen}
-      />
-      <Tab.Screen
-        name="Recursos educacionais"
-        component={EducationalResourcesScreen}
-      />
+      <Tab.Screen name="tasks" component={AnalyticsScreen} />
+      <Tab.Screen name="messages" component={MessagesStack} />
+      <Tab.Screen name="pairing" component={Home} />
+      <Tab.Screen name="session" component={SessionManagementScreen} />
+      <Tab.Screen name="educational-resources" component={EducationalResourcesScreen} />
     </Tab.Navigator>
   );
 }
