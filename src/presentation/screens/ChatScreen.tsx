@@ -11,6 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from 'expo-file-system';
 import EmojiSelector, { Categories } from 'react-native-emoji-selector';
 import { Audio } from 'expo-av';
+import { SessionIcon } from "@/assets/images/svg";
 
 // First, let's extend our Message interface to support different content types
 interface Message {
@@ -42,6 +43,8 @@ export function ChatScreen({ route, navigation }: Props) {
     const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [showSessionDropdown, setShowSessionDropdown] = useState(false);
+    const [isInSession, setIsInSession] = useState(false);
 
     // New state variables for emoji and file handling
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -418,11 +421,36 @@ export function ChatScreen({ route, navigation }: Props) {
                 </TouchableOpacity>
 
                 <View style={tw`flex-row items-center`}>
+                    <View style={tw`relative w-10 h-10 flex-row items-center justify-end`}>
+                        <TouchableOpacity
+                            style={tw`p-2`}
+                            onPress={() => setShowSessionDropdown(!showSessionDropdown)}
+                        >
+                            <SessionIcon color={ "#222222"} size={20} />
+                            {isInSession && (
+                                <View style={tw`absolute bottom-1 right-1 w-3 h-3 border border-white bg-green-500 rounded-full`} />
+                            )}
+                        </TouchableOpacity>
+
+                        {showSessionDropdown && (
+                            <View style={tw`absolute top-10 right-4 bg-white rounded-lg shadow-lg z-50`}>
+                                <TouchableOpacity
+                                    style={tw`px-4 py-3`}
+                                    onPress={() => {
+                                        setIsInSession(!isInSession);
+                                        setShowSessionDropdown(false);
+                                    }}
+                                >
+                                    <Text style={tw`text-gray-800`}>
+                                        {isInSession ? "Finalizar sessão" : "Iniciar sessão"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+
                     <TouchableOpacity style={tw`p-2 mr-1`}>
-                        <Feather name="phone" size={20} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={tw`p-2`}>
-                        <Feather name="more-vertical" size={20} color="#4F46E5" />
+                        <Feather name="phone" size={20} color="#222222" />
                     </TouchableOpacity>
                 </View>
             </View>
