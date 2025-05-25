@@ -10,6 +10,11 @@ import Home from ".";
 import { SessionManagementScreen } from "@/src/presentation/screens/SessionManagementScreen";
 import { EducationalResourcesScreen } from "@/src/presentation/screens/EducationalResourcesScreen";
 import { ProfileScreen } from "@/src/presentation/screens/ProfileScreen";
+import { useAuth } from "@/src/context/AuthContext";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardScreen";
+import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScreen";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -24,29 +29,47 @@ function MessagesStack() {
   );
 }
 
-// Main Stack Navigator that includes the Profile screen
-function MainStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="TabNavigator" component={TabNavigator} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-    </Stack.Navigator>
-  );
-}
-
-// Bottom Tab Navigator
-function TabNavigator() {
+// Admin Tab Navigator
+function AdminTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === "tasks") iconName = "bar-chart";
-          else if (route.name === "messages") iconName = "chatbubble-ellipses";
-          else if (route.name === "pairing") iconName = "apps";
-          else if (route.name === "session") iconName = "reader";
-          else if (route.name === "educational-resources") iconName = "library";
+          if (route.name === "Dashboard") iconName = "analytics";
+          else if (route.name === "Sessões Admin") iconName = "reader";
+          else if (route.name === "Relatórios") iconName = "document-text";
+
+          return <Ionicons name={iconName as any} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: "#4F46E5",
+        tabBarInactiveTintColor: "gray",
+        tabBarStyle: tw`bg-white shadow-md h-16`,
+        tabBarItemStyle: tw`justify-center`,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
+      })}
+    >
+      <Tab.Screen name="Dashboard" component={AdminDashboardScreen} />
+      <Tab.Screen name="Sessões Admin" component={SessionManagementScreen} />
+      <Tab.Screen name="Relatórios" component={AdminReportsScreen} />
+    </Tab.Navigator>
+  );
+}
+
+// Regular User Tab Navigator (your existing one)
+function UserTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === "Tarefas") iconName = "bar-chart";
+          else if (route.name === "Mensagens") iconName = "chatbubble-ellipses";
+          else if (route.name === "Emparelhamento") iconName = "apps";
+          else if (route.name === "Gerenciamento de sessões") iconName = "reader";
+          else if (route.name === "Recursos educacionais") iconName = "library";
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
@@ -57,12 +80,42 @@ function TabNavigator() {
         tabBarLabelStyle: { display: "none" },
       })}
     >
-      <Tab.Screen name="tasks" component={AnalyticsScreen} />
-      <Tab.Screen name="messages" component={MessagesStack} />
-      <Tab.Screen name="pairing" component={Home} />
-      <Tab.Screen name="session" component={SessionManagementScreen} />
-      <Tab.Screen name="educational-resources" component={EducationalResourcesScreen} />
+      <Tab.Screen name="Tarefas" component={AnalyticsScreen} />
+      <Tab.Screen name="Mensagens" component={MessagesStack} />
+      <Tab.Screen name="Emparelhamento" component={Home} />
+      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} />
+      <Tab.Screen name="Recursos educacionais" component={EducationalResourcesScreen} />
     </Tab.Navigator>
+  );
+}
+
+// Main Stack Navigator with role-based routing
+function MainStack() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/auth/LoginScreen');
+    }
+  }, [user, isLoading]);
+
+  if (isLoading) {
+    return null; // Or loading screen
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen 
+        name="TabNavigator" 
+        component={user.role === 'admin' ? AdminTabNavigator : UserTabNavigator} 
+      />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+    </Stack.Navigator>
   );
 }
 

@@ -9,37 +9,49 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { View } from 'react-native';
 import { FloatingOptionsButton } from '@/components/ui/FloatingUnfoldVerticalButton';
+import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
-  const pathname = usePathname
-    ();
+  const pathname = usePathname();
+  const { user, isLoading } = useAuth();
+
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-
   useEffect(() => {
-    if (loaded) {
+    if (loaded && !isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, isLoading]);
 
-  if (!loaded) {
+  if (!loaded || isLoading) {
     return null;
   }
 
-  const hideSettingsOn = ['/settings', '/voice-call', '/normal-call', '/notifications', '/+not-found'];
-  const shouldShowSettings = !hideSettingsOn.includes(pathname) &&
-    !pathname.includes('/ChatScreen');
+  const hideSettingsOn = [
+    '/settings',
+    '/voice-call',
+    '/normal-call',
+    '/notifications',
+    '/+not-found',
+    '/auth/LoginScreen'
+  ];
+
+  const shouldShowSettings = user &&
+    !hideSettingsOn.includes(pathname) &&
+    !pathname.includes('/ChatScreen') &&
+    !pathname.includes('/auth/');
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <View style={{ flex: 1 }}>
         <Stack>
+          <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
@@ -64,6 +76,14 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         {shouldShowSettings && <FloatingOptionsButton />}
       </View>
-    </ThemeProvider >
+    </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
+    </AuthProvider>
   );
 }
