@@ -32,8 +32,9 @@ export default function RootLayout() {
     return null;
   }
 
-  const hideSettingsOn = ['/settings', '/voice-call', '/normal-call'];
-  const shouldShowSettings = !hideSettingsOn.includes(pathname);
+  const hideSettingsOn = ['/settings', '/voice-call', '/normal-call', '/notifications', '/+not-found'];
+  const shouldShowSettings = !hideSettingsOn.includes(pathname) &&
+    !pathname.includes('/ChatScreen');
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

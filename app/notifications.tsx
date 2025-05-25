@@ -142,7 +142,7 @@ export default function NotificationScreen() {
     // Handle notification action
     const handleNotificationAction = (notification: Notification) => {
         markAsRead(notification.id);
-        
+
         switch (notification.type) {
             case 'message':
                 // Navigate to chat
@@ -164,7 +164,7 @@ export default function NotificationScreen() {
     // Get notification icon
     const getNotificationIcon = (type: string, priority: string) => {
         const iconColor = priority === 'high' ? '#EF4444' : priority === 'medium' ? '#F59E0B' : '#6B7280';
-        
+
         switch (type) {
             case 'session':
                 return <MaterialIcons name="group" size={24} color={iconColor} />;
@@ -182,24 +182,22 @@ export default function NotificationScreen() {
     };
 
     // Filter button component
-    const FilterButton = ({ 
-        filterType, 
-        label, 
-        count 
-    }: { 
-        filterType: typeof filter, 
-        label: string, 
-        count?: number 
+    const FilterButton = ({
+        filterType,
+        label,
+        count
+    }: {
+        filterType: typeof filter,
+        label: string,
+        count?: number
     }) => (
         <TouchableOpacity
-            style={tw`px-4 py-2 rounded-full mr-2 ${
-                filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
-            }`}
+            style={tw`flex justify-center items-center px-4 rounded-full mr-2 ${filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
+                }`}
             onPress={() => setFilter(filterType)}
         >
-            <Text style={tw`${
-                filter === filterType ? 'text-white' : 'text-gray-700'
-            } font-medium`}>
+            <Text style={tw`text-xs ${filter === filterType ? 'text-white' : 'text-gray-700'
+                } font-medium`}>
                 {label} {count !== undefined && count > 0 && `(${count})`}
             </Text>
         </TouchableOpacity>
@@ -215,7 +213,7 @@ export default function NotificationScreen() {
                 <View style={tw`w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-3`}>
                     {getNotificationIcon(item.type, item.priority)}
                 </View>
-                
+
                 <View style={tw`flex-1`}>
                     <View style={tw`flex-row items-center justify-between mb-1`}>
                         <Text style={tw`font-bold text-gray-800 flex-1`} numberOfLines={1}>
@@ -225,24 +223,24 @@ export default function NotificationScreen() {
                             {formatMessageTime(item.timestamp)}
                         </Text>
                     </View>
-                    
+
                     <Text style={tw`text-gray-600 mb-2`} numberOfLines={2}>
                         {item.message}
                     </Text>
-                    
+
                     <View style={tw`flex-row items-center justify-between`}>
                         <View style={tw`flex-row items-center`}>
                             {!item.isRead && (
                                 <View style={tw`w-2 h-2 bg-[#4F46E5] rounded-full mr-2`} />
                             )}
                             <Text style={tw`text-xs text-gray-500 capitalize`}>
-                                {item.type === 'session' ? 'Sessão' : 
-                                 item.type === 'message' ? 'Mensagem' :
-                                 item.type === 'call' ? 'Chamada' :
-                                 item.type === 'reminder' ? 'Lembrete' : 'Sistema'}
+                                {item.type === 'session' ? 'Sessão' :
+                                    item.type === 'message' ? 'Mensagem' :
+                                        item.type === 'call' ? 'Chamada' :
+                                            item.type === 'reminder' ? 'Lembrete' : 'Sistema'}
                             </Text>
                         </View>
-                        
+
                         <TouchableOpacity
                             style={tw`p-1`}
                             onPress={() => deleteNotification(item.id)}
@@ -257,14 +255,14 @@ export default function NotificationScreen() {
 
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
-            <Navbar title="Notificações"  showBackButton={true} />
-            
+            <Navbar title="Notificações" showBackButton={true} />
+
             {/* Header Actions */}
             <View style={tw`flex-row justify-between items-center px-4 py-3 bg-white mb-2`}>
                 <Text style={tw`text-lg font-bold text-gray-800`}>
                     {unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas lidas'}
                 </Text>
-                
+
                 {unreadCount > 0 && (
                     <TouchableOpacity
                         style={tw`px-3 py-1 bg-[#4F46E5] rounded-full`}
@@ -276,34 +274,35 @@ export default function NotificationScreen() {
             </View>
 
             {/* Filters */}
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={tw`px-4 mb-4`}
-                contentContainerStyle={tw`pr-4`}
-            >
-                <FilterButton filterType="all" label="Todas" />
-                <FilterButton 
-                    filterType="unread" 
-                    label="Não lidas" 
-                    count={unreadCount}
-                />
-                <FilterButton 
-                    filterType="session" 
-                    label="Sessões"
-                    count={notifications.filter(n => n.type === 'session').length}
-                />
-                <FilterButton 
-                    filterType="message" 
-                    label="Mensagens"
-                    count={notifications.filter(n => n.type === 'message').length}
-                />
-                <FilterButton 
-                    filterType="call" 
-                    label="Chamadas"
-                    count={notifications.filter(n => n.type === 'call').length}
-                />
-            </ScrollView>
+            <View style={tw`mb-4 h-9`}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={tw`px-4 h-full`} // Fixed height
+                >
+                    <FilterButton filterType="all" label="Todas" />
+                    <FilterButton
+                        filterType="unread"
+                        label="Não lidas"
+                        count={unreadCount}
+                    />
+                    <FilterButton
+                        filterType="session"
+                        label="Sessões"
+                        count={notifications.filter(n => n.type === 'session').length}
+                    />
+                    <FilterButton
+                        filterType="message"
+                        label="Mensagens"
+                        count={notifications.filter(n => n.type === 'message').length}
+                    />
+                    <FilterButton
+                        filterType="call"
+                        label="Chamadas"
+                        count={notifications.filter(n => n.type === 'call').length}
+                    />
+                </ScrollView>
+            </View>
 
             {/* Notifications List */}
             <FlatList

@@ -8,7 +8,7 @@ import { UnfoldVerticalIcon } from '@/assets/images/svg';
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
     const router = useRouter();
-    
+
     // Animation values
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -16,18 +16,20 @@ export function FloatingOptionsButton() {
     const scaleAnim = useRef(new Animated.Value(0)).current;
 
     const handleNavigateToSettings = () => {
+        toggleUnfold()
         router.push('/settings');
     };
-    
+
     const handleNavigateToNotifications = () => {
+        toggleUnfold()
         router.push('/notifications');
     };
 
     const toggleUnfold = () => {
         const toValue = unfold ? 0 : 1;
-        
+
         setUnfold(!unfold);
-        
+
         // Parallel animations for smooth effect
         Animated.parallel([
             // Slide up animation
@@ -78,7 +80,7 @@ export function FloatingOptionsButton() {
     return (
         <View style={tw`absolute bottom-20 right-6 w-14 items-center justify-center z-50`}>
             {/* Options Container */}
-            <Animated.View 
+            <Animated.View
                 style={[
                     tw`mb-2 bg-white rounded-full flex-col items-center justify-center shadow-lg`,
                     {
@@ -97,7 +99,7 @@ export function FloatingOptionsButton() {
                         tw`overflow-hidden`,
                         {
                             transform: [
-                                { 
+                                {
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [20, 0],
@@ -122,7 +124,7 @@ export function FloatingOptionsButton() {
                         tw`overflow-hidden`,
                         {
                             transform: [
-                                { 
+                                {
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [40, 0],
