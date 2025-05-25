@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { TouchableOpacity, View, Animated } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { TouchableOpacity, View, Animated, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useRouter } from 'expo-router';
@@ -7,29 +7,49 @@ import { UnfoldVerticalIcon } from '@/assets/images/svg';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
+    const [unreadCount, setUnreadCount] = useState(3); // This should come from your notification service
     const router = useRouter();
-
+    
     // Animation values
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0)).current;
+    const badgeScaleAnim = useRef(new Animated.Value(1)).current;
+
+    // Animate badge when count changes
+    useEffect(() => {
+        if (unreadCount > 0) {
+            Animated.sequence([
+                Animated.timing(badgeScaleAnim, {
+                    toValue: 1.2,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(badgeScaleAnim, {
+                    toValue: 1,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }
+    }, [unreadCount]);
 
     const handleNavigateToSettings = () => {
-        toggleUnfold()
         router.push('/settings');
     };
-
+    
     const handleNavigateToNotifications = () => {
-        toggleUnfold()
+        // Reset unread count when navigating to notifications
+        setUnreadCount(0);
         router.push('/notifications');
     };
 
     const toggleUnfold = () => {
         const toValue = unfold ? 0 : 1;
-
+        
         setUnfold(!unfold);
-
+        
         // Parallel animations for smooth effect
         Animated.parallel([
             // Slide up animation
@@ -77,10 +97,32 @@ export function FloatingOptionsButton() {
         outputRange: [0, 1], // Scale from 0 to 1
     });
 
+    // Badge component for notification count
+    const NotificationBadge = ({ count }: { count: number }) => {
+        if (count === 0) return null;
+        
+        const displayCount = count > 99 ? '99+' : count.toString();
+        
+        return (
+            <Animated.View
+                style={[
+                    tw`absolute top-1 right-3 bg-[#FF7266] rounded-full min-w-5 h-5 items-center justify-center z-10`,
+                    {
+                        transform: [{ scale: badgeScaleAnim }]
+                    }
+                ]}
+            >
+                <Text style={tw`text-white text-xs font-bold px-1`}>
+                    {displayCount}
+                </Text>
+            </Animated.View>
+        );
+    };
+
     return (
         <View style={tw`absolute bottom-20 right-6 w-14 items-center justify-center z-50`}>
             {/* Options Container */}
-            <Animated.View
+            <Animated.View 
                 style={[
                     tw`mb-2 bg-white rounded-full flex-col items-center justify-center shadow-lg`,
                     {
@@ -99,7 +141,7 @@ export function FloatingOptionsButton() {
                         tw`overflow-hidden`,
                         {
                             transform: [
-                                {
+                                { 
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [20, 0],
@@ -118,13 +160,13 @@ export function FloatingOptionsButton() {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Notifications Button */}
+                {/* Notifications Button with Badge */}
                 <Animated.View
                     style={[
-                        tw`overflow-hidden`,
+                        tw`overflow-hidden relative`,
                         {
                             transform: [
-                                {
+                                { 
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [40, 0],
@@ -135,11 +177,12 @@ export function FloatingOptionsButton() {
                     ]}
                 >
                     <TouchableOpacity
-                        style={tw`items-center justify-center z-50 w-14 h-14 rounded-full bg-white`}
+                        style={tw`items-center justify-center z-50 w-14 h-14 rounded-full bg-white relative`}
                         onPress={handleNavigateToNotifications}
                         activeOpacity={0.8}
                     >
                         <Feather name="bell" size={24} color="#222222" />
+                        <NotificationBadge count={unreadCount} />
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
