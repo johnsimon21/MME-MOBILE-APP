@@ -561,7 +561,7 @@ export function ChatScreen({ route, navigation }: Props) {
                 <ScrollView
                     ref={scrollViewRef}
                     style={tw`flex-1`}
-                    contentContainerStyle={tw`pb-2`}
+                    contentContainerStyle={tw`py-2`}
                     onContentSizeChange={() => isScrolledToBottom && scrollToBottom()}
                 >
                     {messages.map((message, index) => (
