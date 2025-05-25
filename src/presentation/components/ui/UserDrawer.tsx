@@ -30,7 +30,7 @@ export function UserDrawer({ visible, onClose, onSelectUser }: UserDrawerProps) 
     const router = useRouter();
     const navigation = useNavigation();
 
-    // In the handleAction function:
+    // HandleAction function:
     const handleAction = (action: 'message' | 'call', user: User) => {
         if (action === 'call') {
             onClose(); // Close the drawer first
@@ -57,7 +57,7 @@ export function UserDrawer({ visible, onClose, onSelectUser }: UserDrawerProps) 
             console.log('Chat user:', chatUser);
             // Navigate to ChatScreen
             // @ts-ignore - Ignore type checking for navigation
-            navigation.navigate('Mensagens', { screen: 'ChatScreen', params: { user: chatUser } });
+            navigation.navigate('Mensagens', { screen: 'ChatScreen', params: { user: chatUser , startSession: true } });
         }
     };
 

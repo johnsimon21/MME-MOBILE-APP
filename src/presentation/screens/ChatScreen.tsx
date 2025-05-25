@@ -12,6 +12,7 @@ import * as FileSystem from 'expo-file-system';
 import EmojiSelector, { Categories } from 'react-native-emoji-selector';
 import { Audio } from 'expo-av';
 import { SessionIcon } from "@/assets/images/svg";
+import { addSession, Session } from "@/src/data/sessionService";
 
 // First, let's extend our Message interface to support different content types
 interface Message {
@@ -29,22 +30,28 @@ interface Message {
 }
 
 type RootStackParamList = {
-    ChatScreen: { user: User };
+    ChatScreen: {
+        user: User;
+        startSession?: boolean; // Add optional parameter
+    };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChatScreen'>;
 
 export function ChatScreen({ route, navigation }: Props) {
     // Existing state variables
-    const { user } = route.params;
+    const { user, startSession } = route.params;
     const [messages, setMessages] = useState<Message[]>(user.messages || []);
     const [newMessage, setNewMessage] = useState("");
     const [unreadCount, setUnreadCount] = useState(0);
     const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+
     const [showSessionDropdown, setShowSessionDropdown] = useState(false);
     const [isInSession, setIsInSession] = useState(false);
+    const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
+    const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
     // New state variables for emoji and file handling
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -62,6 +69,70 @@ export function ChatScreen({ route, navigation }: Props) {
     const handleEmojiSelected = (emoji: string) => {
         setNewMessage(prev => prev + emoji);
     };
+
+    const toggleSession = () => {
+        if (!isInSession) {
+            // Start session
+            setIsInSession(true);
+            setSessionStartTime(new Date().toISOString());
+            setSessionMessages([]);
+        } else {
+            // End session and save
+            endSession();
+        }
+        setShowSessionDropdown(false);
+    };
+
+    // End session and save
+    const endSession = async () => {
+        if (!sessionStartTime || sessionMessages.length === 0) {
+            setIsInSession(false);
+            return;
+        }
+
+        const sessionData: Session = {
+            id: Date.now().toString(),
+            name: `Sessão com ${user.name}`,
+            description: `Sessão de conversa com ${sessionMessages.length} mensagens`,
+            status: "Concluída",
+            scheduledDate: new Date(sessionStartTime).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            }),
+            completedDate: new Date().toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            }),
+            type: "Chat",
+            participantId: user.id,
+            participantName: user.name,
+            duration: Math.floor((Date.now() - new Date(sessionStartTime).getTime()) / 1000 / 60) // duration in minutes
+        };
+
+        try {
+            await addSession(sessionData);
+            console.log("Session saved successfully");
+        } catch (error) {
+            console.error("Error saving session:", error);
+        }
+
+        // Reset session state
+        setIsInSession(false);
+        setSessionStartTime(null);
+        setSessionMessages([]);
+    };
+
+    // Auto-start session if startSession is true
+    useEffect(() => {
+        if (startSession && !isInSession) {
+            // Auto-start session
+            setIsInSession(true);
+            setSessionStartTime(new Date().toISOString());
+            setSessionMessages([]);
+        }
+    }, [startSession]);
 
     useEffect(() => {
         // Simulate typing status changes
@@ -279,6 +350,11 @@ export function ChatScreen({ route, navigation }: Props) {
         const updatedMessages = [...messages, newMessage];
         setMessages(updatedMessages);
 
+        // Record message if session is active
+        if (isInSession) {
+            setSessionMessages(prev => [...prev, newMessage]);
+        }
+
         // Make sure we scroll to bottom after state update
         setTimeout(() => {
             scrollToBottom();
@@ -297,13 +373,17 @@ export function ChatScreen({ route, navigation }: Props) {
                 contentType: 'text'
             };
 
-            scrollToBottom();
             setMessages([...messages, message]);
-            setNewMessage("");
 
-            // Simulate reply after a delay (existing code)
+            // Record message if session is active
+            if (isInSession) {
+                setSessionMessages(prev => [...prev, message]);
+            }
+
+            setNewMessage("");
+            scrollToBottom();
         }
-    };
+    }
 
     // Function to render message content based on type
     const renderMessageContent = (message: Message) => {
@@ -420,26 +500,31 @@ export function ChatScreen({ route, navigation }: Props) {
                     </View>
                 </TouchableOpacity>
 
+                {isInSession && (
+                    <View style={tw`absolute top-24 left-0 right-0 z-50 bg-green-100 px-4 py-1`}>
+                        <Text style={tw`text-green-800 text-xs text-center font-medium`}>
+                            🔴 Sessão em andamento - Mensagens sendo gravadas
+                        </Text>
+                    </View>
+                )}
+
                 <View style={tw`flex-row items-center`}>
                     <View style={tw`relative w-10 h-10 flex-row items-center justify-end`}>
                         <TouchableOpacity
                             style={tw`p-2`}
                             onPress={() => setShowSessionDropdown(!showSessionDropdown)}
                         >
-                            <SessionIcon color={ "#222222"} size={20} />
+                            <SessionIcon color={"#222222"} size={20} />
                             {isInSession && (
                                 <View style={tw`absolute bottom-1 right-1 w-3 h-3 border border-white bg-green-500 rounded-full`} />
                             )}
                         </TouchableOpacity>
 
                         {showSessionDropdown && (
-                            <View style={tw`absolute top-10 right-4 bg-white rounded-lg shadow-lg z-50`}>
+                            <View style={tw`absolute top-10 right-4 bg-white border border-gray-200 rounded-lg shadow-lg z-50`}>
                                 <TouchableOpacity
                                     style={tw`px-4 py-3`}
-                                    onPress={() => {
-                                        setIsInSession(!isInSession);
-                                        setShowSessionDropdown(false);
-                                    }}
+                                    onPress={toggleSession}
                                 >
                                     <Text style={tw`text-gray-800`}>
                                         {isInSession ? "Finalizar sessão" : "Iniciar sessão"}
@@ -456,7 +541,7 @@ export function ChatScreen({ route, navigation }: Props) {
             </View>
 
 
-            <View style={tw`flex-1 p-4`}>
+            <View style={tw`flex-1 p-4 pt-0`}>
                 <ScrollView
                     ref={scrollViewRef}
                     style={tw`flex-1`}
