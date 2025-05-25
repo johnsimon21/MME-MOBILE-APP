@@ -23,4 +23,77 @@ const SessionIcon = ({ color = "#222222", size = 18 }: SessionIconProps) => (
     </Svg>
 );
 
-export { SessionIcon };
+interface UnfoldVerticalIconProps {
+    color?: string;
+    size?: number;
+}
+
+const UnfoldVerticalIcon = ({ color = "#222222", size = 18 }: UnfoldVerticalIconProps) => (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+        <G clipPath="url(#clip0_31_210)">
+            <Path 
+                d="M10 18.3333V13.3333" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M10 6.66669V1.66669" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M3.33329 10H1.66663" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M8.33329 10H6.66663" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M13.3333 10H11.6666" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M18.3333 10H16.6666" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M12.5 15.8333L10 18.3333L7.5 15.8333" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+            <Path 
+                d="M12.5 4.16669L10 1.66669L7.5 4.16669" 
+                stroke={color} 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+            />
+        </G>
+        <Defs>
+            <ClipPath id="clip0_31_210">
+                <Rect width="20" height="20" fill="white" />
+            </ClipPath>
+        </Defs>
+    </Svg>
+);
+
+export { SessionIcon, UnfoldVerticalIcon };

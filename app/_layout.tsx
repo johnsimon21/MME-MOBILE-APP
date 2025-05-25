@@ -8,7 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { View } from 'react-native';
-import { FloatingSettingsButton } from '@/components/ui/FloatingSettingsButton';
+import { FloatingOptionsButton } from '@/components/ui/FloatingUnfoldVerticalButton';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -42,6 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen
             name="voice-call"
             options={{
@@ -60,7 +61,7 @@ export default function RootLayout() {
           />
         </Stack>
         <StatusBar style="auto" />
-        {shouldShowSettings && <FloatingSettingsButton />}
+        {shouldShowSettings && <FloatingOptionsButton />}
       </View>
     </ThemeProvider >
   );

@@ -437,13 +437,6 @@ export function MessagesScreen() {
           )}
         </ScrollView>
       </Animated.ScrollView>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={tw`absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg`}
-      >
-        <Feather name="edit" size={24} color="white" />
-      </TouchableOpacity>
     </View >
   );
 }

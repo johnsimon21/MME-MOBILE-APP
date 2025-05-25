@@ -106,7 +106,7 @@ export default function SettingsScreen() {
 
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
-            <Navbar title="Configurações" />
+            <Navbar title="Configurações" showBackButton={true} />
             
             <ScrollView style={tw`flex-1`} showsVerticalScrollIndicator={false}>
                 {/* Profile Section */}
