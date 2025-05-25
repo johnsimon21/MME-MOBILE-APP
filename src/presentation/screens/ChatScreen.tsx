@@ -13,6 +13,7 @@ import EmojiSelector, { Categories } from 'react-native-emoji-selector';
 import { Audio } from 'expo-av';
 import { SessionIcon } from "@/assets/images/svg";
 import { addSession, Session } from "@/src/data/sessionService";
+import { useRouter } from "expo-router";
 
 // First, let's extend our Message interface to support different content types
 interface Message {
@@ -64,10 +65,22 @@ export function ChatScreen({ route, navigation }: Props) {
     const scrollViewRef = useRef<ScrollView>(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const router = useRouter();
 
     // Function to handle emoji selection
     const handleEmojiSelected = (emoji: string) => {
         setNewMessage(prev => prev + emoji);
+    };
+
+    const handleVoiceCall = () => {
+        router.push({
+            pathname: '/normal-call',
+            params: {
+                userId: user.id.toString(),
+                userName: user.name,
+                userPhoto: user.image || ''
+            }
+        });
     };
 
     const toggleSession = () => {
@@ -534,7 +547,10 @@ export function ChatScreen({ route, navigation }: Props) {
                         )}
                     </View>
 
-                    <TouchableOpacity style={tw`p-2 mr-1`}>
+                    <TouchableOpacity
+                        onPress={handleVoiceCall}
+                        style={tw`p-2 mr-1`}
+                    >
                         <Feather name="phone" size={20} color="#222222" />
                     </TouchableOpacity>
                 </View>

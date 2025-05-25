@@ -40,6 +40,14 @@ export default function RootLayout() {
             animation: 'slide_from_bottom'
           }} 
         />
+        <Stack.Screen 
+          name="normal-call" 
+          options={{ 
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom'
+          }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
