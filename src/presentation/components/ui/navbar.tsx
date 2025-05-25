@@ -103,7 +103,8 @@ export function Navbar({
 
   const handleProfileView = () => {
     setMenuVisible(false);
-    navigation.navigate('Profile' as never);
+    // @ts-expect-error: Profile is not in this stack, but exists in parent navigator
+    navigation.navigate('Profile');
   };
   const handleBackButton = () => {
     if (onBackPress) {

@@ -491,8 +491,8 @@ export function ChatScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                     style={tw`flex-row items-center flex-1 ml-2`}
                     onPress={() => {
-                        // Navigate to user profile or info
-                        // navigation.navigate('UserProfile', { userId: user.id });
+                        // @ts-expect-error: Profile is not in this stack, but exists in parent navigator
+                        navigation.navigate('Profile', { userId: user.id });
                     }}
                 >
                     {/* Use a default icon instead of avatar */}
@@ -580,17 +580,20 @@ export function ChatScreen({ route, navigation }: Props) {
                                     {renderMessageContent(message)}
                                 </View>
 
+                                {message.isSent && (
+                                    <View style={tw`absolute -left-1 bottom-3 bg-white w-5 h-5 rounded-full flex items-center justify-center shadow-md`}>
+                                        <Ionicons
+                                            name={message.isRead ? "checkmark-done" : "checkmark"}
+                                            size={13}
+                                            color={message.isRead ? "#4CAF50" : "#9CA3AF"}
+                                        />
+                                    </View>
+                                )}
+
                                 <View style={tw`flex-row items-center ${message.isSent ? 'justify-end' : 'justify-start'} mt-1`}>
                                     <Text style={tw`text-xs text-gray-500 mr-1`}>
                                         {formatMessageTime(message.timestamp)}
                                     </Text>
-                                    {message.isSent && (
-                                        <Ionicons
-                                            name={message.isRead ? "checkmark-done" : "checkmark"}
-                                            size={16}
-                                            color={message.isRead ? "#4CAF50" : "#9CA3AF"}
-                                        />
-                                    )}
                                 </View>
                             </View>
                         </React.Fragment>
