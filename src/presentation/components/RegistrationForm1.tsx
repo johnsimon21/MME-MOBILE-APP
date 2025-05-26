@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { TextInput, View } from "react-native";
 import { FormData1 } from "../../../app/auth/RegisterScreen";
 import tw from "twrnc";
 
@@ -15,11 +15,11 @@ export default function Form1({ formData, onChange }: Form1Props) {
     return (
         <View style={tw`bg-transparent m-0 p-0 w-full flex flex-col justify-start items-center`} >
             {/* Nome Completo */}
-            <input
+            <TextInput
                 style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
                 placeholder="Nome Completo"
                 value={formData.fullName}
-                onChange={(text) => onChange("fullName", text.target.value)}
+                onChange={(text) => onChange("fullName", text.nativeEvent.text)}
             />
 
             {/* Gênero (Dropdown) */}
@@ -33,34 +33,33 @@ export default function Form1({ formData, onChange }: Form1Props) {
             >
                 {genderOptions.map((option, index) => (
                     <option key={index} value={option}>
-                        {option}
+                         {option}
                     </option>
                 ))}
             </select>
 
             {/* Data de Nascimento */}
-            <input
-                required
-                type="date"
+            <TextInput
                 style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
                 placeholder="Data de Nascimento"
-                onChange={(text) => onChange("birth", text)}
+                value={formData.birth ? formData.birth.toISOString().slice(0, 10) : ""}
+                onChange={(text) => onChange("birth", text.nativeEvent.text)}
             />
 
             {/* Telefone */}
-            <input
+            <TextInput
                 style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
                 placeholder="Telefone"
                 value={formData.cellphone}
-                onChange={(text) => onChange("cellphone", text.target.value)}
+                onChange={(text) => onChange("cellphone", text.nativeEvent.text)}
             />
 
             {/* E-mail */}
-            <input
+            <TextInput
                 style={tw`w-full py-4 px-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
                 placeholder="E-mail"
                 value={formData.email}
-                onChange={(text) => onChange("email", text.target.value)}
+                onChange={(text) => onChange("email", text.nativeEvent.text)}
             />
         </View>
     );

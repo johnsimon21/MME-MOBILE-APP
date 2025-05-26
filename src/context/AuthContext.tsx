@@ -2,6 +2,7 @@ import React, { createContext, useState, ReactNode } from "react";
 import { useNavigation } from "@react-navigation/native";
 import apiService from "../services/apiService";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from "expo-router";
 
 // Define the shape of user data
 interface AuthUser {
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const navigation = useNavigation();
+    const router = useRouter();
 
     // Check auth state on app start
     React.useEffect(() => {
@@ -105,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 };
                 setUser(adminUser);
                 await AsyncStorage.setItem('user', JSON.stringify(adminUser));
+                router.replace('/(tabs)');
                 return true;
             }
 

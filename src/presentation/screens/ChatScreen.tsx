@@ -11,7 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from 'expo-file-system';
 import EmojiSelector, { Categories } from 'react-native-emoji-selector';
 import { Audio } from 'expo-av';
-import { SessionIcon } from "@/assets/images/svg";
+// import { SessionIcon } from "@/assets/images/svg";
 import { addSession, Session } from "@/src/data/sessionService";
 import { useRouter } from "expo-router";
 
@@ -527,7 +527,7 @@ export function ChatScreen({ route, navigation }: Props) {
                             style={tw`p-2`}
                             onPress={() => setShowSessionDropdown(!showSessionDropdown)}
                         >
-                            <SessionIcon color={"#222222"} size={20} />
+                            {/* <SessionIcon color={"#222222"} size={20} /> */}
                             {isInSession && (
                                 <View style={tw`absolute bottom-1 right-1 w-3 h-3 border border-white bg-green-500 rounded-full`} />
                             )}

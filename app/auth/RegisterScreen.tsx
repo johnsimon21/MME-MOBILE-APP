@@ -4,7 +4,7 @@ import SelectProfile from "../../src/presentation/components/SelectProfile";
 import Form1 from "../../src/presentation/components/RegistrationForm1";
 import { AuthContext, RegisterFullFormData } from "../../src/context/AuthContext";
 import Form2 from "../../src/presentation/components/RegistrationForm2";
-import { TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import tw from "twrnc";
 
 export type FormData1 = {
@@ -111,7 +111,7 @@ export default function RegisterScreen({ navigation }: any) {
                 }
 
                 <TouchableOpacity  style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 text-white font-bold text-md border-0 cursor-pointer`} onPress={handleSubmit}>
-                    {submitMessage}
+                    <Text>{submitMessage}</Text>
                 </TouchableOpacity >
             </View>
         </View>
