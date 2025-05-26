@@ -23,7 +23,7 @@ export default function Form1({ formData, onChange }: Form1Props) {
             />
 
             {/* Gênero (Dropdown) */}
-            <select
+            < select
                 required
                 style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
                 onChange={(event) => {
