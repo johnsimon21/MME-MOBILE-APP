@@ -54,7 +54,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const navigation = useNavigation();
     const router = useRouter();
 
     // Check auth state on app start

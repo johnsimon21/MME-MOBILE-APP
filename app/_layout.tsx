@@ -52,6 +52,7 @@ function RootLayoutContent() {
       <View style={{ flex: 1 }}>
         <Stack>
           <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen name="settings" options={{ headerShown: false }} />

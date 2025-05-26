@@ -110,8 +110,8 @@ export default function RegisterScreen({ navigation }: any) {
                     <Form2 onChange={handleForm2Change} setConfirmPassword={setConfirmPassword} profile={selectedProfile} />
                 }
 
-                <TouchableOpacity  style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 text-white font-bold text-md border-0 cursor-pointer`} onPress={handleSubmit}>
-                    <Text>{submitMessage}</Text>
+                <TouchableOpacity  style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 border-0 cursor-pointer`} onPress={handleSubmit}>
+                    <Text style={tw`text-center text-white font-bold text-md`}>{submitMessage}</Text>
                 </TouchableOpacity >
             </View>
         </View>

@@ -12,17 +12,17 @@ export default function SelectProfile({ selectedProfile, setSelectedProfile }: S
   return (
     <View style={tw`bg-white m-0 p-0`}>
       <Text style={tw`text-sm mb-6`}>Selecione o seu perfil</Text>
-
+  
       <Radio checked={selectedProfile === "MENTOR"} onChange={() => setSelectedProfile("MENTOR")}>
-        Mentor
+         <Text style={tw`text-sm`}> Mentor</Text>
       </Radio>
 
       <Radio checked={selectedProfile === "MENTORADO"} onChange={() => setSelectedProfile("MENTORADO")}>
-        Mentorado
+        <Text style={tw`text-sm`}> Mentorado</Text>
       </Radio>
 
       <Radio checked={selectedProfile === "COORDENADOR"} onChange={() => setSelectedProfile("COORDENADOR")}>
-        Coordenador
+        <Text style={tw`text-sm`}> Coordenador</Text>
       </Radio>
     </View>
   );
