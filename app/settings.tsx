@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-n
 import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
+import { useAuth } from '@/src/context/AuthContext';
+import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
     // Settings state
@@ -14,6 +16,8 @@ export default function SettingsScreen() {
     const [saveSessionHistory, setSaveSessionHistory] = useState(true);
     const [darkMode, setDarkMode] = useState(false);
     const [autoBackup, setAutoBackup] = useState(false);
+    const { user, logout } = useAuth();
+    const router = useRouter();
 
     const handleClearSessionHistory = () => {
         Alert.alert(
@@ -21,8 +25,8 @@ export default function SettingsScreen() {
             "Tem certeza que deseja limpar todo o histórico de sessões? Esta ação não pode ser desfeita.",
             [
                 { text: "Cancelar", style: "cancel" },
-                { 
-                    text: "Limpar", 
+                {
+                    text: "Limpar",
                     style: "destructive",
                     onPress: () => {
                         // Implement clear session history
@@ -39,8 +43,8 @@ export default function SettingsScreen() {
             "Deseja exportar seus dados de sessões e conversas?",
             [
                 { text: "Cancelar", style: "cancel" },
-                { 
-                    text: "Exportar", 
+                {
+                    text: "Exportar",
                     onPress: () => {
                         // Implement data export
                         console.log("Exporting data...");
@@ -50,13 +54,31 @@ export default function SettingsScreen() {
         );
     };
 
-    const SettingItem = ({ 
-        icon, 
-        title, 
-        subtitle, 
-        onPress, 
-        showSwitch = false, 
-        switchValue = false, 
+    const handleLogout = async () => {
+        Alert.alert(
+            "Sair",
+            "Tem certeza que deseja sair?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Sair",
+                    style: "destructive",
+                    onPress: async () => {
+                        router.replace('/auth/LoginScreen');
+                        await logout();
+                    }
+                }
+            ]
+        );
+    };
+
+    const SettingItem = ({
+        icon,
+        title,
+        subtitle,
+        onPress,
+        showSwitch = false,
+        switchValue = false,
         onSwitchChange,
         showArrow = true,
         iconColor = "#4F46E5"
@@ -71,7 +93,7 @@ export default function SettingsScreen() {
         showArrow?: boolean;
         iconColor?: string;
     }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={tw`flex-row items-center py-4 px-4 bg-white mb-2 rounded-xl`}
             onPress={onPress}
             disabled={showSwitch}
@@ -79,7 +101,7 @@ export default function SettingsScreen() {
             <View style={tw`w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-3`}>
                 <Feather name={icon as any} size={20} color={iconColor} />
             </View>
-            
+
             <View style={tw`flex-1`}>
                 <Text style={tw`text-gray-800 font-medium text-base`}>{title}</Text>
                 {subtitle && (
@@ -107,7 +129,7 @@ export default function SettingsScreen() {
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
             <Navbar title="Configurações" showBackButton={true} />
-            
+
             <ScrollView style={tw`flex-1`} showsVerticalScrollIndicator={false}>
                 {/* Profile Section */}
                 <SectionHeader title="Perfil" />
@@ -305,16 +327,7 @@ export default function SettingsScreen() {
                     icon="log-out"
                     title="Sair da Conta"
                     subtitle="Fazer logout do aplicativo"
-                    onPress={() => {
-                        Alert.alert(
-                            "Sair da Conta",
-                            "Tem certeza que deseja sair?",
-                            [
-                                { text: "Cancelar", style: "cancel" },
-                                { text: "Sair", style: "destructive", onPress: () => console.log("Logout") }
-                            ]
-                        );
-                    }}
+                    onPress={handleLogout}
                     iconColor="#EF4444"
                 />
 

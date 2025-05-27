@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Navbar } from "../components/ui/navbar";
+import { useAuth } from "@/src/context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 
 interface UserData {
@@ -46,6 +47,10 @@ const defaultUserData: UserData = {
 
 
 export const ProfileScreen = () => {
+    const {user} = useAuth();
+    defaultUserData.name = user?.fullName || "";
+    defaultUserData.name = user?.fullName || "";
+
     // Initialize state with default values
     const [userData, setUserData] = useState<UserData>(defaultUserData);
     const [editedData, setEditedData] = useState<UserData>(defaultUserData);
@@ -56,7 +61,6 @@ export const ProfileScreen = () => {
     const [filterModalVisible, setFilterModalVisible] = useState(false);
     const [activeFilter, setActiveFilter] = useState<"Todos" | "Mentor" | "Mentorado">("Todos");
 
-    const navigation = useNavigation();
 
     const difficultyOptions = ["Gestão de tempo", "Organização", "Cálculos", "Línguas", "Teoria", "Outro"];
     const skillOptions = ["Informática", "Cálculos", "Línguas", "Teoria", "Empatia", "Ouvir", "Análise"];

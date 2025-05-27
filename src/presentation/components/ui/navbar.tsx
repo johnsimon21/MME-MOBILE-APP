@@ -4,6 +4,8 @@ import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/src/context/AuthContext";
+import { useRouter } from "expo-router";
 
 interface NavbarProps {
   title: string;
@@ -13,9 +15,9 @@ interface NavbarProps {
   theme?: 'light' | 'dark';
 }
 
-export function Navbar({ 
-  title, 
-  displayProfile = true, 
+export function Navbar({
+  title,
+  displayProfile = true,
   showBackButton = false,
   onBackPress,
   theme = 'light'
@@ -23,7 +25,10 @@ export function Navbar({
   const [menuVisible, setMenuVisible] = useState(false);
   const [userName, setUserName] = useState("User");
   const navigation = useNavigation();
+  const router = useRouter()
   const menuRef = useRef(null);
+
+  const { logout, user } = useAuth();
 
   // Set status bar appearance based on theme
   useEffect(() => {
@@ -39,39 +44,27 @@ export function Navbar({
 
   // Load user data on component mount
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          setUserName(user.name || "User");
-        }
-      } catch (error) {
-        console.error("Error loading user data:", error);
-      }
-    };
-
-    loadUserData();
-  }, []);
+  setUserName(user?.fullName || "User");
+  }, []);+
 
   // Close menu when clicking outside
   useEffect(() => {
-  const handleBackPress = () => {
-    if (menuVisible) {
-      setMenuVisible(false);
-      return true;
-    }
-    return false;
-  };
+    const handleBackPress = () => {
+      if (menuVisible) {
+        setMenuVisible(false);
+        return true;
+      }
+      return false;
+    };
 
-  // Correct way to add BackHandler event listener
-  const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-  
-  // Return cleanup function
-  return () => backHandler.remove();
-}, [menuVisible]);
+    // Correct way to add BackHandler event listener
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
-   const handleLogout = async () => {
+    // Return cleanup function
+    return () => backHandler.remove();
+  }, [menuVisible]);
+
+  const handleLogout = async () => {
     Alert.alert(
       "Logout",
       "Tens a certeza que queres sair?",
@@ -84,14 +77,8 @@ export function Navbar({
           text: "Sim",
           onPress: async () => {
             try {
-              // Keep user data but clear session/token
-              // await AsyncStorage.removeItem('token');
-              // Navigate to login screen
-              // navigation.reset({
-              //   index: 0,
-              //   routes: [{ name: 'Login' }],
-              // });
-              Alert.alert("Logout", "Logout functionality will be implemented here");
+              await logout();
+              router.replace('/auth/LoginScreen');
             } catch (error) {
               console.error("Error during logout:", error);
             }
@@ -119,17 +106,17 @@ export function Navbar({
   const bottomBarColor = theme === 'light' ? 'bg-[#F7F7F7]' : 'bg-gray-800';
 
   return (
-    <View style={tw`${backgroundColor} flex-row justify-between items-center min-h-20 pt-10 pb-6 shadow-sm`}>
+    <View style={tw`${backgroundColor} flex-row justify-between items-center min-h-20 pt-10 pb-6 shadow-sm z-50`}>
       {/* Status Bar - This is just a visual representation, the actual control happens in the useEffect */}
-      <StatusBar 
+      <StatusBar
         barStyle={theme === 'light' ? 'dark-content' : 'light-content'}
         backgroundColor={theme === 'light' ? 'white' : '#121212'}
         translucent={true}
       />
-      
-      <View style={tw`flex-row items-center`}>
+
+      <View style={tw`flex-row items-center flex-1 min-w-0`}>
         {showBackButton && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleBackButton}
             style={tw`px-2 ml-2`}
           >
@@ -140,41 +127,43 @@ export function Navbar({
       </View>
 
       {/* Profile Section */}
-      {displayProfile && (
-        <Pressable 
-          onPress={() => setMenuVisible(!menuVisible)}
-          style={tw`flex-col items-center px-4`}
-        >
-          <View style={tw`w-10 h-10 bg-gray-300 rounded-full justify-center items-center`}>
-            <Text style={tw`text-gray-600 font-bold`}>
-              {userName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <Text style={tw`text-sm mt-1 ${textColor}`}>{userName}</Text>
-        </Pressable>
-      )}
+      <View style={tw`flex-row items-center flex-shrink-0 relative`}>
+        {displayProfile && (
+          <Pressable
+            onPress={() => setMenuVisible(!menuVisible)}
+            style={tw`flex-col items-center px-4`}
+          >
+            <View style={tw`w-10 h-10 bg-gray-300 rounded-full justify-center items-center`}>
+              <Text style={tw`text-gray-600 font-bold`}>
+                {userName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={tw`text-sm mt-1 ${textColor}`}>{userName}</Text>
+          </Pressable>
+        )}
 
-      {/* Dropdown Menu */}
-      {menuVisible && (
-        <View 
-          ref={menuRef}
-          style={tw`absolute right-4 top-20 z-50 ${backgroundColor} p-2 shadow-lg rounded-lg w-40 border border-gray-100`}
-        >
-          <TouchableOpacity 
-            onPress={handleProfileView}
-            style={tw`py-3 px-4 border-b border-gray-100`}
+        {/* Dropdown Menu */}
+        {menuVisible && (
+          <View
+            ref={menuRef}
+            style={tw`absolute right-4 top-18 z-50 ${backgroundColor} p-2 shadow-lg rounded-lg w-40 border border-gray-100`}
           >
-            <Text style={tw`${textColor}`}>Ver perfil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleLogout}
-            style={tw`py-3 px-4`}
-          >
-            <Text style={tw`text-red-500`}>Sair</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
+            <TouchableOpacity
+              onPress={handleProfileView}
+              style={tw`py-3 px-4 border-b border-gray-100`}
+            >
+              <Text style={tw`${textColor}`}>Ver perfil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={tw`py-3 px-4`}
+            >
+              <Text style={tw`text-red-500`}>Sair</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
       {/* Bottom rounded edge */}
       <View style={tw`absolute bottom-0 left-0 right-0 ${bottomBarColor} w-full h-4 rounded-t-4`}></View>
     </View>

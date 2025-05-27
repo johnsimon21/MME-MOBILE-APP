@@ -107,19 +107,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setUser(adminUser);
                 await AsyncStorage.setItem('user', JSON.stringify(adminUser));
                 router.replace('/(tabs)');
-                return true;
             }
 
             // Regular user login
-            const response = await apiService.login({ email, password });
-            const userWithRole = {
-                ...response.user,
-                role: 'user' as const // Default role for regular users
-            };
+            // const response = await apiService.login({ email, password });
+
+            if (email === 'user@mme.com' && password === 'user123') {
+                const regularUser: AuthUser = {
+                    id: 'user_1',
+                    email: 'user@mme.com',
+                    fullName: 'John Simon',
+                    token: 'user_token_123',
+                    role: 'user'
+                };
+
+                setUser(regularUser);
+                await AsyncStorage.setItem('user', JSON.stringify(regularUser));
+                router.replace('/(tabs)');
+            }
             
-            setUser(userWithRole);
-            await AsyncStorage.setItem('user', JSON.stringify(userWithRole));
-            console.log(userWithRole);
             return true;
         } catch (error) {
             console.error(`Erro ao fazer login: ${error}`);

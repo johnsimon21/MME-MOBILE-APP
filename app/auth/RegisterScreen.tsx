@@ -91,7 +91,7 @@ export default function RegisterScreen({ navigation }: any) {
 
     return (
         <View style={tw`flex-1 items-center bg-white`}>
-            <AuthHeader navigation={navigation} activeTab="Cadastro" step={registerStep} />
+            <AuthHeader navigation={navigation} showBackButton={registerStep !== 1 ? true : false} activeTab="Cadastro" step={registerStep} />
 
             <View style={tw`relative  border-0 flex-1 h-full max-w-[400px] w-full px-10 py-0 mt-20 z-0`}>
                 {registerStep === 1 &&
@@ -110,7 +110,7 @@ export default function RegisterScreen({ navigation }: any) {
                     <Form2 onChange={handleForm2Change} setConfirmPassword={setConfirmPassword} profile={selectedProfile} />
                 }
 
-                <TouchableOpacity  style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 border-0 cursor-pointer`} onPress={handleSubmit}>
+                <TouchableOpacity style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 border-0 cursor-pointer`} onPress={handleSubmit}>
                     <Text style={tw`text-center text-white font-bold text-md`}>{submitMessage}</Text>
                 </TouchableOpacity >
             </View>

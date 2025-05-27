@@ -8,16 +8,19 @@ interface AuthHeaderProps {
     navigation: any;
     activeTab: "Login" | "Cadastro";
     step: number;
+    showBackButton?: boolean;
 }
 
-export default function AuthHeader({ navigation, activeTab, step }: AuthHeaderProps) {
+export default function AuthHeader({ navigation, activeTab, step, showBackButton = true }: AuthHeaderProps) {
     const router = useRouter();
 
     return (
         <View style={step !== 1 && activeTab === "Cadastro" ? tw`flex-1 h-[155px] w-full max-h-[155px] justify-center items-center bg-[#4285F4] p-5` : tw`flex-1 h-[220px] max-h-[220px] w-full justify-center items-center bg-[#4285F4] p-5`}>
-            <TouchableOpacity style={tw`w-8 h-8 flex justify-center items-center bg-white rounded-full absolute elevation-10 shadow-lg z-100 border border-[#A5A3B1] border-[0.2px] overflow-visible bottom-[-14px] left-5`} onPress={() => navigation.goBack()}>
-                <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-            </TouchableOpacity>
+            {showBackButton &&
+                <TouchableOpacity style={tw`w-8 h-8 flex justify-center items-center bg-white rounded-full absolute elevation-10 shadow-lg z-100 border border-[#A5A3B1] border-[0.2px] overflow-visible bottom-[-14px] left-5`} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+                </TouchableOpacity>
+            }
             <Text style={tw`text-white text-2xl font-bold`}>Bem-vindo ao Meu Mentor Eiffel</Text>
             <Text style={tw`text-sm text-white mt-1`}>
                 Conectando mentores e mentorados para um aprendizado eficaz

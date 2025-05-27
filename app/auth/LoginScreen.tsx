@@ -22,7 +22,7 @@ export default function LoginScreen({ navigation }: any) {
     return (
         <View style={tw`flex-1 items-center bg-white`}>
             {/* Top Section */}
-            <AuthHeader navigation={navigation} activeTab="Login" step={1} />
+            <AuthHeader navigation={navigation} showBackButton={false} activeTab="Login" step={1} />
 
             {/* Form Section */}
             <View style={tw`bg-white flex-2 max-w-[400px] w-full px-10 justify-start items-center mt-20 relative z-0`}>
