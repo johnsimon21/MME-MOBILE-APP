@@ -9,6 +9,7 @@ import { useFloatingButton } from '@/src/context/FloatingButtonContext';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
+    const [onTop, setOnTop] = React.useState(false);
     const [unreadCount, setUnreadCount] = useState(3); // This should come from your notification service
     const router = useRouter();
     const { position } = useFloatingButton();
@@ -38,18 +39,30 @@ export function FloatingOptionsButton() {
         }
     }, [unreadCount]);
 
+    useEffect(() => {
+        if (position.includes('right-top') || position.includes('left-top')) {
+            setOnTop(true);
+        } else {
+            setOnTop(false);
+        }
+    }, [position]);
+
     const getPositionStyle = () => {
-        const baseStyle = 'absolute w-14 items-center justify-center z-50';
+        const baseStyle = 'absolute w-14 items-center justify-center z-50 rounded-full';
 
         switch (position) {
             case 'left-top':
-                return `${baseStyle} top-20 left-6`;
+                // setOnTop(true);
+                return `${baseStyle} top-30 left-6`;
             case 'left-bottom':
+                // setOnTop(false);
                 return `${baseStyle} bottom-20 left-6`;
             case 'right-top':
-                return `${baseStyle} top-20 right-6`;
+                // setOnTop(true);
+                return `${baseStyle} top-30 right-6`;
             case 'right-bottom':
             default:
+                // setOnTop(false);
                 return `${baseStyle} bottom-20 right-6`;
         }
     };
@@ -103,7 +116,7 @@ export function FloatingOptionsButton() {
     // Animation interpolations
     const slideTransform = slideAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [100, 0], // Start 100px below, end at 0
+        outputRange: onTop ? [-100, 0] : [100, 0], // Start 100px (if onTop) below (else) above, end at 0
     });
 
     const rotateTransform = rotateAnim.interpolate({
@@ -143,7 +156,7 @@ export function FloatingOptionsButton() {
             {/* Options Container */}
             <Animated.View
                 style={[
-                    tw`mb-2 bg-white rounded-full flex-col items-center justify-center shadow-lg`,
+                    tw`absolute ${onTop ? 'top-15' : 'bottom-13'} mb-2 bg-white rounded-full flex-col items-center justify-center shadow-lg`,
                     {
                         opacity: fadeAnim,
                         transform: [
