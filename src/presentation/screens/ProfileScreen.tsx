@@ -10,6 +10,7 @@ import { Feather, MaterialIcons } from "@expo/vector-icons";
 
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from 'expo-file-system';
+import { NameEditor } from "../components/NameEditor";
 
 interface UserData {
     name: string;
@@ -865,7 +866,27 @@ export const ProfileScreen = () => {
             <PhotoViewerModal />
 
             {/* Name Editor Modal */}
-            <NameEditorModal />
+            <NameEditor
+                visible={nameEditVisible}
+                initialName={userData?.name || ""}
+                onClose={() => setNameEditVisible(false)}
+                onSave={async (newName) => {
+                    try {
+                        setIsLoading(true);
+                        const updatedUserData = { ...userData, name: newName };
+                        await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+                        setUserData(updatedUserData);
+                        setEditedData(updatedUserData);
+                        setNameEditVisible(false);
+                        Alert.alert("Sucesso", "Nome atualizado com sucesso!");
+                    } catch (error) {
+                        console.error("Error updating name:", error);
+                        Alert.alert("Erro", "Falha ao atualizar o nome");
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }}
+            />
         </ScrollView>
     );
 };
