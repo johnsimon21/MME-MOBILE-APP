@@ -4,13 +4,15 @@ import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { UnfoldVerticalIcon } from '@/assets/images/svg';
+import { useFloatingButton } from '@/src/context/FloatingButtonContext';
 // import { UnfoldVerticalIcon } from '@/assets/images/svg';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
     const [unreadCount, setUnreadCount] = useState(3); // This should come from your notification service
     const router = useRouter();
-    
+    const { position } = useFloatingButton();
+
     // Animation values
     const slideAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -36,10 +38,26 @@ export function FloatingOptionsButton() {
         }
     }, [unreadCount]);
 
+    const getPositionStyle = () => {
+        const baseStyle = 'absolute w-14 items-center justify-center z-50';
+
+        switch (position) {
+            case 'left-top':
+                return `${baseStyle} top-20 left-6`;
+            case 'left-bottom':
+                return `${baseStyle} bottom-20 left-6`;
+            case 'right-top':
+                return `${baseStyle} top-20 right-6`;
+            case 'right-bottom':
+            default:
+                return `${baseStyle} bottom-20 right-6`;
+        }
+    };
+
     const handleNavigateToSettings = () => {
         router.push('/settings');
     };
-    
+
     const handleNavigateToNotifications = () => {
         // Reset unread count when navigating to notifications
         setUnreadCount(0);
@@ -48,9 +66,9 @@ export function FloatingOptionsButton() {
 
     const toggleUnfold = () => {
         const toValue = unfold ? 0 : 1;
-        
+
         setUnfold(!unfold);
-        
+
         // Parallel animations for smooth effect
         Animated.parallel([
             // Slide up animation
@@ -101,9 +119,9 @@ export function FloatingOptionsButton() {
     // Badge component for notification count
     const NotificationBadge = ({ count }: { count: number }) => {
         if (count === 0) return null;
-        
+
         const displayCount = count > 99 ? '99+' : count.toString();
-        
+
         return (
             <Animated.View
                 style={[
@@ -121,9 +139,9 @@ export function FloatingOptionsButton() {
     };
 
     return (
-        <View style={tw`absolute bottom-20 right-6 w-14 items-center justify-center z-50`}>
+        <View style={tw`${getPositionStyle()}`}>
             {/* Options Container */}
-            <Animated.View 
+            <Animated.View
                 style={[
                     tw`mb-2 bg-white rounded-full flex-col items-center justify-center shadow-lg`,
                     {
@@ -142,7 +160,7 @@ export function FloatingOptionsButton() {
                         tw`overflow-hidden`,
                         {
                             transform: [
-                                { 
+                                {
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [20, 0],
@@ -167,7 +185,7 @@ export function FloatingOptionsButton() {
                         tw`overflow-hidden relative`,
                         {
                             transform: [
-                                { 
+                                {
                                     translateY: slideAnim.interpolate({
                                         inputRange: [0, 1],
                                         outputRange: [40, 0],

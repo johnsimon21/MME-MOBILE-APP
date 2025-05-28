@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { View } from 'react-native';
 import { FloatingOptionsButton } from '@/components/ui/FloatingUnfoldVerticalButton';
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
+import { FloatingButtonProvider } from '@/src/context/FloatingButtonContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -49,35 +50,37 @@ function RootLayoutContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <View style={{ flex: 1 }}>
-        <Stack>
-          <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-          <Stack.Screen name="user" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ headerShown: false }} />
-          <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="voice-call"
-            options={{
-              headerShown: false,
-              presentation: 'modal',
-              animation: 'slide_from_bottom'
-            }}
-          />
-          <Stack.Screen
-            name="normal-call"
-            options={{
-              headerShown: false,
-              presentation: 'modal',
-              animation: 'slide_from_bottom'
-            }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-        {shouldShowSettings && <FloatingOptionsButton />}
-      </View>
+      <FloatingButtonProvider>
+        <View style={{ flex: 1 }}>
+          <Stack>
+            <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+            <Stack.Screen name="user" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
+            <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="voice-call"
+              options={{
+                headerShown: false,
+                presentation: 'modal',
+                animation: 'slide_from_bottom'
+              }}
+            />
+            <Stack.Screen
+              name="normal-call"
+              options={{
+                headerShown: false,
+                presentation: 'modal',
+                animation: 'slide_from_bottom'
+              }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+          {shouldShowSettings && <FloatingOptionsButton />}
+        </View>
+      </FloatingButtonProvider>
     </ThemeProvider>
   );
 }

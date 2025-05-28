@@ -5,6 +5,7 @@ import tw from 'twrnc';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
 import { useAuth } from '@/src/context/AuthContext';
 import { useRouter } from 'expo-router';
+import { useFloatingButton } from '@/src/context/FloatingButtonContext';
 
 export default function SettingsScreen() {
     // Settings state
@@ -16,6 +17,7 @@ export default function SettingsScreen() {
     const [saveSessionHistory, setSaveSessionHistory] = useState(true);
     const [darkMode, setDarkMode] = useState(false);
     const [autoBackup, setAutoBackup] = useState(false);
+    const { position: floatingButtonPosition, setPosition: setFloatingButtonPosition } = useFloatingButton();
     const { user, logout } = useAuth();
     const router = useRouter();
 
@@ -125,6 +127,30 @@ export default function SettingsScreen() {
     const SectionHeader = ({ title }: { title: string }) => (
         <Text style={tw`text-lg font-bold text-gray-800 mb-3 mt-6 px-4`}>{title}</Text>
     );
+
+    const getPositionText = (position: string) => {
+        switch (position) {
+            case 'left-top': return 'Superior Esquerdo';
+            case 'left-bottom': return 'Inferior Esquerdo';
+            case 'right-top': return 'Superior Direito';
+            case 'right-bottom': return 'Inferior Direito';
+            default: return 'Inferior Direito';
+        }
+    };
+
+    const showPositionSelector = () => {
+        Alert.alert(
+            "Posição do Botão Flutuante",
+            "Escolha onde deseja posicionar o botão de opções:",
+            [
+                { text: "Superior Esquerdo", onPress: () => setFloatingButtonPosition('left-top') },
+                { text: "Inferior Esquerdo", onPress: () => setFloatingButtonPosition('left-bottom') },
+                { text: "Superior Direito", onPress: () => setFloatingButtonPosition('right-top') },
+                { text: "Inferior Direito", onPress: () => setFloatingButtonPosition('right-bottom') },
+                { text: "Cancelar", style: "cancel" }
+            ]
+        );
+    };
 
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
@@ -280,6 +306,12 @@ export default function SettingsScreen() {
                     switchValue={darkMode}
                     onSwitchChange={setDarkMode}
                     showArrow={false}
+                />
+                <SettingItem
+                    icon="move"
+                    title="Posição do Botão Flutuante"
+                    subtitle={`Atual: ${getPositionText(floatingButtonPosition)}`}
+                    onPress={() => showPositionSelector()}
                 />
                 <SettingItem
                     icon="type"
