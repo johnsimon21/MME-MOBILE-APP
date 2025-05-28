@@ -6,7 +6,7 @@ import tw from "twrnc";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Navbar } from "../components/ui/navbar";
 import { useAuth } from "@/src/context/AuthContext";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from 'expo-file-system';
@@ -74,10 +74,11 @@ export const ProfileScreen = () => {
     const programsOptions = ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"];
     const [selectedEmotions, setSelectedEmotions] = useState<string[]>(["Nenhum"]);
 
-    // Add these state variables to your component
+    // State variables
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(["Gestão de tempo", "Organização"]);
     const [selectedSkills, setSelectedSkills] = useState<string[]>(["Empatia", "Ouvir", "Análise"]);
     const [selectedPrograms, setSelectedPrograms] = useState<string[]>(["Programação", "Plano de Carreira"]);
+    const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
 
     const loadMockConnections = () => {
         const mockConnections: Connection[] = [
@@ -198,6 +199,79 @@ export const ProfileScreen = () => {
         setEditedData({ ...userData });
         setIsEditing(false);
     };
+
+    // Photo Viewer Modal
+    const PhotoViewerModal = () => (
+        <Modal
+            visible={photoViewerVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setPhotoViewerVisible(false)}
+        >
+            <View style={tw`flex-1 bg-black bg-opacity-90 justify-center items-center`}>
+                {/* Close button */}
+                <TouchableOpacity
+                    style={tw`absolute top-12 right-4 z-10 bg-black bg-opacity-50 rounded-full p-3`}
+                    onPress={() => setPhotoViewerVisible(false)}
+                >
+                    <MaterialIcons name="close" size={24} color="white" />
+                </TouchableOpacity>
+
+                {/* User info overlay */}
+                <View style={tw`absolute top-12 left-4 z-10`}>
+                    <Text style={tw`text-white text-xl font-bold`}>{userData?.name}</Text>
+                    <Text style={tw`text-gray-300 text-sm`}>{userData?.role || "Mentorado"}</Text>
+                </View>
+
+                {/* Edit button overlay */}
+                <TouchableOpacity
+                    style={tw`absolute top-12 right-16 z-10 bg-blue-500 rounded-full p-3 mr-2`}
+                    onPress={() => {
+                        setPhotoViewerVisible(false);
+                        setTimeout(() => showImagePickerOptions(), 100);
+                    }}
+                >
+                    <Feather name="edit-2" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Full screen image */}
+                <TouchableOpacity
+                    style={tw`flex-1 justify-center items-center w-full`}
+                    onPress={() => setPhotoViewerVisible(false)}
+                    activeOpacity={1}
+                >
+                    <Image
+                        source={{ uri: userData?.image || 'https://randomuser.me/api/portraits/men/75.jpg' }}
+                        style={tw`w-full h-full`}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
+
+                {/* Bottom action buttons */}
+                <View style={tw`absolute bottom-12 left-4 right-4`}>
+                    <View style={tw`bg-black bg-opacity-50 rounded-xl p-4 flex-row justify-around`}>
+                        <TouchableOpacity
+                            style={tw`bg-blue-500 px-6 py-3 rounded-lg flex-1 mr-2`}
+                            onPress={() => {
+                                setPhotoViewerVisible(false);
+                                setTimeout(() => showImagePickerOptions(), 100);
+                            }}
+                        >
+                            <Text style={tw`text-white text-center font-medium`}>Alterar Foto</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={tw`bg-gray-600 px-6 py-3 rounded-lg flex-1 ml-2`}
+                            onPress={() => setPhotoViewerVisible(false)}
+                        >
+                            <Text style={tw`text-white text-center font-medium`}>Fechar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+
 
     // Image picker functions
     const showImagePickerOptions = () => {
@@ -392,23 +466,34 @@ export const ProfileScreen = () => {
 
                 {/* Profile image positioned in the middle */}
                 <View style={tw`absolute top-12 left-0 right-0 items-center`}>
-                    <TouchableOpacity
-                        onPress={showImagePickerOptions}
-                        style={[
-                            tw`rounded-full relative`,
-                            { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
-                        ]}
-                        activeOpacity={0.8}
-                    >
-                        <Image
-                            source={{ uri: userData?.image || 'https://randomuser.me/api/portraits/men/75.jpg' }}
-                            style={tw`w-20 h-20 rounded-full border-4 border-white`}
-                        />
-                        {/* Camera icon overlay */}
-                        <View style={tw`absolute bottom-0 right-0 bg-blue-500 rounded-full p-1.5 border-2 border-white`}>
+                    <View style={tw`relative`}>
+                        <TouchableOpacity
+                            onPress={() => setPhotoViewerVisible(true)}
+                            onLongPress={showImagePickerOptions}
+                            style={[
+                                tw`rounded-full relative`,
+                                { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
+                            ]}
+                            activeOpacity={0.8}
+                        >
+                            <Image
+                                source={{ uri: userData?.image || 'https://randomuser.me/api/portraits/men/75.jpg' }}
+                                style={tw`w-20 h-20 rounded-full border-4 border-white`}
+                            />
+                            {/* View icon overlay */}
+                            <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-20 items-center justify-center`}>
+                                <MaterialIcons name="zoom-in" size={20} color="white" style={tw`opacity-70`} />
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Separate edit button */}
+                        <TouchableOpacity
+                            onPress={showImagePickerOptions}
+                            style={tw`absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1.5 border-2 border-white`}
+                        >
                             <Feather name="camera" size={12} color="white" />
-                        </View>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity onPress={showNameEditor} style={tw`mt-2 flex-row items-center`}>
                         <Text style={tw`font-bold text-base mr-1`}>{userData?.name}</Text>
@@ -416,8 +501,12 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
 
                     <Text style={tw`text-xs text-gray-500`}>{userData?.role || "Mentorado"}</Text>
-                </View>
 
+                    {/* Instruction text */}
+                    <Text style={tw`text-xs text-gray-400 mt-1 text-center px-4`}>
+                        Toque para visualizar • Mantenha pressionado para editar
+                    </Text>
+                </View>
             </View>
 
 
@@ -771,6 +860,9 @@ export const ProfileScreen = () => {
                     </TouchableOpacity>
                 </Modal>
             </View>
+
+            {/* Photo Viewer Modal */}
+            <PhotoViewerModal />
 
             {/* Name Editor Modal */}
             <NameEditorModal />
