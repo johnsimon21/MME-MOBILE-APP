@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardScreen";
 import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScreen";
+import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -115,6 +116,7 @@ function MainStack() {
         component={user.role === 'admin' ? AdminTabNavigator : UserTabNavigator} 
       />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     </Stack.Navigator>
   );
 }

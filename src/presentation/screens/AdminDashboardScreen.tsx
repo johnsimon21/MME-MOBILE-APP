@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated, Modal, Alert } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useAuth } from '@/src/context/AuthContext';
 import { Navbar } from '../components/ui/navbar';
+import { useNavigation } from '@react-navigation/native';
 
 interface User {
     id: number;
@@ -35,8 +36,9 @@ interface DashboardStats {
 
 export function AdminDashboardScreen() {
     const { user } = useAuth();
-    const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
-    const [animatedValues] = useState(new Map());
+    const navigation = useNavigation();
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
     const [stats, setStats] = useState<DashboardStats>({
         totalUsers: 156,
         activeSessions: 12,
@@ -141,14 +143,34 @@ export function AdminDashboardScreen() {
         }
     ]);
 
-    // Initialize animated values for each user
-    useEffect(() => {
-        users.forEach(user => {
-            if (!animatedValues.has(user.id)) {
-                animatedValues.set(user.id, new Animated.Value(0));
-            }
-        });
-    }, [users]);
+    const handleRemoveUser = (userId: number, userName: string) => {
+        Alert.alert(
+            "Remover Usuário",
+            `Tem certeza que deseja remover ${userName}? Esta ação não pode ser desfeita.`,
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Remover",
+                    style: "destructive",
+                    onPress: () => {
+                        // Remove user from the list
+                        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+
+                        // Close modal if the removed user was selected
+                        if (selectedUser?.id === userId) {
+                            closeUserModal();
+                        }
+
+                        // Show success message
+                        Alert.alert("Sucesso", `${userName} foi removido com sucesso.`);
+                    }
+                }
+            ]
+        );
+    };
 
     const StatCard = ({ title, value, icon, color }: any) => (
         <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1`}>
@@ -177,53 +199,6 @@ export function AdminDashboardScreen() {
             default: return 'Desconhecido';
         }
     };
-
-    const toggleUserExpansion = (userId: number) => {
-        const isCurrentlyExpanded = expandedUserId === userId;
-
-        if (isCurrentlyExpanded) {
-            // Closing the current expanded card
-            if (animatedValues.has(userId)) {
-                Animated.timing(animatedValues.get(userId), {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: false,
-                }).start(() => {
-                    setExpandedUserId(null);
-                });
-            } else {
-                setExpandedUserId(null);
-            }
-        } else {
-            // Close any currently expanded card first
-            if (expandedUserId && animatedValues.has(expandedUserId)) {
-                Animated.timing(animatedValues.get(expandedUserId), {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: false,
-                }).start();
-            }
-
-            // Set the new expanded card and animate
-            setExpandedUserId(userId);
-
-            // Ensure the animated value exists and start from 0
-            if (!animatedValues.has(userId)) {
-                animatedValues.set(userId, new Animated.Value(0));
-            }
-
-            // Reset to 0 first, then animate to 1
-            const animValue = animatedValues.get(userId);
-            animValue.setValue(0);
-
-            Animated.timing(animValue, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: false,
-            }).start();
-        }
-    };
-
 
     // Simple progress bar component
     const ProgressBar = ({ progress, color = "#4F46E5" }: { progress: number; color?: string }) => (
@@ -259,145 +234,219 @@ export function AdminDashboardScreen() {
         );
     };
 
-    const UserItem = ({ item }: { item: User }) => {
-        const isExpanded = expandedUserId === item.id;
-        const animatedValue = animatedValues.get(item.id) || new Animated.Value(0);
+    const openUserModal = (userData: User) => {
+        setSelectedUser(userData);
+        setModalVisible(true);
+    };
 
-        const expandedHeight = animatedValue.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 400], // Adjust based on content
-        });
+    const closeUserModal = () => {
+        setModalVisible(false);
+        setSelectedUser(null);
+    };
+
+    // User Details Modal Component
+    const UserDetailsModal = () => {
+        if (!selectedUser) return null;
+
+        const handleViewProfile = () => {
+            closeUserModal();
+            // @ts-ignore
+            navigation.navigate('UserProfile', { userId: selectedUser.id });
+        };
+
+        const handleRemoveFromModal = () => {
+            handleRemoveUser(selectedUser.id, selectedUser.name);
+        };
 
         return (
-            <View style={tw`bg-white rounded-xl shadow-sm mb-3 mx-4 overflow-hidden`}>
-                {/* Main User Card */}
-                <TouchableOpacity
-                    style={tw`p-4`}
-                    onPress={() => toggleUserExpansion(item.id)}
-                >
-                    <View style={tw`flex-row items-center`}>
-                        {/* Avatar */}
-                        <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3 relative`}>
-                            <Text style={tw`text-indigo-600 font-bold text-lg`}>
-                                {item.name.charAt(0).toUpperCase()}
-                            </Text>
-                            {/* Status indicator */}
-                            <View
-                                style={[
-                                    tw`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white`,
-                                    { backgroundColor: getStatusColor(item.status) }
-                                ]}
-                            />
-                        </View>
-
-                        {/* User Info */}
-                        <View style={tw`flex-1`}>
-                            <View style={tw`flex-row items-center justify-between mb-1`}>
-                                <Text style={tw`font-bold text-gray-800 flex-1`} numberOfLines={1}>
-                                    {item.name}
-                                </Text>
-                                {item.role === 'admin' && (
-                                    <View style={tw`bg-purple-100 px-2 py-1 rounded-full ml-2`}>
-                                        <Text style={tw`text-purple-800 text-xs font-medium`}>Admin</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            <Text style={tw`text-gray-500 text-sm mb-1`} numberOfLines={1}>
-                                {item.email}
-                            </Text>
-
-                            <View style={tw`flex-row items-center justify-between`}>
-                                <Text style={tw`text-xs text-gray-400`}>
-                                    {getStatusText(item.status)} • {item.lastActive}
-                                </Text>
-                                <Text style={tw`text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full`}>
-                                    {item.sessionsCount} sessões
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Expand/Collapse Icon */}
-                        <View style={tw`ml-3 p-2`}>
-                            <MaterialIcons
-                                name={isExpanded ? "expand-less" : "expand-more"}
-                                size={24}
-                                color="#6B7280"
-                            />
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Expanded Content */}
-                <Animated.View style={[tw`overflow-hidden`, { height: expandedHeight }]}>
-                    <View style={tw`px-4 pb-4 border-t border-gray-100`}>
-                        {/* Stats Row */}
-                        <View style={tw`flex-row justify-between mb-4 mt-4`}>
-                            <View style={tw`items-center flex-1`}>
-                                <Text style={tw`text-lg font-bold text-gray-800`}>{item.totalHours}h</Text>
-                                <Text style={tw`text-xs text-gray-500`}>Total de Horas</Text>
-                            </View>
-                            <View style={tw`items-center flex-1`}>
-                                <Text style={tw`text-lg font-bold text-green-600`}>{item.completionRate}%</Text>
-                                <Text style={tw`text-xs text-gray-500`}>Taxa Conclusão</Text>
-                            </View>
-                            <View style={tw`items-center flex-1`}>
-                                <View style={tw`flex-row items-center`}>
-                                    <Text style={tw`text-lg font-bold text-yellow-600`}>{item.averageRating}</Text>
-                                    <MaterialIcons name="star" size={16} color="#EAB308" />
+            <Modal
+                visible={modalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={closeUserModal}
+            >
+                <View style={tw`flex-1 bg-black bg-opacity-50 justify-end`}>
+                    <View style={tw`bg-white rounded-t-3xl h-4/5 `}>
+                        {/* Modal Header */}
+                        <View style={tw`flex-row items-center justify-between p-4 border-b border-gray-200`}>
+                            <View style={tw`flex-row items-center flex-1`}>
+                                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3 relative`}>
+                                    <Text style={tw`text-indigo-600 font-bold text-lg`}>
+                                        {selectedUser.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                    <View
+                                        style={[
+                                            tw`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white`,
+                                            { backgroundColor: getStatusColor(selectedUser.status) }
+                                        ]}
+                                    />
                                 </View>
-                                <Text style={tw`text-xs text-gray-500`}>Avaliação</Text>
+                                <View style={tw`flex-1`}>
+                                    <Text style={tw`font-bold text-gray-800 text-lg`}>{selectedUser.name}</Text>
+                                    <Text style={tw`text-gray-500 text-sm`}>{selectedUser.email}</Text>
+                                </View>
                             </View>
+                            <TouchableOpacity onPress={closeUserModal} style={tw`p-2`}>
+                                <MaterialIcons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
 
-                        {/* Progress Bar */}
-                        <View style={tw`mb-4`}>
-                            <View style={tw`flex-row justify-between items-center mb-2`}>
-                                <Text style={tw`text-sm font-medium text-gray-700`}>Progresso do Mês</Text>
-                                <Text style={tw`text-sm text-gray-500`}>{item.completionRate}%</Text>
-                            </View>
-                            <ProgressBar progress={item.completionRate} />
-                        </View>
-
-                        {/* Monthly Progress Chart */}
-                        <View style={tw`mb-4`}>
-                            <Text style={tw`text-sm font-medium text-gray-700 mb-2`}>Atividade dos Últimos 7 Meses</Text>
-                            <MiniChart data={item.monthlyProgress} />
-                        </View>
-
-                        {/* Recent Sessions */}
-                        <View style={tw`mb-2`}>
-                            <Text style={tw`text-sm font-medium text-gray-700 mb-2`}>Sessões Recentes</Text>
-                            {item.recentSessions.slice(0, 3).map((session, index) => (
-                                <View key={index} style={tw`flex-row justify-between items-center py-2 border-b border-gray-50`}>
-                                    <View style={tw`flex-1`}>
-                                        <Text style={tw`text-sm font-medium text-gray-800`}>{session.type}</Text>
-                                        <Text style={tw`text-xs text-gray-500`}>
-                                            {new Date(session.date).toLocaleDateString('pt-BR')} • {session.duration}min
-                                        </Text>
-                                    </View>
+                        <ScrollView style={tw`flex-1`} showsVerticalScrollIndicator={false}>
+                            {/* User Info Section */}
+                            <View style={tw`p-4`}>
+                                <View style={tw`flex-row items-center justify-between mb-4`}>
                                     <View style={tw`flex-row items-center`}>
-                                        <MaterialIcons name="star" size={14} color="#EAB308" />
-                                        <Text style={tw`text-sm text-gray-600 ml-1`}>{session.rating}</Text>
+                                        <Text style={tw`text-gray-600 mr-2`}>Status:</Text>
+                                        <Text style={tw`font-medium`}>{getStatusText(selectedUser.status)}</Text>
+                                    </View>
+                                    {selectedUser.role === 'admin' && (
+                                        <View style={tw`bg-purple-100 px-3 py-1 rounded-full`}>
+                                            <Text style={tw`text-purple-800 text-sm font-medium`}>Admin</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Stats Grid */}
+                                <View style={tw`bg-gray-50 rounded-xl p-4 mb-4`}>
+                                    <Text style={tw`font-bold text-gray-800 mb-3`}>Estatísticas</Text>
+                                    <View style={tw`flex-row justify-between mb-4`}>
+                                        <View style={tw`items-center flex-1`}>
+                                            <Text style={tw`text-2xl font-bold text-gray-800`}>{selectedUser.totalHours}h</Text>
+                                            <Text style={tw`text-xs text-gray-500 text-center`}>Total de Horas</Text>
+                                        </View>
+                                        <View style={tw`items-center flex-1`}>
+                                            <Text style={tw`text-2xl font-bold text-green-600`}>{selectedUser.completionRate}%</Text>
+                                            <Text style={tw`text-xs text-gray-500 text-center`}>Taxa Conclusão</Text>
+                                        </View>
+                                        <View style={tw`items-center flex-1`}>
+                                            <View style={tw`flex-row items-center`}>
+                                                <Text style={tw`text-2xl font-bold text-yellow-600`}>{selectedUser.averageRating}</Text>
+                                                <MaterialIcons name="star" size={20} color="#EAB308" />
+                                            </View>
+                                            <Text style={tw`text-xs text-gray-500 text-center`}>Avaliação Média</Text>
+                                        </View>
+                                    </View>
+                                    <View style={tw`items-center`}>
+                                        <Text style={tw`text-2xl font-bold text-blue-600`}>{selectedUser.sessionsCount}</Text>
+                                        <Text style={tw`text-xs text-gray-500`}>Sessões Realizadas</Text>
                                     </View>
                                 </View>
-                            ))}
-                        </View>
 
-                        {/* Action Buttons */}
-                        <View style={tw`flex-row justify-between mt-4`}>
-                            <TouchableOpacity style={tw`bg-blue-50 px-4 py-2 rounded-lg flex-1 mr-2`}>
-                                <Text style={tw`text-blue-600 text-center font-medium`}>Ver Perfil</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={tw`bg-green-50 px-4 py-2 rounded-lg flex-1 ml-2`}>
-                                <Text style={tw`text-green-600 text-center font-medium`}>Nova Sessão</Text>
-                            </TouchableOpacity>
-                        </View>
+                                {/* Progress Section */}
+                                <View style={tw`mb-4`}>
+                                    <Text style={tw`font-bold text-gray-800 mb-3`}>Progresso do Mês</Text>
+                                    <View style={tw`flex-row justify-between items-center mb-2`}>
+                                        <Text style={tw`text-sm text-gray-600`}>Conclusão</Text>
+                                        <Text style={tw`text-sm font-medium text-gray-800`}>{selectedUser.completionRate}%</Text>
+                                    </View>
+                                    <ProgressBar progress={selectedUser.completionRate} />
+                                </View>
+
+                                {/* Monthly Activity Chart */}
+                                <View style={tw`mb-4`}>
+                                    <Text style={tw`font-bold text-gray-800 mb-3`}>Atividade dos Últimos 7 Meses</Text>
+                                    <MiniChart data={selectedUser.monthlyProgress} />
+                                </View>
+
+                                {/* Recent Sessions */}
+                                <View style={tw`mb-4`}>
+                                    <Text style={tw`font-bold text-gray-800 mb-3`}>Sessões Recentes</Text>
+                                    {selectedUser.recentSessions.map((session, index) => (
+                                        <View key={index} style={tw`bg-white p-3 rounded-lg mb-2 border border-gray-100`}>
+                                            <View style={tw`flex-row justify-between items-center`}>
+                                                <View style={tw`flex-1`}>
+                                                    <Text style={tw`font-medium text-gray-800`}>{session.type}</Text>
+                                                    <Text style={tw`text-sm text-gray-500 mt-1`}>
+                                                        {new Date(session.date).toLocaleDateString('pt-BR')} • {session.duration} min
+                                                    </Text>
+                                                </View>
+                                                <View style={tw`flex-row items-center bg-yellow-50 px-2 py-1 rounded-full`}>
+                                                    <MaterialIcons name="star" size={16} color="#EAB308" />
+                                                    <Text style={tw`text-sm font-medium text-yellow-800 ml-1`}>{session.rating}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+
+                                {/* Action Buttons */}
+                                <View style={tw`flex-row justify-between mb-6`}>
+                                    <TouchableOpacity
+                                        style={tw`bg-blue-100 px-6 py-3 rounded-xl flex-1 mr-2`}
+                                        onPress={handleViewProfile}
+                                    >
+                                        <Text style={tw`text-blue-600 text-center font-medium`}>Ver Perfil</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={tw`bg-red-100 px-6 py-3 rounded-xl flex-1 mr-2`}
+                                        onPress={handleRemoveFromModal}
+                                    >
+                                        <Text style={tw`text-red-600 text-center font-medium`}>Remover</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </ScrollView>
                     </View>
-                </Animated.View>
-            </View>
+                </View>
+            </Modal>
         );
     };
+
+    const UserItem = ({ item }: { item: User }) => (
+        <TouchableOpacity
+            style={tw`bg-white p-4 rounded-xl shadow-sm mb-3 mx-4`}
+            onPress={() => openUserModal(item)} // Changed from toggleUserExpansion
+        >
+            <View style={tw`flex-row items-center`}>
+                {/* Avatar */}
+                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3 relative`}>
+                    <Text style={tw`text-indigo-600 font-bold text-lg`}>
+                        {item.name.charAt(0).toUpperCase()}
+                    </Text>
+                    <View
+                        style={[
+                            tw`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white`,
+                            { backgroundColor: getStatusColor(item.status) }
+                        ]}
+                    />
+                </View>
+
+                {/* User Info */}
+                <View style={tw`flex-1`}>
+                    <View style={tw`flex-row items-center justify-between mb-1`}>
+                        <Text style={tw`font-bold text-gray-800 flex-1`} numberOfLines={1}>
+                            {item.name}
+                        </Text>
+                        {item.role === 'admin' && (
+                            <View style={tw`bg-purple-100 px-2 py-1 rounded-full ml-2`}>
+                                <Text style={tw`text-purple-800 text-xs font-medium`}>Admin</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <Text style={tw`text-gray-500 text-sm mb-1`} numberOfLines={1}>
+                        {item.email}
+                    </Text>
+
+                    <View style={tw`flex-row items-center justify-between`}>
+                        <Text style={tw`text-xs text-gray-400`}>
+                            {getStatusText(item.status)} • {item.lastActive}
+                        </Text>
+                        <Text style={tw`text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full`}>
+                            {item.sessionsCount} sessões
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Arrow Icon */}
+                <TouchableOpacity
+                    onPress={() => handleRemoveUser(item.id, item.name)}
+                    style={tw`ml-3 p-2 bg-gray-100 rounded-full`}>
+                    <Feather name="trash-2" size={16} color="#EF4444" />
+                </TouchableOpacity>
+            </View>
+        </TouchableOpacity>
+    );
 
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
@@ -434,18 +483,12 @@ export function AdminDashboardScreen() {
                         renderItem={({ item }) => <UserItem item={item} />}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={tw`pb-6`}
-                        ListEmptyComponent={() => (
-                            <View style={tw`items-center justify-center py-12 mx-4`}>
-                                <MaterialIcons name="people-outline" size={64} color="#9CA3AF" />
-                                <Text style={tw`text-gray-500 text-lg mt-4`}>Nenhum usuário encontrado</Text>
-                                <Text style={tw`text-gray-400 text-sm mt-1 text-center`}>
-                                    Adicione usuários para começar a gerenciar o sistema
-                                </Text>
-                            </View>
-                        )}
                     />
                 </View>
             </ScrollView>
+
+            {/* User Details Modal */}
+            <UserDetailsModal />
         </View>
     );
 }
