@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardScreen";
 import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScreen";
 import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen";
+import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -41,6 +42,7 @@ function AdminTabNavigator() {
           if (route.name === "Dashboard") iconName = "analytics";
           else if (route.name === "Sessões Admin") iconName = "reader";
           else if (route.name === "Relatórios") iconName = "document-text";
+          else if (route.name === "Support") iconName = "help-circle";
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
@@ -54,6 +56,7 @@ function AdminTabNavigator() {
       <Tab.Screen name="Dashboard" component={AdminDashboardScreen} />
       <Tab.Screen name="Sessões Admin" component={SessionManagementScreen} />
       <Tab.Screen name="Relatórios" component={AdminReportsScreen} />
+        <Tab.Screen name="Support" component={SupportScreen} />
     </Tab.Navigator>
   );
 }
@@ -111,9 +114,9 @@ function MainStack() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen 
-        name="TabNavigator" 
-        component={user.role === 'admin' ? AdminTabNavigator : UserTabNavigator} 
+      <Stack.Screen
+        name="TabNavigator"
+        component={user.role === 'admin' ? AdminTabNavigator : UserTabNavigator}
       />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
