@@ -8,6 +8,9 @@ import { Navbar } from "../components/ui/navbar";
 import { useAuth } from "@/src/context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from 'expo-file-system';
+
 interface UserData {
     name: string;
     email: string;
@@ -47,7 +50,7 @@ const defaultUserData: UserData = {
 
 
 export const ProfileScreen = () => {
-    const {user} = useAuth();
+    const { user } = useAuth();
     defaultUserData.name = user?.fullName || "";
     defaultUserData.name = user?.fullName || "";
 
@@ -60,6 +63,9 @@ export const ProfileScreen = () => {
     const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
     const [activeFilter, setActiveFilter] = useState<"Todos" | "Mentor" | "Mentorado">("Todos");
+    const [imagePickerVisible, setImagePickerVisible] = useState(false);
+    const [nameEditVisible, setNameEditVisible] = useState(false);
+    const [tempName, setTempName] = useState("");
 
 
     const difficultyOptions = ["Gestão de tempo", "Organização", "Cálculos", "Línguas", "Teoria", "Outro"];
@@ -193,6 +199,168 @@ export const ProfileScreen = () => {
         setIsEditing(false);
     };
 
+    // Image picker functions
+    const showImagePickerOptions = () => {
+        Alert.alert(
+            "Atualizar Foto de Perfil",
+            "Escolha uma opção:",
+            [
+                { text: "Câmera", onPress: () => openCamera() },
+                { text: "Galeria", onPress: () => openImageLibrary() },
+                { text: "Cancelar", style: "cancel" }
+            ]
+        );
+    };
+
+    const openCamera = async () => {
+        try {
+            const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+            if (!permissionResult.granted) {
+                Alert.alert("Permissão necessária", "É necessário permitir o acesso à câmera.");
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                await updateProfileImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error("Error opening camera:", error);
+            Alert.alert("Erro", "Falha ao abrir a câmera");
+        }
+    };
+
+    const openImageLibrary = async () => {
+        try {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (!permissionResult.granted) {
+                Alert.alert("Permissão necessária", "É necessário permitir o acesso à galeria.");
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                await updateProfileImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error("Error opening image library:", error);
+            Alert.alert("Erro", "Falha ao abrir a galeria");
+        }
+    };
+
+    const updateProfileImage = async (imageUri: string) => {
+        try {
+            setIsLoading(true);
+
+            // Update the user data with new image
+            const updatedUserData = {
+                ...userData,
+                image: imageUri
+            };
+
+            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+            setUserData(updatedUserData);
+            setEditedData(updatedUserData);
+
+            Alert.alert("Sucesso", "Foto de perfil atualizada com sucesso!");
+        } catch (error) {
+            console.error("Error updating profile image:", error);
+            Alert.alert("Erro", "Falha ao atualizar a foto de perfil");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Name editing functions
+    const showNameEditor = () => {
+        setTempName(userData?.name || "");
+        setNameEditVisible(true);
+    };
+
+    const updateUserName = async () => {
+        if (!tempName.trim()) {
+            Alert.alert("Erro", "O nome não pode estar vazio");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            const updatedUserData = {
+                ...userData,
+                name: tempName.trim()
+            };
+
+            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+            setUserData(updatedUserData);
+            setEditedData(updatedUserData);
+            setNameEditVisible(false);
+
+            Alert.alert("Sucesso", "Nome atualizado com sucesso!");
+        } catch (error) {
+            console.error("Error updating name:", error);
+            Alert.alert("Erro", "Falha ao atualizar o nome");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Name Editor Modal
+    const NameEditorModal = () => (
+        <Modal
+            visible={nameEditVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setNameEditVisible(false)}
+        >
+            <View style={tw`flex-1 bg-black bg-opacity-50 justify-center items-center px-4`}>
+                <View style={tw`bg-white rounded-xl p-6 w-full max-w-sm`}>
+                    <Text style={tw`text-lg font-bold mb-4 text-center`}>Editar Nome</Text>
+
+                    <TextInput
+                        style={tw`border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base`}
+                        value={tempName}
+                        onChangeText={setTempName}
+                        placeholder="Digite seu nome"
+                        autoFocus={true}
+                        maxLength={50}
+                    />
+
+                    <View style={tw`flex-row justify-between`}>
+                        <TouchableOpacity
+                            style={tw`bg-gray-200 px-6 py-3 rounded-lg flex-1 mr-2`}
+                            onPress={() => setNameEditVisible(false)}
+                        >
+                            <Text style={tw`text-gray-700 text-center font-medium`}>Cancelar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={tw`bg-blue-500 px-6 py-3 rounded-lg flex-1 ml-2`}
+                            onPress={updateUserName}
+                        >
+                            <Text style={tw`text-white text-center font-medium`}>Salvar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+
+
     if (isLoading) {
         return (
             <View style={tw`flex-1 bg-white`}>
@@ -224,18 +392,32 @@ export const ProfileScreen = () => {
 
                 {/* Profile image positioned in the middle */}
                 <View style={tw`absolute top-12 left-0 right-0 items-center`}>
-                    <View style={[
-                        tw`rounded-full`,
-                        { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
-                    ]}>
+                    <TouchableOpacity
+                        onPress={showImagePickerOptions}
+                        style={[
+                            tw`rounded-full relative`,
+                            { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
+                        ]}
+                        activeOpacity={0.8}
+                    >
                         <Image
-                            source={{ uri: 'https://randomuser.me/api/portraits/men/75.jpg' }}
+                            source={{ uri: userData?.image || 'https://randomuser.me/api/portraits/men/75.jpg' }}
                             style={tw`w-20 h-20 rounded-full border-4 border-white`}
                         />
-                    </View>
-                    <Text style={tw`mt-2 font-bold text-base`}>{userData?.name}</Text>
+                        {/* Camera icon overlay */}
+                        <View style={tw`absolute bottom-0 right-0 bg-blue-500 rounded-full p-1.5 border-2 border-white`}>
+                            <Feather name="camera" size={12} color="white" />
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={showNameEditor} style={tw`mt-2 flex-row items-center`}>
+                        <Text style={tw`font-bold text-base mr-1`}>{userData?.name}</Text>
+                        <Feather name="edit-2" size={14} color="#6B7280" />
+                    </TouchableOpacity>
+
                     <Text style={tw`text-xs text-gray-500`}>{userData?.role || "Mentorado"}</Text>
                 </View>
+
             </View>
 
 
@@ -528,7 +710,7 @@ export const ProfileScreen = () => {
                                     <Text style={tw`text-sm text-gray-500 `}>{connection.country}, {connection.province}</Text>
                                 </View>
                             </View>
-                            <View> 
+                            <View>
                                 <Text style={tw`text-xs ${connection.role === 'Mentor' ? 'text-blue-500' : 'text-green-500'}`}>
                                     {connection.role}
                                 </Text>
@@ -590,6 +772,8 @@ export const ProfileScreen = () => {
                 </Modal>
             </View>
 
+            {/* Name Editor Modal */}
+            <NameEditorModal />
         </ScrollView>
     );
 };
