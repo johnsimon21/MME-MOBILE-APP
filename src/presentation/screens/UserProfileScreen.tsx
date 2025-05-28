@@ -52,6 +52,7 @@ export const UserProfileScreen = () => {
     const [userData, setUserData] = useState<UserProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'connections'>('overview');
+    const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
     const allUsersData: UserProfileData[] = [
         {
             id: 1,
@@ -406,6 +407,65 @@ export const UserProfileScreen = () => {
         );
     };
 
+    // Photo Viewer Modal Component
+    const PhotoViewerModal = () => {
+        if (!userData) return null;
+
+        return (
+            <Modal
+                visible={photoViewerVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setPhotoViewerVisible(false)}
+            >
+                <View style={tw`flex-1 bg-black bg-opacity-90 justify-center items-center`}>
+                    {/* Close button */}
+                    <TouchableOpacity
+                        style={tw`absolute top-12 right-4 z-10 bg-black bg-opacity-50 rounded-full p-3`}
+                        onPress={() => setPhotoViewerVisible(false)}
+                    >
+                        <MaterialIcons name="close" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    {/* User info overlay */}
+                    <View style={tw`absolute top-12 left-4 z-10`}>
+                        <Text style={tw`text-white text-xl font-bold`}>{userData.name}</Text>
+                        <Text style={tw`text-gray-300 text-sm`}>{userData.role}</Text>
+                    </View>
+
+                    {/* Full screen image */}
+                    <TouchableOpacity
+                        style={tw`flex-1 justify-center items-center w-full`}
+                        onPress={() => setPhotoViewerVisible(false)}
+                        activeOpacity={1}
+                    >
+                        <Image
+                            source={{ uri: userData.image }}
+                            style={tw`w-full h-full`}
+                            resizeMode="contain"
+                        />
+                    </TouchableOpacity>
+
+                    {/* Bottom info */}
+                    <View style={tw`absolute bottom-12 left-4 right-4 bg-black bg-opacity-50 rounded-xl p-4`}>
+                        <View style={tw`flex-row items-center justify-between`}>
+                            <View>
+                                <Text style={tw`text-white font-medium`}>Status: {getStatusText(userData.status)}</Text>
+                                <Text style={tw`text-gray-300 text-sm`}>Último acesso: {userData.lastActive}</Text>
+                            </View>
+                            <View
+                                style={[
+                                    tw`w-4 h-4 rounded-full`,
+                                    { backgroundColor: getStatusColor(userData.status) }
+                                ]}
+                            />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    };
+
     if (isLoading) {
         return (
             <View style={tw`flex-1 bg-white`}>
@@ -438,24 +498,34 @@ export const UserProfileScreen = () => {
                 <View style={tw`bg-white h-32 rounded-b-4`} />
 
                 <View style={tw`absolute top-12 left-0 right-0 items-center`}>
-                    <View style={[
-                        tw`rounded-full`,
-                        { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
-                    ]}>
+                    <TouchableOpacity
+                        onPress={() => setPhotoViewerVisible(true)}
+                        style={[
+                            tw`rounded-full`,
+                            { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
+                        ]}
+                        activeOpacity={0.8}
+                    >
                         <Image
-                            source={{ uri: userData.image }}
+                            source={{ uri: userData?.image }}
                             style={tw`w-20 h-20 rounded-full border-4 border-white`}
                         />
                         <View
                             style={[
                                 tw`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white`,
-                                { backgroundColor: getStatusColor(userData.status) }
+                                { backgroundColor: getStatusColor(userData?.status || 'offline') }
                             ]}
                         />
-                    </View>
-                    <Text style={tw`mt-2 font-bold text-base`}>{userData.name}</Text>
-                    <Text style={tw`text-xs text-gray-500`}>{userData.role}</Text>
-                    <Text style={tw`text-xs text-gray-400`}>{getStatusText(userData.status)} • {userData.lastActive}</Text>
+                        {/* Add camera icon overlay to indicate it's clickable */}
+                        <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-20 items-center justify-center`}>
+                            <MaterialIcons name="zoom-in" size={20} color="white" style={tw`opacity-70`} />
+                        </View>
+                    </TouchableOpacity>
+                    <Text style={tw`mt-2 font-bold text-base`}>{userData?.name}</Text>
+                    <Text style={tw`text-xs text-gray-500`}>{userData?.role}</Text>
+                    <Text style={tw`text-xs text-gray-400`}>
+                        {getStatusText(userData?.status || 'offline')} • {userData?.lastActive}
+                    </Text>
                 </View>
             </View>
 
@@ -634,6 +704,9 @@ export const UserProfileScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Photo Viewer Modal */}
+            <PhotoViewerModal />
         </ScrollView>
     );
 };

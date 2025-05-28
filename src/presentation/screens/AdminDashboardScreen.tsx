@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated, Modal, Alert } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
-import tw from 'twrnc';
 import { useAuth } from '@/src/context/AuthContext';
-import { Navbar } from '../components/ui/navbar';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { Alert, FlatList, Image, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import tw from 'twrnc';
+import { Navbar } from '../components/ui/navbar';
 
 interface User {
     id: number;
     name: string;
     email: string;
-    role: 'admin' | 'user';
+    role: string;
     status: 'online' | 'offline' | 'away';
     lastActive: string;
     sessionsCount: number;
@@ -18,6 +18,7 @@ interface User {
     totalHours: number;
     completionRate: number;
     averageRating: number;
+    profile: string;
     monthlyProgress: number[];
     recentSessions: {
         date: string;
@@ -26,6 +27,7 @@ interface User {
         rating: number;
     }[];
 }
+
 
 interface DashboardStats {
     totalUsers: number;
@@ -39,6 +41,8 @@ export function AdminDashboardScreen() {
     const navigation = useNavigation();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
+    const [photoViewerUser, setPhotoViewerUser] = useState<User | null>(null);
     const [stats, setStats] = useState<DashboardStats>({
         totalUsers: 156,
         activeSessions: 12,
@@ -59,6 +63,7 @@ export function AdminDashboardScreen() {
             totalHours: 45.5,
             completionRate: 87,
             averageRating: 4.2,
+            profile: "https://randomuser.me/api/portraits/men/1.jpg", // Add profile image
             monthlyProgress: [12, 8, 15, 10, 18, 14, 20],
             recentSessions: [
                 { date: "2025-01-15", duration: 60, type: "Mentoria", rating: 5 },
@@ -78,6 +83,7 @@ export function AdminDashboardScreen() {
             totalHours: 45.5,
             completionRate: 87,
             averageRating: 4.2,
+            profile: "https://randomuser.me/api/portraits/women/2.jpg", // Add profile image
             monthlyProgress: [12, 8, 15, 10, 18, 14, 20],
             recentSessions: [
                 { date: "2025-01-15", duration: 60, type: "Mentoria", rating: 5 },
@@ -97,6 +103,7 @@ export function AdminDashboardScreen() {
             totalHours: 45.5,
             completionRate: 87,
             averageRating: 4.2,
+            profile: "https://randomuser.me/api/portraits/men/3.jpg", // Add profile image
             monthlyProgress: [12, 8, 15, 10, 18, 14, 20],
             recentSessions: [
                 { date: "2025-01-15", duration: 60, type: "Mentoria", rating: 5 },
@@ -110,12 +117,13 @@ export function AdminDashboardScreen() {
             email: "jocy@example.com",
             role: "user",
             status: "offline",
-            lastActive: "Agora",
+            lastActive: "2 horas atrás",
             sessionsCount: 14,
             joinedDate: "2024-03-15",
             totalHours: 45.5,
             completionRate: 87,
             averageRating: 4.2,
+            profile: "https://randomuser.me/api/portraits/women/4.jpg", // Add profile image
             monthlyProgress: [12, 8, 15, 10, 18, 14, 20],
             recentSessions: [
                 { date: "2025-01-15", duration: 60, type: "Mentoria", rating: 5 },
@@ -135,6 +143,7 @@ export function AdminDashboardScreen() {
             totalHours: 24.0,
             completionRate: 92,
             averageRating: 4.5,
+            profile: "https://randomuser.me/api/portraits/men/5.jpg", // Add profile image
             monthlyProgress: [5, 3, 8, 6, 12, 9, 15],
             recentSessions: [
                 { date: "2025-01-14", duration: 50, type: "Mentoria", rating: 5 },
@@ -142,6 +151,7 @@ export function AdminDashboardScreen() {
             ]
         }
     ]);
+
 
     const handleRemoveUser = (userId: number, userName: string) => {
         Alert.alert(
@@ -234,6 +244,7 @@ export function AdminDashboardScreen() {
         );
     };
 
+    // Modal control functions
     const openUserModal = (userData: User) => {
         setSelectedUser(userData);
         setModalVisible(true);
@@ -243,6 +254,72 @@ export function AdminDashboardScreen() {
         setModalVisible(false);
         setSelectedUser(null);
     };
+
+    const openPhotoViewer = (user: User) => {
+        setPhotoViewerUser(user);
+        setPhotoViewerVisible(true);
+    };
+
+    const closePhotoViewer = () => {
+        setPhotoViewerVisible(false);
+        setPhotoViewerUser(null);
+    };
+
+
+    // Photo Viewer Modal Component
+    const PhotoViewerModal = () => {
+        if (!photoViewerUser) return null;
+
+        return (
+            <Modal
+                visible={photoViewerVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={closePhotoViewer}
+            >
+                <View style={tw`flex-1 bg-black bg-opacity-90 justify-center items-center`}>
+                    <TouchableOpacity
+                        style={tw`absolute top-12 right-4 z-10 bg-black bg-opacity-50 rounded-full p-3`}
+                        onPress={closePhotoViewer}
+                    >
+                        <MaterialIcons name="close" size={24} color="white" />
+                    </TouchableOpacity>
+
+                    <View style={tw`absolute top-12 left-4 z-10`}>
+                        <Text style={tw`text-white text-xl font-bold`}>{photoViewerUser.name}</Text>
+                        <Text style={tw`text-gray-300 text-sm`}>{photoViewerUser.role}</Text>
+                    </View>
+
+                    <View
+                        style={tw`flex-1 justify-center items-center w-full`}
+                    >
+                        <Image
+                            source={{ uri: photoViewerUser.profile }}
+                            style={tw`w-full h-full`}
+                            resizeMode="contain"
+                            defaultSource={{ uri: 'https://via.placeholder.com/400x400/CCCCCC/FFFFFF?text=' + photoViewerUser.name.charAt(0) }}
+                        />
+                    </View>
+
+                    <View style={tw`absolute bottom-12 left-4 right-4 bg-black bg-opacity-50 rounded-xl p-4`}>
+                        <View style={tw`flex-row items-center justify-between`}>
+                            <View>
+                                <Text style={tw`text-white font-medium`}>Status: {getStatusText(photoViewerUser.status)}</Text>
+                                <Text style={tw`text-gray-300 text-sm`}>Último acesso: {photoViewerUser.lastActive}</Text>
+                            </View>
+                            <View
+                                style={[
+                                    tw`w-4 h-4 rounded-full`,
+                                    { backgroundColor: getStatusColor(photoViewerUser.status) }
+                                ]}
+                            />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    };
+
 
     // User Details Modal Component
     const UserDetailsModal = () => {
@@ -270,17 +347,30 @@ export function AdminDashboardScreen() {
                         {/* Modal Header */}
                         <View style={tw`flex-row items-center justify-between p-4 border-b border-gray-200`}>
                             <View style={tw`flex-row items-center flex-1`}>
-                                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3 relative`}>
-                                    <Text style={tw`text-indigo-600 font-bold text-lg`}>
-                                        {selectedUser.name.charAt(0).toUpperCase()}
-                                    </Text>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        closeUserModal(); // Close modal first
+                                        setTimeout(() => openPhotoViewer(selectedUser), 100); // Then open photo viewer
+                                    }}
+                                    style={tw`w-12 h-12 rounded-full mr-3 relative`}
+                                    activeOpacity={0.8}
+                                >
+                                    <Image
+                                        source={{ uri: selectedUser.profile }}
+                                        style={tw`w-12 h-12 rounded-full`}
+                                        defaultSource={{ uri: 'https://via.placeholder.com/48x48/CCCCCC/FFFFFF?text=' + selectedUser.name.charAt(0) }}
+                                    />
                                     <View
                                         style={[
                                             tw`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white`,
                                             { backgroundColor: getStatusColor(selectedUser.status) }
                                         ]}
                                     />
-                                </View>
+                                    {/* Add zoom icon overlay */}
+                                    <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-20 items-center justify-center`}>
+                                        <MaterialIcons name="zoom-in" size={12} color="white" style={tw`opacity-70`} />
+                                    </View>
+                                </TouchableOpacity>
                                 <View style={tw`flex-1`}>
                                     <Text style={tw`font-bold text-gray-800 text-lg`}>{selectedUser.name}</Text>
                                     <Text style={tw`text-gray-500 text-sm`}>{selectedUser.email}</Text>
@@ -393,23 +483,37 @@ export function AdminDashboardScreen() {
     };
 
     const UserItem = ({ item }: { item: User }) => (
-        <TouchableOpacity
-            style={tw`bg-white p-4 rounded-xl shadow-sm mb-3 mx-4`}
-            onPress={() => openUserModal(item)} // Changed from toggleUserExpansion
-        >
-            <View style={tw`flex-row items-center`}>
+        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-3 mx-4`}>
+            <TouchableOpacity
+                style={tw`flex-row items-center`}
+                onPress={() => openUserModal(item)}
+            >
+
                 {/* Avatar */}
-                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3 relative`}>
-                    <Text style={tw`text-indigo-600 font-bold text-lg`}>
-                        {item.name.charAt(0).toUpperCase()}
-                    </Text>
+                <TouchableOpacity
+                    onPress={(e) => {
+                        e.stopPropagation(); // Prevent opening user modal
+                        openPhotoViewer(item);
+                    }}
+                    style={tw`w-12 h-12 rounded-full mr-3 relative`}
+                    activeOpacity={0.8}
+                >
+                    <Image
+                        source={{ uri: item.profile }}
+                        style={tw`w-12 h-12 rounded-full`}
+                        defaultSource={{ uri: 'https://via.placeholder.com/48x48/CCCCCC/FFFFFF?text=' + item.name.charAt(0) }}
+                    />
                     <View
                         style={[
                             tw`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white`,
                             { backgroundColor: getStatusColor(item.status) }
                         ]}
                     />
-                </View>
+                    {/* Add subtle zoom overlay */}
+                    <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-10 items-center justify-center`}>
+                        <MaterialIcons name="zoom-in" size={12} color="white" style={tw`opacity-80`} />
+                    </View>
+                </TouchableOpacity>
 
                 {/* User Info */}
                 <View style={tw`flex-1`}>
@@ -444,8 +548,8 @@ export function AdminDashboardScreen() {
                     style={tw`ml-3 p-2 bg-gray-100 rounded-full`}>
                     <Feather name="trash-2" size={16} color="#EF4444" />
                 </TouchableOpacity>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+        </View >
     );
 
     return (
@@ -485,10 +589,11 @@ export function AdminDashboardScreen() {
                         contentContainerStyle={tw`pb-6`}
                     />
                 </View>
-            </ScrollView>
 
-            {/* User Details Modal */}
-            <UserDetailsModal />
+                {/* Modals */}
+                <UserDetailsModal />
+                <PhotoViewerModal />
+            </ScrollView>
         </View>
     );
 }
