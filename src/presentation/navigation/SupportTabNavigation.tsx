@@ -53,18 +53,17 @@ export function SupportTabNavigation({
     };
 
     return (
-        <View style={tw`bg-white border-b border-gray-200`}>
+        <View style={tw`bg-white px-4 py-3 border-b border-gray-200`}>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={tw`px-4 py-3`}
             >
                 <View style={tw`flex-row`}>
                     {tabs.map((tab) => (
                         <TouchableOpacity
                             key={tab.id}
                             onPress={() => handleTabPress(tab.id)}
-                            style={tw`flex-row items-center px-4 py-2 mr-1 rounded-full ${activeTab === tab.id
+                            style={tw`flex-row items-center px-4 py-2 mr-3 rounded-full ${activeTab === tab.id
                                 ? 'bg-blue-200'
                                 : 'bg-gray-100'
                                 }`}

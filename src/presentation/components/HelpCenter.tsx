@@ -16,21 +16,24 @@ export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
             desc: 'Visualizar e responder tickets', 
             icon: 'clipboard', 
             action: () => onTabChange('tickets'),
-            color: 'bg-blue-500'
+            bg_color: 'bg-blue-200',
+            text_color: 'text-blue-800',
         },
         { 
             title: 'Chat ao Vivo', 
             desc: 'Atender usuários em tempo real', 
             icon: 'message-circle', 
             action: () => onTabChange('chat'),
-            color: 'bg-green-500'
+            bg_color: 'bg-green-200',
+            text_color: 'text-green-800',
         },
         { 
             title: 'Gerenciar FAQ', 
             desc: 'Adicionar e editar perguntas', 
             icon: 'help-circle', 
             action: () => onTabChange('faq'),
-            color: 'bg-purple-500'
+            bg_color: 'bg-purple-200',
+            text_color: 'text-purple-800',
         }
     ];
 
@@ -91,8 +94,8 @@ export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
                                 onPress={action.action}
                                 style={tw`bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm items-center`}
                             >
-                                <View style={tw`w-12 h-12 ${action.color} rounded-full items-center justify-center mb-3`}>
-                                    <Feather name={action.icon as any} size={24} color="white" />
+                                <View style={tw`w-12 h-12 ${action.bg_color} rounded-full items-center justify-center mb-3`}>
+                                    <Feather name={action.icon as any} size={24} color="black" style={tw`${action.text_color}`}/>
                                 </View>
                                 <Text style={tw`font-semibold text-center text-gray-800 mb-1`}>
                                     {action.title}
