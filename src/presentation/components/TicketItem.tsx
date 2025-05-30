@@ -65,14 +65,14 @@ export function TicketItem({ ticket, onPress, isAdmin = false }: TicketItemProps
 
                     <View style={tw`flex-row items-center justify-between`}>
                         <View style={tw`flex-row items-center`}>
-                            <View style={tw`px-2 py-1 rounded-full ${getStatusColor(ticket.status)} mr-2`}>
-                                <Text style={tw`text-xs font-medium text-white`}>
+                            <View style={tw`px-2 py-1 rounded-full ${getStatusColor(ticket.status).bg} mr-2`}>
+                                <Text style={tw`text-xs font-medium ${getStatusColor(ticket.status).text}`}>
                                     {getStatusText(ticket.status)}
                                 </Text>
                             </View>
 
-                            <View style={tw`px-2 py-1 rounded-full ${getPriorityColor(ticket.priority)}`}>
-                                <Text style={tw`text-xs font-medium text-white`}>
+                            <View style={tw`px-2 py-1 rounded-full ${getPriorityColor(ticket.priority).bg}`}>
+                                <Text style={tw`text-xs font-medium ${getPriorityColor(ticket.priority).text}`}>
                                     {ticket.priority === 'low' ? 'Baixa' :
                                         ticket.priority === 'medium' ? 'Média' :
                                             ticket.priority === 'high' ? 'Alta' : 'Urgente'}

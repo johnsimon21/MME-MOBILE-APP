@@ -1,11 +1,16 @@
-export const getStatusColor = (status: string): string => {
-    const colors: { [key: string]: string } = {
-        'open': 'bg-red-500',
-        'in-progress': 'bg-yellow-500',
-        'resolved': 'bg-green-500',
-        'closed': 'bg-gray-500'
+interface IColor {
+    bg: string;
+    text: string;
+}
+
+export const getStatusColor = (status: string): IColor => {
+    const colors: { [key: string]: IColor } = {
+        'open': {bg:'bg-red-200', text: 'text-red-800'},
+        'in-progress': {bg:'bg-yellow-200', text: 'text-yellow-800'},
+        'resolved': {bg:'bg-green-200', text: 'text-green-800'},
+        'closed': {bg:'bg-gray-200', text: 'text-gray-800'},
     };
-    return colors[status] || 'bg-gray-500';
+    return {bg: colors[status].bg || 'bg-gray-200', text: colors[status].text || 'text-gray-600'};
 };
 
 export const getStatusText = (status: string): string => {
@@ -18,14 +23,14 @@ export const getStatusText = (status: string): string => {
     return texts[status] || status;
 };
 
-export const getPriorityColor = (priority: string): string => {
-    const colors: { [key: string]: string } = {
-        'low': 'bg-blue-500',
-        'medium': 'bg-yellow-500',
-        'high': 'bg-orange-500',
-        'urgent': 'bg-red-500'
+export const getPriorityColor = (priority: string): IColor => {
+    const colors: { [key: string]: IColor } = {
+        'low': {bg:'bg-blue-200', text: 'text-blue-800'},
+        'medium': {bg:'bg-yellow-200', text: 'text-yellow-800'},
+        'high': {bg:'bg-orange-200', text: 'text-orange-800'},
+        'urgent': {bg:'bg-red-200', text: 'text-red-800'},
     };
-    return colors[priority] || 'bg-gray-500';
+    return{bg: colors[priority].bg || 'bg-gray-200', text: colors[priority].text || 'text-gray-600'};
 };
 
 export const formatSupportDate = (timestamp: string): string => {

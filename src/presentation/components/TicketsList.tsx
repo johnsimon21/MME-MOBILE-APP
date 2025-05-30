@@ -174,8 +174,8 @@ export function TicketsList({
                         <Text style={tw`font-medium mb-2`}>Status:</Text>
                         {statusFilters.map((status) => (
                             <TouchableOpacity key={status} onPress={() => setSelectedStatus(status)}>
-                                <Text style={tw`p-2 ${selectedStatus === status ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
-                                    {status}
+                                <Text style={tw`p-2 text-center ${selectedStatus === status ? 'bg-blue-200 text-blue-800' : 'bg-gray-100'}`}>
+                                    {getStatusLabel(status)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -183,8 +183,8 @@ export function TicketsList({
                         <Text style={tw`font-medium mt-4 mb-2`}>Prioridade:</Text>
                         {priorityFilters.map((priority) => (
                             <TouchableOpacity key={priority} onPress={() => setSelectedPriority(priority)}>
-                                <Text style={tw`p-2 ${selectedPriority === priority ? 'bg-purple-500 text-white' : 'bg-gray-100'}`}>
-                                    {priority}
+                                <Text style={tw`p-2 text-center ${selectedPriority === priority ? 'bg-purple-200 text-purple-800' : 'bg-gray-100'}`}>
+                                    {getPriorityLabel(priority)}
                                 </Text>
                             </TouchableOpacity>
                         ))}

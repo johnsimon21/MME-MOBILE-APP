@@ -64,17 +64,17 @@ export function SupportTabNavigation({
                         <TouchableOpacity
                             key={tab.id}
                             onPress={() => handleTabPress(tab.id)}
-                            style={tw`flex-row items-center px-4 py-2 mr-3 rounded-full ${activeTab === tab.id
-                                    ? 'bg-blue-500'
-                                    : 'bg-gray-100'
+                            style={tw`flex-row items-center px-4 py-2 mr-1 rounded-full ${activeTab === tab.id
+                                ? 'bg-blue-200'
+                                : 'bg-gray-100'
                                 }`}
                         >
                             <Feather
                                 name={tab.icon as any}
                                 size={16}
-                                color={activeTab === tab.id ? 'white' : '#6B7280'}
+                                style={tw`${activeTab === tab.id ? 'text-blue-800' : 'text-gray-600'}`}
                             />
-                            <Text style={tw`ml-2 font-medium ${activeTab === tab.id ? 'text-white' : 'text-gray-600'
+                            <Text style={tw`ml-2 font-medium ${activeTab === tab.id ? 'text-blue-800' : 'text-gray-600'
                                 }`}>
                                 {tab.label}
                             </Text>
