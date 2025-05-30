@@ -1,20 +1,23 @@
 import React, { useState, useRef } from 'react';
-import { View, Animated } from 'react-native';
+import { View, Animated, Alert } from 'react-native';
 import tw from 'twrnc';
 import { Navbar } from '../components/ui/navbar';
 import { SupportTab } from '@/src/types/support.types';
 import { useSupportContext } from '@/src/context/SupportContext';
-import { FAQList } from '../components/FAQList';
+import { useAuth } from '@/src/context/AuthContext';
+
+// Import all components
+import { SupportTabNavigation } from '../navigation/SupportTabNavigation';
 import { HelpCenter } from '../components/HelpCenter';
+import { TicketsList } from '../components/TicketsList';
+import { FAQList } from '../components/FAQList';
 import { LiveChat } from '../components/LiveChat';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { TicketDetailModal } from '../components/TicketDetailModal';
-import { TicketsList } from '../components/TicketsList';
-import { SupportTabNavigation } from '../navigation/SupportTabNavigation';
-
-// Import all components
+import { AdminFAQManager } from '../components/AdminFAQManager';
 
 export function SupportScreen() {
+    const { user, isAdmin } = useAuth();
     const {
         tickets,
         faqs,
@@ -22,11 +25,22 @@ export function SupportScreen() {
         updateTicket,
         updateFAQHelpful,
         getFilteredTickets,
-        getFilteredFAQs
+        getFilteredFAQs,
+        addFAQ,
+        updateFAQ,
+        deleteFAQ
     } = useSupportContext();
     
+    // Redirect if not admin
+    React.useEffect(() => {
+        if (!isAdmin()) {
+            Alert.alert('Acesso Negado', 'Esta área é restrita para administradores.');
+            // You might want to navigate back here
+        }
+    }, [isAdmin]);
+    
     // State management
-    const [activeTab, setActiveTab] = useState<SupportTab>('help');
+    const [activeTab, setActiveTab] = useState<SupportTab>('tickets'); // Start with tickets for admin
     const [showNewTicketModal, setShowNewTicketModal] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [showTicketDetail, setShowTicketDetail] = useState(false);
@@ -60,6 +74,19 @@ export function SupportScreen() {
         setSelectedTicket(updatedTicket);
     };
 
+    // Admin-specific FAQ handlers
+    const handleAddFAQ = (faqData: any) => {
+        addFAQ(faqData);
+    };
+
+    const handleUpdateFAQ = (faqId: string, faqData: any) => {
+        updateFAQ(faqId, faqData);
+    };
+
+    const handleDeleteFAQ = (faqId: string) => {
+        deleteFAQ(faqId);
+    };
+
     // Render content based on active tab
     const renderContent = () => {
         return (
@@ -78,7 +105,10 @@ export function SupportScreen() {
                 ]}
             >
                 {activeTab === 'help' && (
-                    <HelpCenter onTabChange={handleTabChange} />
+                    <HelpCenter 
+                        onTabChange={handleTabChange} 
+                        isAdmin={true}
+                    />
                 )}
                 
                 {activeTab === 'tickets' && (
@@ -88,33 +118,43 @@ export function SupportScreen() {
                         onSearchChange={setSearchQuery}
                         onTicketPress={handleTicketPress}
                         onNewTicket={() => setShowNewTicketModal(true)}
+                        isAdmin={true}
                     />
                 )}
                 
                 {activeTab === 'faq' && (
-                    <FAQList
-                        faqs={faqs}
+                    <AdminFAQManager
+                        faqs={getFilteredFAQs(searchQuery, 'all')}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
-                        onUpdateFAQ={updateFAQHelpful}
+                        onAddFAQ={handleAddFAQ}
+                        onUpdateFAQ={handleUpdateFAQ}
+                        onDeleteFAQ={handleDeleteFAQ}
+                        onUpdateHelpful={updateFAQHelpful}
                     />
                 )}
                 
                 {activeTab === 'chat' && (
-                    <LiveChat />
+                    <LiveChat isAdmin={true} />
                 )}
             </Animated.View>
         );
     };
 
+    // Don't render if not admin
+    if (!isAdmin()) {
+        return null;
+    }
+
     return (
         <View style={tw`flex-1 bg-gray-50`}>
-            <Navbar title="Suporte" />
+            <Navbar title="Painel de Suporte" />
             
             <SupportTabNavigation
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
                 slideAnim={slideAnim}
+                isAdmin={true}
             />
             
             {renderContent()}
@@ -124,6 +164,11 @@ export function SupportScreen() {
                 visible={showNewTicketModal}
                 onClose={() => setShowNewTicketModal(false)}
                 onCreateTicket={handleCreateTicket}
+                currentUser={
+                    user && user.id && user.fullName
+                        ? { id: user.id, fullName: user.fullName }
+                        : undefined
+                }
             />
 
             <TicketDetailModal
@@ -134,6 +179,8 @@ export function SupportScreen() {
                     setSelectedTicket(null);
                 }}
                 onUpdateTicket={handleUpdateTicket}
+                currentUser={user}
+                isAdmin={true}
             />
         </View>
     );

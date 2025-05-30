@@ -28,7 +28,7 @@ export function Navbar({
   const router = useRouter()
   const menuRef = useRef(null);
 
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
 
   // Set status bar appearance based on theme
   useEffect(() => {
@@ -123,10 +123,10 @@ export function Navbar({
             <Ionicons name="arrow-back" size={24} color="#4F46E5" />
           </TouchableOpacity>
         )}
-        <Text style={tw`text-lg font-semibold px-4 ${textColor}`}>{title}</Text>
+        <Text style={tw`text-lg font-semibold px-4 ${textColor}`}>{isAdmin() && '🛡️ '} {title}</Text>
       </View>
 
-      {/* Profile Section */}
+      {/* Profile Section */} 
       <View style={tw`flex-row items-center flex-shrink-0 relative`}>
         {displayProfile && (
           <Pressable

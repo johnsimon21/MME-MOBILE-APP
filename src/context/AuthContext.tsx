@@ -10,7 +10,7 @@ interface AuthUser {
     email: string;
     fullName?: string;
     token: string;
-    role: 'admin' | 'user'; // Add role field
+    role: 'admin' | 'mentor' | 'mentorado'; // Add role field
 }
 
 // Define registration data
@@ -36,6 +36,8 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<boolean>;
     logout: () => Promise<void>;
     isAdmin: () => boolean;
+    isAMentor: () => boolean;
+    isAMentorado: () => boolean;
 }
 
 // Create context with default values
@@ -112,13 +114,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Regular user login
             // const response = await apiService.login({ email, password });
 
-            if (email === 'user@mme.com' && password === 'user123') {
+            if (email === 'mentor@mme.com' && password === 'user123') {
                 const regularUser: AuthUser = {
                     id: 'user_1',
-                    email: 'user@mme.com',
+                    email: 'mentor@mme.com',
+                    fullName: 'Lukombo Afonso',
+                    token: 'mentor_token_123',
+                    role: 'mentor'
+                };
+
+                setUser(regularUser);
+                await AsyncStorage.setItem('user', JSON.stringify(regularUser));
+                router.replace('/(tabs)');
+            }
+
+            if (email === 'mentorado@mme.com' && password === 'user123') {
+                const regularUser: AuthUser = {
+                    id: 'user_1',
+                    email: 'mentorado@mme.com',
                     fullName: 'John Simon',
-                    token: 'user_token_123',
-                    role: 'user'
+                    token: 'mentorado_token_123',
+                    role: 'mentorado'
                 };
 
                 setUser(regularUser);
@@ -146,9 +162,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check if user is admin
     const isAdmin = () => user?.role === 'admin';
+    const isAMentor = () => user?.role === 'mentor';
+    const isAMentorado = () => user?.role === 'mentorado';
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, register, login, logout, isAdmin }}>
+        <AuthContext.Provider value={{ user, isLoading, register, login, logout, isAdmin, isAMentor, isAMentorado }}>
             {children}
         </AuthContext.Provider>
     );

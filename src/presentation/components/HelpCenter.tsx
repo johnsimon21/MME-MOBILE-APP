@@ -5,16 +5,160 @@ import tw from 'twrnc';
 import { SupportTab } from '@/src/types/support.types';
 
 interface HelpCenterProps {
-    onTabChange: (tab: SupportTab) => void; // Changed from string to SupportTab
+    onTabChange: (tab: SupportTab) => void;
+    isAdmin?: boolean;
 }
 
-export function HelpCenter({ onTabChange }: HelpCenterProps) {
-    const quickActions = [
+export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
+    const adminActions = [
+        { 
+            title: 'Gerenciar Tickets', 
+            desc: 'Visualizar e responder tickets', 
+            icon: 'clipboard', 
+            action: () => onTabChange('tickets'),
+            color: 'bg-blue-500'
+        },
+        { 
+            title: 'Chat ao Vivo', 
+            desc: 'Atender usuários em tempo real', 
+            icon: 'message-circle', 
+            action: () => onTabChange('chat'),
+            color: 'bg-green-500'
+        },
+        { 
+            title: 'Gerenciar FAQ', 
+            desc: 'Adicionar e editar perguntas', 
+            icon: 'help-circle', 
+            action: () => onTabChange('faq'),
+            color: 'bg-purple-500'
+        }
+    ];
+
+    const userActions = [
         { title: 'Criar Ticket', desc: 'Relatar um problema', icon: 'plus-circle', action: () => onTabChange('tickets') },
         { title: 'Chat ao Vivo', desc: 'Falar com suporte', icon: 'message-circle', action: () => onTabChange('chat') },
         { title: 'Perguntas Frequentes', desc: 'Respostas rápidas', icon: 'help-circle', action: () => onTabChange('faq') }
     ];
 
+    const adminStats = [
+        { label: 'Tickets Abertos', value: '12', icon: 'alert-circle', color: 'text-red-600' },
+        { label: 'Em Andamento', value: '8', icon: 'clock', color: 'text-yellow-600' },
+        { label: 'Resolvidos Hoje', value: '24', icon: 'check-circle', color: 'text-green-600' },
+        { label: 'Usuários Online', value: '3', icon: 'users', color: 'text-blue-600' }
+    ];
+
+    const recentActivity = [
+        { action: 'Ticket #1234 foi resolvido', time: '5 min atrás', icon: 'check-circle' },
+        { action: 'Nova mensagem no chat', time: '12 min atrás', icon: 'message-circle' },
+        { action: 'FAQ atualizada', time: '1 hora atrás', icon: 'edit' },
+        { action: 'Ticket #1233 criado', time: '2 horas atrás', icon: 'plus-circle' }
+    ];
+
+    if (isAdmin) {
+        return (
+            <ScrollView style={tw`flex-1 bg-gray-50`} showsVerticalScrollIndicator={false}>
+                {/* Admin Welcome */}
+                <View style={tw`bg-gradient-to-r from-blue-600 to-purple-600 p-6 m-4 rounded-xl`}>
+                    <Text style={tw`text-white text-2xl font-bold mb-2`}>Painel de Suporte</Text>
+                    <Text style={tw`text-blue-100 text-base`}>
+                        Gerencie tickets, responda usuários e mantenha a base de conhecimento
+                    </Text>
+                </View>
+
+                {/* Stats */}
+                <View style={tw`px-4 mb-6`}>
+                    <Text style={tw`text-lg font-bold mb-4`}>Estatísticas</Text>
+                    <View style={tw`flex-row flex-wrap justify-between`}>
+                        {adminStats.map((stat, index) => (
+                            <View key={index} style={tw`bg-white p-4 rounded-xl w-[48%] mb-3 shadow-sm`}>
+                                <View style={tw`flex-row items-center justify-between mb-2`}>
+                                    <Feather name={stat.icon as any} size={20} color="#6B7280" />
+                                    <Text style={tw`text-2xl font-bold ${stat.color}`}>{stat.value}</Text>
+                                </View>
+                                <Text style={tw`text-gray-600 text-sm`}>{stat.label}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Admin Actions */}
+                <View style={tw`px-4 mb-6`}>
+                    <Text style={tw`text-lg font-bold mb-4`}>Ações Principais</Text>
+                    <View style={tw`flex-row justify-between`}>
+                        {adminActions.map((action, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                onPress={action.action}
+                                style={tw`bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm items-center`}
+                            >
+                                <View style={tw`w-12 h-12 ${action.color} rounded-full items-center justify-center mb-3`}>
+                                    <Feather name={action.icon as any} size={24} color="white" />
+                                </View>
+                                <Text style={tw`font-semibold text-center text-gray-800 mb-1`}>
+                                    {action.title}
+                                </Text>
+                                <Text style={tw`text-xs text-gray-500 text-center`}>
+                                    {action.desc}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Recent Activity */}
+                <View style={tw`px-4 mb-6`}>
+                    <Text style={tw`text-lg font-bold mb-4`}>Atividade Recente</Text>
+                    <View style={tw`bg-white rounded-xl shadow-sm`}>
+                        {recentActivity.map((activity, index) => (
+                            <View key={index} style={tw`p-4 ${index < recentActivity.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                <View style={tw`flex-row items-center`}>
+                                    <View style={tw`w-8 h-8 bg-gray-100 rounded-full items-center justify-center mr-3`}>
+                                        <Feather name={activity.icon as any} size={16} color="#6B7280" />
+                                    </View>
+                                    <View style={tw`flex-1`}>
+                                        <Text style={tw`text-gray-800 font-medium`}>{activity.action}</Text>
+                                        <Text style={tw`text-gray-500 text-sm`}>{activity.time}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Quick Tools */}
+                <View style={tw`px-4 mb-6`}>
+                    <Text style={tw`text-lg font-bold mb-4`}>Ferramentas Rápidas</Text>
+                    <View style={tw`bg-white rounded-xl p-4 shadow-sm`}>
+                        <TouchableOpacity style={tw`flex-row items-center justify-between py-3 border-b border-gray-100`}>
+                            <View style={tw`flex-row items-center`}>
+                                <Feather name="download" size={20} color="#4F46E5" />
+                                <Text style={tw`ml-3 font-medium`}>Exportar Relatórios</Text>
+                            </View>
+                            <Feather name="chevron-right" size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={tw`flex-row items-center justify-between py-3 border-b border-gray-100`}>
+                            <View style={tw`flex-row items-center`}>
+                                <Feather name="settings" size={20} color="#4F46E5" />
+                                <Text style={tw`ml-3 font-medium`}>Configurações do Suporte</Text>
+                            </View>
+                            <Feather name="chevron-right" size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                        
+                                             <TouchableOpacity style={tw`flex-row items-center justify-between py-3`}>
+                            <View style={tw`flex-row items-center`}>
+                                <Feather name="users" size={20} color="#4F46E5" />
+                                <Text style={tw`ml-3 font-medium`}>Gerenciar Usuários</Text>
+                            </View>
+                            <Feather name="chevron-right" size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ScrollView>
+        );
+    }
+
+    // User view (original)
     const popularTopics = [
         { title: 'Problemas de Login', desc: 'Recuperar acesso à conta', icon: 'lock' },
         { title: 'Gerenciar Sessões', desc: 'Agendar e modificar sessões', icon: 'calendar' },
@@ -36,7 +180,7 @@ export function HelpCenter({ onTabChange }: HelpCenterProps) {
             <View style={tw`px-4 mb-6`}>
                 <Text style={tw`text-lg font-bold mb-4`}>Ações Rápidas</Text>
                 <View style={tw`flex-row justify-between`}>
-                    {quickActions.map((action, index) => (
+                    {userActions.map((action, index) => (
                         <TouchableOpacity
                             key={index}
                             onPress={action.action}

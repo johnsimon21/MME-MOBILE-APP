@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, Animated } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { SupportTab } from '@/src/types/support.types';
@@ -8,55 +8,80 @@ interface SupportTabNavigationProps {
     activeTab: SupportTab;
     onTabChange: (tab: SupportTab) => void;
     slideAnim: Animated.Value;
+    isAdmin?: boolean;
 }
 
-export function SupportTabNavigation({ activeTab, onTabChange, slideAnim }: SupportTabNavigationProps) {
-    const tabs = [
-        { key: 'help' as SupportTab, label: 'Ajuda', icon: 'help-circle' },
-        { key: 'tickets' as SupportTab, label: 'Tickets', icon: 'clipboard' },
-        { key: 'chat' as SupportTab, label: 'Chat', icon: 'message-circle' },
-        { key: 'faq' as SupportTab, label: 'FAQ', icon: 'book-open' }
+export function SupportTabNavigation({
+    activeTab,
+    onTabChange,
+    slideAnim,
+    isAdmin = false
+}: SupportTabNavigationProps) {
+
+    const adminTabs = [
+        { id: 'tickets' as SupportTab, label: 'Tickets', icon: 'clipboard' },
+        { id: 'chat' as SupportTab, label: 'Chat ao Vivo', icon: 'message-circle' },
+        { id: 'faq' as SupportTab, label: 'Gerenciar FAQ', icon: 'help-circle' },
+        { id: 'help' as SupportTab, label: 'Painel', icon: 'grid' }
     ];
 
+    const userTabs = [
+        { id: 'help' as SupportTab, label: 'Ajuda', icon: 'home' },
+        { id: 'tickets' as SupportTab, label: 'Meus Tickets', icon: 'clipboard' },
+        { id: 'faq' as SupportTab, label: 'FAQ', icon: 'help-circle' },
+        { id: 'chat' as SupportTab, label: 'Chat', icon: 'message-circle' }
+    ];
+
+    const tabs = isAdmin ? adminTabs : userTabs;
+
     const handleTabPress = (tab: SupportTab) => {
-        Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 150,
-            useNativeDriver: true,
-        }).start(() => {
-            onTabChange(tab);
+        // Animate tab change
+        Animated.sequence([
+            Animated.timing(slideAnim, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true,
+            }),
             Animated.timing(slideAnim, {
                 toValue: 1,
-                duration: 150,
+                duration: 100,
                 useNativeDriver: true,
-            }).start();
-        });
+            }),
+        ]).start();
+
+        onTabChange(tab);
     };
 
     return (
         <View style={tw`bg-white border-b border-gray-200`}>
-            <View style={tw`flex-row justify-around py-3`}>
-                {tabs.map((tab) => (
-                    <TouchableOpacity
-                        key={tab.key}
-                        onPress={() => handleTabPress(tab.key)}
-                        style={tw`items-center px-4 py-2 ${
-                            activeTab === tab.key ? 'bg-blue-50 rounded-lg' : ''
-                        }`}
-                    >
-                        <Feather 
-                            name={tab.icon as any} 
-                            size={20} 
-                            color={activeTab === tab.key ? '#4F46E5' : '#6B7280'} 
-                        />
-                        <Text style={tw`text-xs mt-1 font-medium ${
-                            activeTab === tab.key ? 'text-blue-600' : 'text-gray-600'
-                        }`}>
-                            {tab.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={tw`px-4 py-3`}
+            >
+                <View style={tw`flex-row`}>
+                    {tabs.map((tab) => (
+                        <TouchableOpacity
+                            key={tab.id}
+                            onPress={() => handleTabPress(tab.id)}
+                            style={tw`flex-row items-center px-4 py-2 mr-3 rounded-full ${activeTab === tab.id
+                                    ? 'bg-blue-500'
+                                    : 'bg-gray-100'
+                                }`}
+                        >
+                            <Feather
+                                name={tab.icon as any}
+                                size={16}
+                                color={activeTab === tab.id ? 'white' : '#6B7280'}
+                            />
+                            <Text style={tw`ml-2 font-medium ${activeTab === tab.id ? 'text-white' : 'text-gray-600'
+                                }`}>
+                                {tab.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </ScrollView>
         </View>
     );
 }
