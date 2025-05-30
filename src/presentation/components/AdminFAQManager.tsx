@@ -107,8 +107,8 @@ export function AdminFAQManager({
     return (
         <View style={tw`flex-1 bg-gray-50`}>
             {/* Header with Search and Add Button */}
-            <View style={tw`bg-white p-4 border-b border-gray-200`}>
-                <View style={tw`bg-gray-100 rounded-lg flex-row items-center px-4 py-3 mb-3`}>
+            <View style={tw`bg-white flex-row items-center px-2 py-1 mb-2 `}>
+                <View style={tw`bg-gray-100 rounded-lg flex-row items-center flex-1 px-4 py-1 mr-2`}>
                     <Feather name="search" size={20} color="#6B7280" />
                     <TextInput
                         placeholder="Buscar FAQs..."
@@ -117,14 +117,13 @@ export function AdminFAQManager({
                         onChangeText={onSearchChange}
                     />
                 </View>
-                
                 <TouchableOpacity
                     onPress={() => setShowAddModal(true)}
-                    style={tw`bg-blue-500 py-3 rounded-lg flex-row items-center justify-center`}
+                    style={tw`bg-blue-500 p-3 rounded-lg flex-row items-center justify-center`}
                 >
                     <Feather name="plus" size={20} color="white" />
-                    <Text style={tw`text-white font-medium ml-2`}>Adicionar FAQ</Text>
                 </TouchableOpacity>
+                
             </View>
 
             {/* Categories */}
@@ -136,11 +135,11 @@ export function AdminFAQManager({
                                 key={category}
                                 onPress={() => setSelectedCategory(category)}
                                 style={tw`px-4 py-2 mr-2 rounded-full ${
-                                    selectedCategory === category ? 'bg-blue-500' : 'bg-gray-100'
+                                    selectedCategory === category ? 'bg-blue-200' : 'bg-gray-100'
                                 }`}
                             >
                                 <Text style={tw`font-medium ${
-                                    selectedCategory === category ? 'text-white' : 'text-gray-600'
+                                    selectedCategory === category ? 'text-blue-800' : 'text-gray-600'
                                 }`}>
                                     {category === 'all' ? 'Todas' : category}
                                 </Text>
@@ -277,12 +276,12 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
                                             onPress={() => setFormData(prev => ({ ...prev, category }))}
                                             style={tw`px-4 py-2 mr-2 rounded-full border ${
                                                 formData.category === category 
-                                                    ? 'bg-blue-500 border-blue-500' 
+                                                    ? 'bg-blue-200 border-blue-300' 
                                                     : 'bg-white border-gray-300'
                                             }`}
                                         >
                                             <Text style={tw`${
-                                                formData.category === category ? 'text-white' : 'text-gray-600'
+                                                formData.category === category ? 'text-blue-800' : 'text-gray-600'
                                             }`}>
                                                 {category}
                                             </Text>
