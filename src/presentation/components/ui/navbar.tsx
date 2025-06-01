@@ -1,18 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Pressable, Image, TouchableOpacity, BackHandler, Platform, StatusBar, Alert } from "react-native";
+import { View, Text, Pressable, TouchableOpacity, BackHandler, Platform, StatusBar, Alert, Animated } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import tw from "twrnc";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "expo-router";
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface NavbarProps {
   title: string;
   displayProfile?: boolean;
   showBackButton?: boolean;
   onBackPress?: () => void;
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'gradient';
+  showNotifications?: boolean;
+  notificationCount?: number;
+  subtitle?: string;
+  rightActions?: Array<{
+    icon: string;
+    onPress: () => void;
+    badge?: number;
+  }>;
 }
 
 export function Navbar({
@@ -20,80 +28,50 @@ export function Navbar({
   displayProfile = true,
   showBackButton = false,
   onBackPress,
-  theme = 'light'
+  theme = 'light',
+  showNotifications = false,
+  notificationCount = 0,
+  subtitle,
+  rightActions = []
 }: NavbarProps) {
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [userName, setUserName] = useState("User");
   const navigation = useNavigation();
-  const router = useRouter()
-  const menuRef = useRef(null);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
-  const { logout, user, isAdmin } = useAuth();
-
-  // Set status bar appearance based on theme
   useEffect(() => {
-    // For iOS, we can set the style directly
-    // For Android, we need to set the background color and style
-    if (Platform.OS === 'ios') {
-      StatusBar.setBarStyle(theme === 'light' ? 'dark-content' : 'light-content');
+    if (showProfileMenu) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
     } else {
-      StatusBar.setBackgroundColor(theme === 'light' ? 'white' : '#121212');
-      StatusBar.setBarStyle(theme === 'light' ? 'dark-content' : 'light-content');
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.95,
+          duration: 150,
+          useNativeDriver: true,
+        })
+      ]).start();
     }
-  }, [theme]);
+  }, [showProfileMenu]);
 
-  // Load user data on component mount
-  useEffect(() => {
-  setUserName(user?.fullName || "User");
-  }, []);+
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleBackPress = () => {
-      if (menuVisible) {
-        setMenuVisible(false);
-        return true;
-      }
-      return false;
-    };
-
-    // Correct way to add BackHandler event listener
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-
-    // Return cleanup function
-    return () => backHandler.remove();
-  }, [menuVisible]);
-
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Tens a certeza que queres sair?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Sim",
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/auth/LoginScreen');
-            } catch (error) {
-              console.error("Error during logout:", error);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleProfileView = () => {
-    setMenuVisible(false);
-    // @ts-expect-error: Profile is not in this stack, but exists in parent navigator
-    navigation.navigate('Profile');
-  };
-  const handleBackButton = () => {
+  const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
     } else {
@@ -101,71 +79,277 @@ export function Navbar({
     }
   };
 
-  const backgroundColor = theme === 'light' ? 'bg-white' : 'bg-gray-900';
-  const textColor = theme === 'light' ? 'text-gray-800' : 'text-white';
-  const bottomBarColor = theme === 'light' ? 'bg-[#F7F7F7]' : 'bg-gray-800';
+  const handleProfilePress = () => {
+    setShowProfileMenu(!showProfileMenu);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Sair",
+      "Tem certeza que deseja sair da sua conta?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: () => {
+            logout();
+            setShowProfileMenu(false);
+          }
+        }
+      ]
+    );
+  };
+
+  const navigateToProfile = () => {
+    setShowProfileMenu(false);
+    // @ts-ignore
+    router.push('Profile');
+  };
+
+  const navigateToSettings = () => {
+    setShowProfileMenu(false);
+    router.push('/settings');
+  };
+
+  const navigateToNotifications = () => {
+    router.push('/notifications');
+  };
+
+  const getNavbarContent = () => {
+    const baseContent = (
+      <>
+        {/* Left Section */}
+        <View style={tw`flex-row items-center flex-1`}>
+          {showBackButton && (
+            <TouchableOpacity
+              style={tw`w-10 h-10 rounded-full items-center justify-center mr-3 ${theme === 'dark' ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                }`}
+              onPress={handleBackPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={20}
+                color={theme === 'dark' ? "#FFFFFF" : "#4F46E5"}
+              />
+            </TouchableOpacity>
+          )}
+
+          <View style={tw`flex-1`}>
+            <Text style={tw`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'
+              }`} numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle && (
+              <Text style={tw`text-sm ${theme === 'dark' ? 'text-white text-opacity-80' : 'text-gray-500'
+                }`} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Right Section */}
+        <View style={tw`flex-row items-center`}>
+          {/* Custom Right Actions */}
+          {rightActions.map((action, index) => (
+            <TouchableOpacity
+              key={index}
+              style={tw`w-10 h-10 rounded-full items-center justify-center mr-2 relative ${theme === 'dark' ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                }`}
+              onPress={action.onPress}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name={action.icon as any}
+                size={18}
+                color={theme === 'dark' ? "#FFFFFF" : "#4F46E5"}
+              />
+              {action.badge && action.badge > 0 && (
+                <View style={tw`absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center`}>
+                  <Text style={tw`text-white text-xs font-bold`}>
+                    {action.badge > 9 ? '9+' : action.badge.toString()}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+
+          {/* Notifications */}
+          {showNotifications && (
+            <TouchableOpacity
+              style={tw`w-10 h-10 rounded-full items-center justify-center mr-2 relative ${theme === 'dark' ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                }`}
+              onPress={navigateToNotifications}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name="bell"
+                size={18}
+                color={theme === 'dark' ? "#FFFFFF" : "#4F46E5"}
+              />
+              {notificationCount > 0 && (
+                <View style={tw`absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center`}>
+                  <Text style={tw`text-white text-xs font-bold`}>
+                    {notificationCount > 9 ? '9+' : notificationCount.toString()}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Profile */}
+          {displayProfile && (
+            <TouchableOpacity
+              style={tw`w-10 h-10 rounded-full items-center justify-center relative ${theme === 'dark' ? 'bg-white bg-opacity-20' : 'bg-indigo-100'
+                }`}
+              onPress={handleProfilePress}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name="user"
+                size={18}
+                color={theme === 'dark' ? "#FFFFFF" : "#4F46E5"}
+              />
+              {showProfileMenu && (
+                <View style={tw`absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full`} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      </>
+    );
+
+    if (theme === 'gradient') {
+      return (
+        <LinearGradient
+          colors={['#4F46E5', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={tw`flex-row items-center px-4 pt-12 pb-4`}
+        >
+          {baseContent}
+        </LinearGradient>
+      );
+    }
+
+    return (
+      <View style={tw`flex-row items-center px-4 pt-12 pb-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+        }`}>
+        {baseContent}
+      </View>
+    );
+  };
 
   return (
-    <View style={tw`${backgroundColor} flex-row justify-between items-center min-h-20 pt-10 pb-6 shadow-sm z-50`}>
-      {/* Status Bar - This is just a visual representation, the actual control happens in the useEffect */}
+    <>
       <StatusBar
-        barStyle={theme === 'light' ? 'dark-content' : 'light-content'}
-        backgroundColor={theme === 'light' ? 'white' : '#121212'}
-        translucent={true}
+        barStyle={theme === 'dark' ? "light-content" : "dark-content"}
+        backgroundColor={theme === 'gradient' ? '#4F46E5' : theme === 'dark' ? '#111827' : '#FFFFFF'}
       />
 
-      <View style={tw`flex-row items-center flex-1 min-w-0`}>
-        {showBackButton && (
+      {/* Main Navbar */}
+      <View style={tw`${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+        } ${Platform.OS === 'ios' ? '' : 'elevation-4'} shadow-sm`}>
+        {getNavbarContent()}
+      </View>
+
+      {/* Profile Dropdown Menu */}
+      {showProfileMenu && (
+        <>
+          {/* Overlay */}
           <TouchableOpacity
-            onPress={handleBackButton}
-            style={tw`px-2 ml-2`}
+            style={tw`absolute top-0 left-0 right-0 bottom-0 z-40`}
+            onPress={() => setShowProfileMenu(false)}
+            activeOpacity={1}
           >
-            <Ionicons name="arrow-back" size={24} color="#4F46E5" />
+            <View style={tw`flex-1 bg-black bg-opacity-20`} />
           </TouchableOpacity>
-        )}
-        <Text style={tw`text-lg font-semibold px-4 ${textColor}`}>{isAdmin() && '🛡️ '} {title}</Text>
-      </View>
 
-      {/* Profile Section */} 
-      <View style={tw`flex-row items-center flex-shrink-0 relative`}>
-        {displayProfile && (
-          <Pressable
-            onPress={() => setMenuVisible(!menuVisible)}
-            style={tw`flex-col items-center px-4`}
+          {/* Dropdown Menu */}
+          <Animated.View
+            style={[
+              tw`absolute top-20 right-4 bg-white rounded-2xl shadow-2xl z-50 min-w-48`,
+              {
+                transform: [
+                  {
+                    translateY: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-10, 0],
+                    })
+                  },
+                  { scale: scaleAnim }
+                ],
+                opacity: slideAnim,
+              }
+            ]}
           >
-            <View style={tw`w-10 h-10 bg-gray-300 rounded-full justify-center items-center`}>
-              <Text style={tw`text-gray-600 font-bold`}>
-                {userName.charAt(0).toUpperCase()}
-              </Text>
+            {/* User Info */}
+            <View style={tw`p-4 border-b border-gray-100`}>
+              <View style={tw`flex-row items-center`}>
+                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3`}>
+                  <Text style={tw`text-indigo-600 font-bold text-lg`}>
+                    {user?.fullName?.charAt(0) || 'U'}
+                  </Text>
+                </View>
+                <View style={tw`flex-1`}>
+                  <Text style={tw`font-semibold text-gray-800`} numberOfLines={1}>
+                    {user?.fullName || 'Usuário'}
+                  </Text>
+                  <Text style={tw`text-sm text-gray-500`} numberOfLines={1}>
+                    {user?.email || 'email@exemplo.com'}
+                  </Text>
+                </View>
+              </View>
             </View>
-            {/* <Text style={tw`text-sm mt-1 ${textColor}`}>{userName}</Text> */}
-          </Pressable>
-        )}
 
-        {/* Dropdown Menu */}
-        {menuVisible && (
-          <View
-            ref={menuRef}
-            style={tw`absolute right-4 top-18 z-50 ${backgroundColor} p-2 shadow-lg rounded-lg w-40 border border-gray-100`}
-          >
-            <TouchableOpacity
-              onPress={handleProfileView}
-              style={tw`py-3 px-4 border-b border-gray-100`}
-            >
-              <Text style={tw`${textColor}`}>Ver perfil</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={tw`py-3 px-4`}
-            >
-              <Text style={tw`text-red-500`}>Sair</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+            {/* Menu Items */}
+            <View style={tw`py-2`}>
+              <TouchableOpacity
+                style={tw`flex-row items-center px-4 py-3`}
+                onPress={navigateToProfile}
+                activeOpacity={0.7}
+              >
+                <Feather name="user" size={18} color="#6B7280" style={tw`mr-3`} />
+                <Text style={tw`text-gray-700 font-medium`}>Meu Perfil</Text>
+              </TouchableOpacity>
 
-      {/* Bottom rounded edge */}
-      <View style={tw`absolute bottom-0 left-0 right-0 ${bottomBarColor} w-full h-4 rounded-t-4`}></View>
-    </View>
+              <TouchableOpacity
+                style={tw`flex-row items-center px-4 py-3`}
+                onPress={navigateToSettings}
+                activeOpacity={0.7}
+              >
+                <Feather name="settings" size={18} color="#6B7280" style={tw`mr-3`} />
+                <Text style={tw`text-gray-700 font-medium`}>Configurações</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={tw`flex-row items-center px-4 py-3`}
+                onPress={() => {
+                  setShowProfileMenu(false);
+                  router.push('/support');
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather name="help-circle" size={18} color="#6B7280" style={tw`mr-3`} />
+                <Text style={tw`text-gray-700 font-medium`}>Suporte</Text>
+              </TouchableOpacity>
+
+              <View style={tw`border-t border-gray-100 mt-2 pt-2`}>
+                <TouchableOpacity
+                  style={tw`flex-row items-center px-4 py-3`}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="log-out" size={18} color="#EF4444" style={tw`mr-3`} />
+                  <Text style={tw`text-red-500 font-medium`}>Sair</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </>
+      )}
+    </>
   );
 }
