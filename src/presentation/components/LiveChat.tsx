@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { ChatMessage } from '@/src/types/support.types';
@@ -16,6 +16,7 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
     const { chatMessages, sendChatMessage } = useSupportContext();
     const [newMessage, setNewMessage] = useState('');
     const [isOnline, setIsOnline] = useState(isAdmin); // Admin is always online
+    const [showQuickResponses, setShowQuickResponses] = useState(true);
     const [activeUsers, setActiveUsers] = useState(isAdmin ? 3 : 0); // Mock active users
     const flatListRef = useRef<FlatList>(null);
 
@@ -34,10 +35,10 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
                 const isAvailable = Math.random() > 0.3; // 70% chance admin is available
                 setIsOnline(isAvailable);
             };
-            
+
             checkAdminAvailability();
             const interval = setInterval(checkAdminAvailability, 30000); // Check every 30s
-            
+
             return () => clearInterval(interval);
         }
     }, [isAdmin]);
@@ -47,7 +48,7 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
 
         if (!isAdmin && !isOnline) {
             Alert.alert(
-                'Suporte Offline', 
+                'Suporte Offline',
                 'O suporte não está disponível no momento. Tente novamente mais tarde ou crie um ticket.'
             );
             return;
@@ -59,14 +60,13 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
 
     const MessageItem = ({ message }: { message: ChatMessage }) => {
         const isCurrentUser = isAdmin ? message.sender === 'admin' : message.sender === 'user';
-        
+
         return (
             <View style={tw`mb-4 ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-                <View style={tw`max-w-[85%] ${
-                    isCurrentUser 
-                        ? 'bg-blue-500 rounded-tl-xl rounded-tr-xl rounded-bl-xl' 
+                <View style={tw`max-w-[85%] ${isCurrentUser
+                        ? 'bg-blue-500 rounded-tl-xl rounded-tr-xl rounded-bl-xl'
                         : 'bg-gray-100 rounded-tl-xl rounded-tr-xl rounded-br-xl'
-                } p-4 shadow-sm`}>
+                    } p-4 shadow-sm`}>
                     <Text style={tw`${isCurrentUser ? 'text-white' : 'text-gray-800'} leading-6`}>
                         {message.message}
                     </Text>
@@ -112,15 +112,15 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
         </View>
     );
 
-      const EmptyState = () => (
+    const EmptyState = () => (
         <View style={tw`flex-1 items-center justify-center p-8`}>
             <Feather name="message-circle" size={48} color="#9CA3AF" />
             <Text style={tw`text-gray-500 text-lg mt-4 text-center`}>
                 {isAdmin ? 'Aguardando mensagens dos usuários' : 'Inicie uma conversa'}
             </Text>
             <Text style={tw`text-gray-400 text-sm mt-1 text-center`}>
-                {isAdmin 
-                    ? 'As mensagens dos usuários aparecerão aqui' 
+                {isAdmin
+                    ? 'As mensagens dos usuários aparecerão aqui'
                     : 'Digite uma mensagem para começar o chat'
                 }
             </Text>
@@ -128,7 +128,7 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
     );
 
     return (
-        <View style={tw`flex-1 bg-gray-50`}>
+        <ScrollView style={tw`flex-1 bg-gray-50`}>
             {/* Header */}
             {isAdmin ? <AdminHeader /> : <UserHeader />}
 
@@ -150,28 +150,43 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
 
             {/* Quick Responses for Admin */}
             {isAdmin && (
-                <View style={tw`bg-white p-4 border-t border-gray-200`}>
-                    <Text style={tw`font-medium text-gray-700 mb-2`}>Respostas Rápidas:</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View style={tw`flex-row`}>
-                            {[
-                                'Olá! Como posso ajudá-lo?',
-                                'Vou verificar isso para você.',
-                                'Obrigado por aguardar.',
-                                'Problema resolvido?',
-                                'Precisa de mais alguma coisa?'
-                            ].map((quickResponse, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    onPress={() => setNewMessage(quickResponse)}
-                                    style={tw`bg-blue-100 px-3 py-2 rounded-full mr-2`}
-                                >
-                                    <Text style={tw`text-blue-700 text-sm`}>{quickResponse}</Text>
-                                </TouchableOpacity>
-                            ))}
+                <Animated.View style={tw`bg-white border-t border-gray-200`}>
+                    <TouchableOpacity
+                        onPress={() => setShowQuickResponses(!showQuickResponses)}
+                        style={tw`flex-row items-center justify-between p-4 pb-2`}
+                    >
+                        <Text style={tw`font-medium text-gray-700`}>Respostas Rápidas</Text>
+                        <Feather
+                            name={showQuickResponses ? "chevron-up" : "chevron-down"}
+                            size={16}
+                            color="#6B7280"
+                        />
+                    </TouchableOpacity>
+
+                    {showQuickResponses && (
+                        <View style={tw`px-4 pb-4`}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={tw`flex-row`}>
+                                    {[
+                                        'Olá! Como posso ajudá-lo?',
+                                        'Vou verificar isso para você.',
+                                        'Obrigado por aguardar.',
+                                        'Problema resolvido?',
+                                        'Precisa de mais alguma coisa?'
+                                    ].map((quickResponse, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            onPress={() => setNewMessage(quickResponse)}
+                                            style={tw`bg-blue-100 px-3 py-2 rounded-full mr-2`}
+                                        >
+                                            <Text style={tw`text-blue-700 text-sm`}>{quickResponse}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </ScrollView>
                         </View>
-                    </ScrollView>
-                </View>
+                    )}
+                </Animated.View>
             )}
 
             {/* Message Input */}
@@ -179,10 +194,10 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
                 <View style={tw`flex-1 bg-gray-100 rounded-full px-4 py-2 flex-row items-center mr-3`}>
                     <TextInput
                         placeholder={
-                            isAdmin 
-                                ? "Digite sua resposta..." 
-                                : isOnline 
-                                    ? "Digite sua mensagem..." 
+                            isAdmin
+                                ? "Digite sua resposta..."
+                                : isOnline
+                                    ? "Digite sua mensagem..."
                                     : "Suporte offline..."
                         }
                         style={tw`flex-1 text-gray-700`}
@@ -194,15 +209,14 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
                 </View>
                 <TouchableOpacity
                     onPress={handleSendMessage}
-                    style={tw`${
-                        newMessage.trim() && (isAdmin || isOnline) ? 'bg-blue-500' : 'bg-gray-300'
-                    } p-3 rounded-full`}
+                    style={tw`${newMessage.trim() && (isAdmin || isOnline) ? 'bg-blue-500' : 'bg-gray-300'
+                        } p-3 rounded-full`}
                     disabled={!newMessage.trim() || (!isAdmin && !isOnline)}
                 >
                     <Feather name="send" size={20} color="white" />
                 </TouchableOpacity>
             </View>
-        </View>
+        </ScrollView>
     );
 }
 

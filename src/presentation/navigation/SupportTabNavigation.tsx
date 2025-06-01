@@ -22,11 +22,9 @@ export function SupportTabNavigation({
         { id: 'tickets' as SupportTab, label: 'Tickets', icon: 'clipboard' },
         { id: 'chat' as SupportTab, label: 'Chat ao Vivo', icon: 'message-circle' },
         { id: 'faq' as SupportTab, label: 'Gerenciar FAQ', icon: 'help-circle' },
-        { id: 'help' as SupportTab, label: 'Painel', icon: 'grid' }
     ];
 
     const userTabs = [
-        { id: 'help' as SupportTab, label: 'Ajuda', icon: 'home' },
         { id: 'tickets' as SupportTab, label: 'Meus Tickets', icon: 'clipboard' },
         { id: 'faq' as SupportTab, label: 'FAQ', icon: 'help-circle' },
         { id: 'chat' as SupportTab, label: 'Chat', icon: 'message-circle' }

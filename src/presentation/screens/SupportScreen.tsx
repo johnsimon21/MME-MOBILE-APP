@@ -8,7 +8,6 @@ import { useAuth } from '@/src/context/AuthContext';
 
 // Import all components
 import { SupportTabNavigation } from '../navigation/SupportTabNavigation';
-import { HelpCenter } from '../components/HelpCenter';
 import { TicketsList } from '../components/TicketsList';
 import { FAQList } from '../components/FAQList';
 import { LiveChat } from '../components/LiveChat';
@@ -104,13 +103,6 @@ export function SupportScreen() {
                     }
                 ]}
             >
-                {activeTab === 'help' && (
-                    <HelpCenter 
-                        onTabChange={handleTabChange} 
-                        isAdmin={true}
-                    />
-                )}
-                
                 {activeTab === 'tickets' && (
                     <TicketsList
                         tickets={getFilteredTickets(searchQuery)}
