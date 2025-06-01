@@ -41,7 +41,12 @@ function RootLayoutContent() {
     '/normal-call',
     '/notifications',
     '/+not-found',
-    '/auth/LoginScreen'
+    '/support',
+    '/auth/LoginScreen',
+     '/faq',
+    '/chat-support',
+    '/create-ticket',
+    '/quick-questions'
   ];
 
   const shouldShowSettings = user &&
@@ -54,7 +59,7 @@ function RootLayoutContent() {
       <AuthProvider>
         <SupportProvider>
           <FloatingButtonProvider>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}> 
               <Stack>
                 <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
                 <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
@@ -63,6 +68,10 @@ function RootLayoutContent() {
                 <Stack.Screen name="user" options={{ headerShown: false }} />
                 <Stack.Screen name="settings" options={{ headerShown: false }} />
                 <Stack.Screen name="notifications" options={{ headerShown: false }} />
+                <Stack.Screen name="support" options={{ headerShown: false }} />
+                <Stack.Screen name="faq" options={{ headerShown: false }} />
+                <Stack.Screen name="chat-support" options={{ headerShown: false }} />
+                <Stack.Screen name="create-ticket" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="voice-call"
                   options={{
@@ -72,7 +81,8 @@ function RootLayoutContent() {
                   }}
                 />
                 <Stack.Screen
-                  name="normal-call"
+                  name="normal-ca
+                  ll"
                   options={{
                     headerShown: false,
                     presentation: 'modal',

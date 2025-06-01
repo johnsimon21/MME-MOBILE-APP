@@ -5,12 +5,12 @@ import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { UnfoldVerticalIcon } from '@/assets/images/svg';
 import { useFloatingButton } from '@/src/context/FloatingButtonContext';
-// import { UnfoldVerticalIcon } from '@/assets/images/svg';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
     const [onTop, setOnTop] = React.useState(false);
-    const [unreadCount, setUnreadCount] = useState(3); // This should come from your notification service
+    const [unreadCountDeskHelp, setUnreadCountDeskHelp] = useState(3); 
+    const [unreadCountNotification, setUnreadCountNotification] = useState(2);
     const router = useRouter();
     const { position } = useFloatingButton();
 
@@ -23,7 +23,7 @@ export function FloatingOptionsButton() {
 
     // Animate badge when count changes
     useEffect(() => {
-        if (unreadCount > 0) {
+        if (unreadCountNotification > 0) {
             Animated.sequence([
                 Animated.timing(badgeScaleAnim, {
                     toValue: 1.2,
@@ -37,7 +37,7 @@ export function FloatingOptionsButton() {
                 }),
             ]).start();
         }
-    }, [unreadCount]);
+    }, [unreadCountNotification]);
 
     useEffect(() => {
         if (position.includes('right-top') || position.includes('left-top')) {
@@ -52,29 +52,32 @@ export function FloatingOptionsButton() {
 
         switch (position) {
             case 'left-top':
-                // setOnTop(true);
                 return `${baseStyle} top-30 left-6`;
             case 'left-bottom':
-                // setOnTop(false);
                 return `${baseStyle} bottom-20 left-6`;
             case 'right-top':
-                // setOnTop(true);
                 return `${baseStyle} top-30 right-6`;
             case 'right-bottom':
             default:
-                // setOnTop(false);
                 return `${baseStyle} bottom-20 right-6`;
         }
     };
 
     const handleNavigateToSettings = () => {
         router.push('/settings');
+        setUnfold(false);
     };
 
     const handleNavigateToNotifications = () => {
-        // Reset unread count when navigating to notifications
-        setUnreadCount(0);
+        setUnreadCountNotification(0);
         router.push('/notifications');
+        setUnfold(false);
+    };
+
+    const handleNavigateToHelpDesk = () => {
+        setUnreadCountDeskHelp(0);
+        router.push('/support');
+        setUnfold(false);
     };
 
     const toggleUnfold = () => {
@@ -82,28 +85,23 @@ export function FloatingOptionsButton() {
 
         setUnfold(!unfold);
 
-        // Parallel animations for smooth effect
         Animated.parallel([
-            // Slide up animation
             Animated.spring(slideAnim, {
                 toValue: toValue,
                 useNativeDriver: true,
                 tension: 100,
                 friction: 8,
             }),
-            // Fade in/out animation
             Animated.timing(fadeAnim, {
                 toValue: toValue,
                 duration: 200,
                 useNativeDriver: true,
             }),
-            // Rotate main button
             Animated.timing(rotateAnim, {
                 toValue: toValue,
                 duration: 300,
                 useNativeDriver: true,
             }),
-            // Scale animation for buttons
             Animated.spring(scaleAnim, {
                 toValue: toValue,
                 useNativeDriver: true,
@@ -113,23 +111,21 @@ export function FloatingOptionsButton() {
         ]).start();
     };
 
-    // Animation interpolations
     const slideTransform = slideAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: onTop ? [-100, 0] : [100, 0], // Start 100px (if onTop) below (else) above, end at 0
+        outputRange: onTop ? [-100, 0] : [100, 0],
     });
 
     const rotateTransform = rotateAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ['0deg', '45deg'], // Rotate the main button
+        outputRange: ['0deg', '45deg'],
     });
 
     const scaleTransform = scaleAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, 1], // Scale from 0 to 1
+        outputRange: [0, 1],
     });
 
-    // Badge component for notification count
     const NotificationBadge = ({ count }: { count: number }) => {
         if (count === 0) return null;
 
@@ -214,7 +210,33 @@ export function FloatingOptionsButton() {
                         activeOpacity={0.8}
                     >
                         <Feather name="bell" size={24} color="#222222" />
-                        <NotificationBadge count={unreadCount} />
+                        <NotificationBadge count={unreadCountNotification} />
+                    </TouchableOpacity>
+                </Animated.View>
+
+                {/* Help Desk Button with Badge */}
+                <Animated.View
+                    style={[
+                        tw`overflow-hidden relative`,
+                        {
+                            transform: [
+                                {
+                                    translateY: slideAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [40, 0],
+                                    })
+                                }
+                            ]
+                        }
+                    ]}
+                >
+                    <TouchableOpacity
+                        style={tw`items-center justify-center z-50 w-14 h-14 rounded-full bg-white relative`}
+                        onPress={handleNavigateToHelpDesk}
+                        activeOpacity={0.8}
+                    >
+                        <Feather name="help-circle" size={24} color="#222222" />
+                        <NotificationBadge count={unreadCountDeskHelp} />
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>

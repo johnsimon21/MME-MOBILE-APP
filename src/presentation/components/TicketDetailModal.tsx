@@ -105,12 +105,12 @@ export function TicketDetailModal({
                     <View style={tw`p-6 border-b border-gray-200`}>
                         <View style={tw`flex-row items-center justify-between mb-4`}>
                             <View style={tw`flex-row items-center`}>
-                                <View style={tw`px-3 py-1 rounded-full ${getStatusColor(ticket.status)} mr-3`}>
+                                <View style={tw`px-3 py-1 rounded-full ${getStatusColor(ticket.status).bg} mr-3`}>
                                     <Text style={tw`text-white text-sm font-medium`}>
                                         {getStatusText(ticket.status)}
                                     </Text>
                                 </View>
-                                <View style={tw`px-3 py-1 rounded-full ${getPriorityColor(ticket.priority)}`}>
+                                <View style={tw`px-3 py-1 rounded-full ${getPriorityColor(ticket.priority).bg}`}>
                                     <Text style={tw`text-white text-sm font-medium`}>
                                         {ticket.priority === 'low' ? 'Baixa' :
                                          ticket.priority === 'medium' ? 'Média' :
