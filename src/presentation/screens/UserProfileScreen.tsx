@@ -693,9 +693,6 @@ export const UserProfileScreen = () => {
             {/* Action Buttons */}
             <View style={tw`px-4 pb-6`}>
                 <View style={tw`flex-row justify-between`}>
-                    <TouchableOpacity style={tw`bg-blue-200 px-6 py-3 rounded-xl flex-1 mr-2`}>
-                        <Text style={tw`text-blue-800 text-center font-medium`}>Enviar Mensagem</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity
                         style={tw`bg-red-200 px-6 py-3 rounded-xl flex-1 ml-2`}
                         onPress={handleRemoveUser}

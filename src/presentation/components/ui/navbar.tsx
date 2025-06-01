@@ -138,7 +138,7 @@ export function Navbar({
                 {userName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <Text style={tw`text-sm mt-1 ${textColor}`}>{userName}</Text>
+            {/* <Text style={tw`text-sm mt-1 ${textColor}`}>{userName}</Text> */}
           </Pressable>
         )}
 
