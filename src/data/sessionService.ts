@@ -9,7 +9,7 @@ export interface Session {
   scheduledDate: string;
   completedDate?: string;
   type?: string;
-  participantId?: number;
+  participantId?: string;
   participantName?: string;
   duration?: number;
 }

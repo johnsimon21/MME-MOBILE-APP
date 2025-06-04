@@ -32,22 +32,149 @@ interface Message {
 
 type RootStackParamList = {
     ChatScreen: {
-        user: User;
+        user?: User; // Gotta be removed after. replaceable
+        userId?: string; 
         startSession?: boolean; // Add optional parameter
     };
 };
+const users: User[] = [
+    {
+        id: "1",
+        name: "Lukombo Afonso",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Tá fx agora é só esperar",
+                timestamp: "2025-02-15T08:24",
+                isSent: false,
+                isRead: true
+            },
+            {
+                id: "2",
+                text: "Checa o seu Email",
+                timestamp: "2025-02-15T08:24",
+                isSent: true,
+                isRead: true
+            }
+        ],
+        timestamp: "2025-02-15T08:24",
+        unreadCount: 2,
+        status: "online"
+    },
+    {
+        id: "2",
+        name: "Ângelo Domingos",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Ângelo, cá resolveu os exercícios?",
+                timestamp: "2025-02-15T18:24",
+                isSent: true,
+                isRead: true
+            },
+            {
+                id: "2",
+                text: "Sim, já resolvi todos",
+                timestamp: "2025-03-08T16:26",
+                isSent: false,
+                isRead: true
+            }
+        ],
+        timestamp: "2025-02-15T18:24",
+        status: "away",
+        lastSeen: "1h atrás"
+    },
+    {
+        id: "3",
+        name: "Talakaka António",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Howdy, Simon?",
+                timestamp: "2025-02-15T18:24",
+                isSent: false,
+                isRead: false
+            }
+        ],
+        timestamp: "2025-02-15T18:24",
+        unreadCount: 1,
+        status: "online"
+    },
+    {
+        id: "4",
+        name: "Miguel Del Castilio",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Ontem encontrei o resultado da última equação...",
+                timestamp: "2025-02-15T07:10",
+                isSent: false,
+                isRead: true
+            },
+            {
+                id: "2",
+                text: "Qual foi o resultado?",
+                timestamp: "2025-02-15T07:15",
+                isSent: true,
+                isRead: true
+            }
+        ],
+        timestamp: "2025-02-15T07:10",
+        status: "offline",
+        lastSeen: "3h atrás"
+    },
+    {
+        id: "5",
+        name: "King Dacis",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Bro, fizeste commit das últimas features?",
+                timestamp: "2025-02-15T15:00",
+                isSent: true,
+                isRead: false
+            }
+        ],
+        timestamp: "2025-02-15T15:00",
+        status: "online"
+    },
+    {
+        id: "6",
+        name: "Mauro Twister",
+        image: "",
+        messages: [
+            {
+                id: "1",
+                text: "Vou enviar o código agora",
+                timestamp: "2025-02-15T12:00",
+                isSent: false,
+                isRead: true
+            }
+        ],
+        timestamp: "2025-02-15T12:00",
+        isTyping: true,
+        status: "online"
+    }
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChatScreen'>;
 
 export function ChatScreen({ route, navigation }: Props) {
     // Existing state variables
-    const { user, startSession } = route.params;
-    const [messages, setMessages] = useState<Message[]>(user.messages || []);
+    const { user, userId, startSession } = route.params;
+    const [chatId, setChatId] = useState<string | null>(userId ?? null);
+    const [messages, setMessages] = useState<Message[]>(user?.messages || []);
     const [newMessage, setNewMessage] = useState("");
     const [unreadCount, setUnreadCount] = useState(0);
     const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
     const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [chatWith, setChatWith] = useState<User | null>(null);
 
     const [showSessionDropdown, setShowSessionDropdown] = useState(false);
     const [isInSession, setIsInSession] = useState(false);
@@ -67,12 +194,21 @@ export function ChatScreen({ route, navigation }: Props) {
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
     const router = useRouter();
 
+    useEffect(() => {
+        if (chatId && users.length > 0) {
+            // Gotta be replace by dynamic datas. replaceable
+            setMessages(users.find(u => u.id === chatId)?.messages || []);
+            setChatWith(users.find(u => u.id === chatId) || null);
+        }
+    }, [chatId]);
+
     // Function to handle emoji selection
     const handleEmojiSelected = (emoji: string) => {
         setNewMessage(prev => prev + emoji);
     };
 
     const handleVoiceCall = () => {
+        if (!user) return;
         router.push({
             pathname: '/normal-call',
             params: {
@@ -102,7 +238,10 @@ export function ChatScreen({ route, navigation }: Props) {
             setIsInSession(false);
             return;
         }
-
+        if (!user) {
+            console.error("User data is missing");
+            return;
+        }
         const sessionData: Session = {
             id: Date.now().toString(),
             name: `Sessão com ${user.name}`,
@@ -374,6 +513,12 @@ export function ChatScreen({ route, navigation }: Props) {
         }, 100);
     };
 
+    const handleViewProfile = (userId: string) => {
+        console.log("Viewing profile for user ID:", userId);
+        // @ts-ignore
+        navigation.navigate('UserProfile', { userId });
+    };
+
     // Modified handleSendMessage to support text messages
     const handleSendMessage = () => {
         if (newMessage.trim()) {
@@ -490,10 +635,7 @@ export function ChatScreen({ route, navigation }: Props) {
 
                 <TouchableOpacity
                     style={tw`flex-row items-center flex-1 ml-2`}
-                    onPress={() => {
-                        // @ts-expect-error: Profile is not in this stack, but exists in parent navigator
-                        navigation.navigate('Profile', { userId: user.id });
-                    }}
+                    onPress={() => handleViewProfile(user?.id ?? '')}
                 >
                     {/* Use a default icon instead of avatar */}
                     <View style={tw`w-10 h-10 rounded-full bg-indigo-100 items-center justify-center`}>
@@ -501,7 +643,7 @@ export function ChatScreen({ route, navigation }: Props) {
                     </View>
 
                     <View style={tw`ml-3`}>
-                        <Text style={tw`font-bold text-gray-800`}>{user.name}</Text>
+                        <Text style={tw`font-bold text-gray-800`}>{user?.name}</Text>
                         {isTyping ? (
                             <Text style={tw`text-xs text-green-600`}>Digitando...</Text>
                         ) : (

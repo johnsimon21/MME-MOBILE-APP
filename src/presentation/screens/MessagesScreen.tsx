@@ -16,7 +16,7 @@ interface Message {
 }
 
 export interface User {
-  id: number;
+  id: string;
   name: string;
   image?: string;
   messages: Message[];
@@ -35,7 +35,7 @@ type RootStackParamList = {
 
 const users: User[] = [
   {
-    id: 1,
+    id: "1",
     name: "Lukombo Afonso",
     image: "",
     messages: [
@@ -59,7 +59,7 @@ const users: User[] = [
     status: "online"
   },
   {
-    id: 2,
+    id: "2",
     name: "Ângelo Domingos",
     image: "",
     messages: [
@@ -83,7 +83,7 @@ const users: User[] = [
     lastSeen: "1h atrás"
   },
   {
-    id: 3,
+    id: "3",
     name: "Talakaka António",
     image: "",
     messages: [
@@ -100,7 +100,7 @@ const users: User[] = [
     status: "online"
   },
   {
-    id: 4,
+    id: "4",
     name: "Miguel Del Castilio",
     image: "",
     messages: [
@@ -124,7 +124,7 @@ const users: User[] = [
     lastSeen: "3h atrás"
   },
   {
-    id: 5,
+    id: "5",
     name: "King Dacis",
     image: "",
     messages: [
@@ -140,7 +140,7 @@ const users: User[] = [
     status: "online"
   },
   {
-    id: 6,
+    id: "6",
     name: "Mauro Twister",
     image: "",
     messages: [
@@ -159,12 +159,12 @@ const users: User[] = [
 ];
 
 const activeUsers = [
-  { id: 1, name: "Lukombo", image: "", status: "online" },
-  { id: 2, name: "Ângelo", image: "", status: "online" },
-  { id: 3, name: "Talakaka", image: "", status: "online" },
-  { id: 4, name: "Miguel", image: "", status: "away" },
-  { id: 5, name: "King", image: "", status: "online" },
-  { id: 6, name: "Mauro", image: "", status: "online" },
+  { id: "1", name: "Lukombo", image: "", status: "online" },
+  { id: "2", name: "Ângelo", image: "", status: "online" },
+  { id: "3", name: "Talakaka", image: "", status: "online" },
+  { id: "4", name: "Miguel", image: "", status: "away" },
+  { id: "5", name: "King", image: "", status: "online" },
+  { id: "6", name: "Mauro", image: "", status: "online" },
 ];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

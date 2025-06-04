@@ -1,14 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 import * as React from "react";
-import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import tw from "twrnc";
 
 import { FilterModal } from "@/src/presentation/components/ui/FilterModal";
 import { Navbar } from "../components/ui/navbar";
 
 interface Mentor {
-  id: number;
+  id: string;
   name: string;
   photo: string | null;
   location: string;
@@ -19,10 +19,10 @@ interface Mentor {
 }
 
 const mentors: Mentor[] = [
-  { id: 1, name: "Lukombo Afonso", photo: null, location: "Luanda, Angola", mentorias: 406, subjects: 12, userType: "Mentor", status: "Disponível" },
-  { id: 2, name: "Cardoso Manuel", photo: null, location: "Luanda, Angola", mentorias: 126, subjects: 8, userType: "Mentor", status: "Indisponível" },
-  { id: 3, name: "Lucy Script", photo: null, location: "Washington, USA", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
-  { id: 4, name: "Java Simon", photo: "../../assets/images/passe.png", location: "Luanda, Angola", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
+  { id: "1", name: "Lukombo Afonso", photo: null, location: "Luanda, Angola", mentorias: 406, subjects: 12, userType: "Mentor", status: "Disponível" },
+  { id: "2", name: "Cardoso Manuel", photo: null, location: "Luanda, Angola", mentorias: 126, subjects: 8, userType: "Mentor", status: "Indisponível" },
+  { id: "3", name: "Lucy Script", photo: null, location: "Washington, USA", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
+  { id: "4", name: "Java Simon", photo: "../../assets/images/passe.png", location: "Luanda, Angola", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
 ];
 
 export function HomeScreen() {
@@ -37,35 +37,46 @@ export function HomeScreen() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filteredMentors, setFilteredMentors] = React.useState(mentors);
 
+  const handleViewProfile = (userId: string) => {
+    // @ts-ignore
+    navigation.navigate('UserProfile', { userId });
+  };
+
+  const handleChatOpen = (userId: string) => {
+    // @ts-ignore
+    navigation.navigate('ChatScreen', { userId });
+  };
+
+
   // Apply filters function
   const applyFilters = () => {
     let result = [...mentors];
-    
+
     // Apply search query filter
     if (searchQuery.trim()) {
-      result = result.filter(mentor => 
+      result = result.filter(mentor =>
         mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         mentor.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     // Apply user type filter
     if (filters.userType) {
       result = result.filter(mentor => mentor.userType === filters.userType);
     }
-    
+
     // Apply status filter
     if (filters.status) {
       result = result.filter(mentor => mentor.status === filters.status);
     }
-    
+
     // Apply location filter
     if (filters.location && filters.location.trim()) {
-      result = result.filter(mentor => 
+      result = result.filter(mentor =>
         mentor.location.toLowerCase().includes(filters.location!.toLowerCase())
       );
     }
-    
+
     setFilteredMentors(result);
     setFilterModalVisible(false);
   };
@@ -95,17 +106,17 @@ export function HomeScreen() {
   // Handle search input changes
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    
+
     // Only apply search, not other filters
     let result = [...mentors];
-    
+
     if (text.trim()) {
-      result = result.filter(mentor => 
+      result = result.filter(mentor =>
         mentor.name.toLowerCase().includes(text.toLowerCase()) ||
         mentor.location.toLowerCase().includes(text.toLowerCase())
       );
     }
-    
+
     setFilteredMentors(result);
   };
 
@@ -194,7 +205,7 @@ export function HomeScreen() {
           filteredMentors.map((mentor) => (
             <View key={mentor.id} style={tw`bg-white p-4 rounded-3xl mb-4`}>
               <View style={tw`flex-row justify-between`}>
-                <View style={tw`flex-col items-start self-start`}>
+                <TouchableOpacity onPress={() => handleViewProfile(mentor.id)} style={tw`flex-col items-start self-start`}>
                   {/* Profile Picture Placeholder */}
                   <View style={tw`w-12 h-12 bg-[#E1E1E1] rounded-full mb-1`}>
                     {mentor.photo && (
@@ -225,7 +236,7 @@ export function HomeScreen() {
                     </Text>
                   </View>
                   <Text style={tw`text-[#4A4852]`}>{mentor.location}</Text>
-                </View>
+                </TouchableOpacity>
 
                 {mentor.userType === "Mentor" && (
                   <View style={tw`flex-row items-center self-start -ml-20`}>
@@ -270,6 +281,7 @@ export function HomeScreen() {
                 <View style={tw`w-4`} />
 
                 <Pressable
+                  onPress={() => handleChatOpen(mentor.id)}
                   style={tw`flex-1 border border-[#E9E9E9] py-2 rounded-full`}
                 >
                   <Text style={tw`text-center`}>Mensagem</Text>

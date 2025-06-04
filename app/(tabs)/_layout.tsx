@@ -274,6 +274,7 @@ function MainStack() {
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
     </Stack.Navigator>
   );
 }

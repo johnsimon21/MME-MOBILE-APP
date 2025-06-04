@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { Modal, FlatList, Dimensions } from "react-native";
 import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -6,6 +6,12 @@ import tw from "twrnc";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Navbar } from "@/src/presentation/components/ui/navbar";
 import { useAuth } from "@/src/context/AuthContext";
+
+interface Relationship {
+    id: string;
+    status: 'paired' | 'blocked' | 'pending' | 'rejected';
+    date: string | Date;
+}
 
 interface UserProfileData {
     id: string;
@@ -298,6 +304,34 @@ export const UserProfileScreen = () => {
         }
     ];
 
+    const relationships: Relationship[] = [
+        {
+            id: "1",
+            status: "paired",
+            date: new Date("2025-04-15"),
+        },
+        {
+            id: "2",
+            status: "blocked",
+            date: new Date("2025-05-15"),
+        },
+        {
+            id: "2",
+            status: "paired",
+            date: new Date("2025-05-15"),
+        },
+        {
+            id: "3",
+            status: "pending",
+            date: new Date("2025-02-15"),
+        },
+        {
+            id: "4",
+            status: "rejected",
+            date: new Date("2025-01-15"),
+        },
+    ]
+
     useEffect(() => {
         loadUserProfile(userId);
     }, [userId]);
@@ -306,6 +340,76 @@ export const UserProfileScreen = () => {
         // @ts-ignore
         navigation.navigate('UserProfile', { userId });
     };
+
+    const pairingStatusColor = {
+        paired: '#10B981',
+        blocked: '#EF4444',
+        pending: '#F59E0B',
+        rejected: '#6B7280'
+    }
+    const pairingStatusText = {
+        paired: 'Emparelhado',
+        blocked: 'Bloqueado',
+        pending: 'Pendente',
+        rejected: 'Rejeitado'
+    }
+
+    const pairingStatus = (userId: string): { isConnected: boolean, status: string } => {
+        if (!relationships) return { isConnected: false, status: 'none' };
+
+        const isConnected = relationships.some(relationship => relationship.id === userId);
+        return { isConnected, status: relationships.find(relationship => relationship.id === userId)?.status || 'none' };
+    }
+
+    const simulatePairingResponse = async () => {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        if (!userData) return false;
+
+        relationships.find(relationship => relationship.id === userData.id)!.status = 'paired';
+
+
+        setUserData(prev => ({
+            ...prev!,
+            connections: [...prev!.connections, {
+                id: userData.id,
+                name: userData.name,
+                country: "Angola",
+                province: "Luanda",
+                role: userData.role as "Mentor" | "Mentorado",
+                avatar: userData.image
+            }]
+        }));
+
+        pairingStatus(userId);
+    }
+
+    const pairingRequest = (userId: string) => {
+        if (!userData) return;
+
+        relationships.push({
+            id: userData.id,
+            status: 'pending',
+            date: new Date().toISOString()
+        });
+
+        Alert.alert(
+            "Emparelhar Usuário",
+            `Você deseja emparelhar com ${userData.name}?`,
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Emparelhar",
+                    onPress: () => {
+                        simulatePairingResponse();
+                    }
+                }
+            ]
+        );
+    }
 
     const handleRemoveUser = () => {
         if (!userData) return;
@@ -489,7 +593,7 @@ export const UserProfileScreen = () => {
             <View style={tw`flex-1 bg-white`}>
                 <Navbar title="Perfil do Usuário" showBackButton={true} theme="light" />
                 <View style={tw`flex-1 justify-center items-center`}>
-                    <Text style={tw`text-gray-500 text-lg`}>Usuário não encontrado</Text>
+                    <Text style={tw`text-gray-500 text-lg`}>Perfil indisponível, tenta mais tarde!</Text>
                 </View>
             </View>
         );
@@ -504,7 +608,7 @@ export const UserProfileScreen = () => {
                 {/* Profile Header */}
                 <View style={tw`relative px-2 `}>
                     <View style={tw`bg-[#75A5F5] h-24 rounded-t-4`} />
-                    <View style={tw`bg-white h-32 rounded-b-4`} />
+                    <View style={tw`bg-white h-36 rounded-b-4`} />
 
                     <View style={tw`absolute top-12 left-0 right-0 items-center`}>
                         <TouchableOpacity
@@ -536,7 +640,18 @@ export const UserProfileScreen = () => {
                             {getStatusText(userData?.status || 'offline')} • {userData?.lastActive}
                         </Text>
                     </View>
+
+                    {!isAdmin() && ( // This section need more atention to be more dynamic
+                        <TouchableOpacity
+                            onPress={pairingRequest.bind(null, userData?.id)}
+                            style={tw`flex-row ${pairingStatus(userData?.id).status === 'paired' ? `bg-[${pairingStatus(userData?.id).status}]` : 'bg-[#75A5F5]'} rounded-3 px-3 py-3 absolute bottom-2 right-4 shadow-lg`}
+                        >
+                            <Feather name={pairingStatus(userData?.id).status === 'paired' ? 'user-check' : 'user-plus'} size={14} color="white" />
+                            <Text style={tw`text-white text-xs font-medium ml-2`}>{pairingStatus(userData?.id).status === 'paired' ? 'Desvincular' : 'Emparelhar'}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
+
 
                 {/* Stats Cards */}
                 <View style={tw`px-4 py-4`}>
