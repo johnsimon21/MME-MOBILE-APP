@@ -7,7 +7,7 @@ import tw from 'twrnc';
 import { Navbar } from '../components/ui/navbar';
 
 interface User {
-    id: number;
+    id: string;
     name: string;
     email: string;
     role: string;
@@ -52,7 +52,7 @@ export function AdminDashboardScreen() {
 
     const [users, setUsers] = useState<User[]>([
         {
-            id: 1,
+            id: "1",
             name: "Lukombo Afonso",
             email: "lukombo@example.com",
             role: "admin",
@@ -72,7 +72,7 @@ export function AdminDashboardScreen() {
             ]
         },
         {
-            id: 2,
+            id: "2",
             name: "Lucy Script",
             email: "lucy@example.com",
             role: "user",
@@ -92,7 +92,7 @@ export function AdminDashboardScreen() {
             ]
         },
         {
-            id: 3,
+            id: "3",
             name: "Java Simon",
             email: "java@example.com",
             role: "user",
@@ -112,7 +112,7 @@ export function AdminDashboardScreen() {
             ]
         },
         {
-            id: 4,
+            id: "4",
             name: "Jocy Simon",
             email: "jocy@example.com",
             role: "user",
@@ -132,7 +132,7 @@ export function AdminDashboardScreen() {
             ]
         },
         {
-            id: 5,
+            id: "5",
             name: "Cardoso Manuel",
             email: "cardoso@example.com",
             role: "user",
@@ -153,7 +153,7 @@ export function AdminDashboardScreen() {
     ]);
 
 
-    const handleRemoveUser = (userId: number, userName: string) => {
+    const handleRemoveUser = (userId: string, userName: string) => {
         Alert.alert(
             "Remover Usuário",
             `Tem certeza que deseja remover ${userName}? Esta ação não pode ser desfeita.`,

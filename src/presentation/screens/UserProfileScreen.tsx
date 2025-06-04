@@ -5,9 +5,10 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import tw from "twrnc";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Navbar } from "@/src/presentation/components/ui/navbar";
+import { useAuth } from "@/src/context/AuthContext";
 
 interface UserProfileData {
-    id: number;
+    id: string;
     name: string;
     email: string;
     phone: string;
@@ -47,7 +48,9 @@ interface UserProfileData {
 export const UserProfileScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { userId } = route.params as { userId: number };
+
+    const { userId } = route.params as { userId: string };
+    const { isAdmin } = useAuth();
 
     const [userData, setUserData] = useState<UserProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +58,7 @@ export const UserProfileScreen = () => {
     const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
     const allUsersData: UserProfileData[] = [
         {
-            id: 1,
+            id: "1",
             name: "Lukombo Afonso",
             email: "lukombo@example.com",
             phone: "+244 942 032 806",
@@ -105,7 +108,7 @@ export const UserProfileScreen = () => {
             ]
         },
         {
-            id: 2,
+            id: "2",
             name: "Lucy Script",
             email: "lucy@example.com",
             phone: "+244 923 456 789",
@@ -154,7 +157,7 @@ export const UserProfileScreen = () => {
             ]
         },
         {
-            id: 3,
+            id: "3",
             name: "Java Simon",
             email: "java@example.com",
             phone: "+244 934 567 890",
@@ -203,7 +206,7 @@ export const UserProfileScreen = () => {
             ]
         },
         {
-            id: 4,
+            id: "4",
             name: "Jocy Simon",
             email: "jocy@example.com",
             phone: "+244 945 678 901",
@@ -252,7 +255,7 @@ export const UserProfileScreen = () => {
             ]
         },
         {
-            id: 5,
+            id: "5",
             name: "Cardoso Manuel",
             email: "cardoso@example.com",
             phone: "+244 956 789 012",
@@ -299,6 +302,10 @@ export const UserProfileScreen = () => {
         loadUserProfile(userId);
     }, [userId]);
 
+    const handleViewProfile = (userId: string) => {
+        // @ts-ignore
+        navigation.navigate('UserProfile', { userId });
+    };
 
     const handleRemoveUser = () => {
         if (!userData) return;
@@ -333,7 +340,7 @@ export const UserProfileScreen = () => {
         );
     };
 
-    const loadUserProfile = async (userId: number) => {
+    const loadUserProfile = async (userId: string) => {
         try {
             setIsLoading(true);
             // Simulate API call - replace with actual API call
@@ -489,221 +496,226 @@ export const UserProfileScreen = () => {
     }
 
     return (
-        <ScrollView style={tw`bg-[#F7F7F7] h-full`}>
-            <Navbar title="Perfil do Usuário" showBackButton={true} theme="light" />
+        <View style={tw`flex-1 bg-[#F7F7F7]`}>
+            <Navbar title={userData.name ?? "Perfil"} showBackButton={true} theme="light" />
 
-            {/* Profile Header */}
-            <View style={tw`relative px-2`}>
-                <View style={tw`bg-[#75A5F5] h-24 rounded-t-4`} />
-                <View style={tw`bg-white h-32 rounded-b-4`} />
+            <ScrollView style={tw`h-full pt-2`}>
 
-                <View style={tw`absolute top-12 left-0 right-0 items-center`}>
-                    <TouchableOpacity
-                        onPress={() => setPhotoViewerVisible(true)}
-                        style={[
-                            tw`rounded-full`,
-                            { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
-                        ]}
-                        activeOpacity={0.8}
-                    >
-                        <Image
-                            source={{ uri: userData?.image }}
-                            style={tw`w-20 h-20 rounded-full border-4 border-white`}
-                        />
-                        <View
-                            style={[
-                                tw`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white`,
-                                { backgroundColor: getStatusColor(userData?.status || 'offline') }
-                            ]}
-                        />
-                        {/* Add camera icon overlay to indicate it's clickable */}
-                        <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-20 items-center justify-center`}>
-                            <MaterialIcons name="zoom-in" size={20} color="white" style={tw`opacity-70`} />
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={tw`mt-2 font-bold text-base`}>{userData?.name}</Text>
-                    <Text style={tw`text-xs text-gray-500`}>{userData?.role}</Text>
-                    <Text style={tw`text-xs text-gray-400`}>
-                        {getStatusText(userData?.status || 'offline')} • {userData?.lastActive}
-                    </Text>
-                </View>
-            </View>
+                {/* Profile Header */}
+                <View style={tw`relative px-2 `}>
+                    <View style={tw`bg-[#75A5F5] h-24 rounded-t-4`} />
+                    <View style={tw`bg-white h-32 rounded-b-4`} />
 
-            {/* Stats Cards */}
-            <View style={tw`px-4 py-4`}>
-                <View style={tw`flex-row justify-between mb-4`}>
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
-                        <Text style={tw`text-2xl font-bold text-blue-600`}>{userData.totalHours}h</Text>
-                        <Text style={tw`text-xs text-gray-500`}>Total Horas</Text>
-                    </View>
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
-                        <Text style={tw`text-2xl font-bold text-green-600`}>{userData.completionRate}%</Text>
-                        <Text style={tw`text-xs text-gray-500`}>Conclusão</Text>
-                    </View>
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
-                        <View style={tw`flex-row items-center`}>
-                            <Text style={tw`text-2xl font-bold text-yellow-600`}>{userData.averageRating}</Text>
-                            <MaterialIcons name="star" size={16} color="#EAB308" />
-                        </View>
-                        <Text style={tw`text-xs text-gray-500`}>Avaliação</Text>
-                    </View>
-                </View>
-            </View>
-
-            {/* Tab Navigation */}
-            <View style={tw`px-4 mb-4`}>
-                <View style={tw`flex-row bg-white rounded-xl p-1`}>
-                    {[
-                        { key: 'overview', label: 'Visão Geral' },
-                        { key: 'sessions', label: 'Sessões' },
-                        { key: 'connections', label: 'Conexões' }
-                    ].map((tab) => (
+                    <View style={tw`absolute top-12 left-0 right-0 items-center`}>
                         <TouchableOpacity
-                            key={tab.key}
-                            style={tw`flex-1 py-3 rounded-lg ${activeTab === tab.key ? 'bg-blue-500' : ''}`}
-                            onPress={() => setActiveTab(tab.key as any)}
+                            onPress={() => setPhotoViewerVisible(true)}
+                            style={[
+                                tw`rounded-full`,
+                                { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }
+                            ]}
+                            activeOpacity={0.8}
                         >
-                            <Text style={tw`text-center font-medium ${activeTab === tab.key ? 'text-white' : 'text-gray-600'}`}>
-                                {tab.label}
-                            </Text>
+                            <Image
+                                source={{ uri: userData?.image }}
+                                style={tw`w-20 h-20 rounded-full border-4 border-white`}
+                            />
+                            <View
+                                style={[
+                                    tw`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white`,
+                                    { backgroundColor: getStatusColor(userData?.status || 'offline') }
+                                ]}
+                            />
+                            {/* Add camera icon overlay to indicate it's clickable */}
+                            <View style={tw`absolute inset-0 rounded-full bg-black bg-opacity-20 items-center justify-center`}>
+                                <MaterialIcons name="zoom-in" size={20} color="white" style={tw`opacity-70`} />
+                            </View>
                         </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            {/* Tab Content */}
-            {activeTab === 'overview' && (
-                <View style={tw`px-4`}>
-                    {/* Personal Information */}
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Informações Pessoais</Text>
-                        <View style={tw`space-y-2`}>
-                            <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
-                                <Text style={tw`text-gray-600`}>Email:</Text>
-                                <Text style={tw`font-medium`}>{userData.email}</Text>
-                            </View>
-                            <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
-                                <Text style={tw`text-gray-600`}>Telefone:</Text>
-                                <Text style={tw`font-medium`}>{userData.phone}</Text>
-                            </View>
-                            <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
-                                <Text style={tw`text-gray-600`}>Endereço:</Text>
-                                <Text style={tw`font-medium flex-1 text-right`}>{userData.address}</Text>
-                            </View>
-                            <View style={tw`flex-row justify-between py-2`}>
-                                <Text style={tw`text-gray-600`}>Portfólio:</Text>
-                                <Text style={tw`font-medium text-blue-500`}>{userData.portfolio}</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Skills & Difficulties */}
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Habilidades e Dificuldades</Text>
-
-                        <Text style={tw`text-sm text-gray-600 mb-2`}>Habilidades:</Text>
-                        <View style={tw`flex-row flex-wrap mb-4`}>
-                            {userData.skills.map((skill, index) => (
-                                <View key={index} style={tw`bg-green-100 px-3 py-1 rounded-full mr-2 mb-2`}>
-                                    <Text style={tw`text-green-800 text-sm`}>{skill}</Text>
-                                </View>
-                            ))}
-                        </View>
-
-                        <Text style={tw`text-sm text-gray-600 mb-2`}>Dificuldades:</Text>
-                        <View style={tw`flex-row flex-wrap`}>
-                            {userData.difficulties.map((difficulty, index) => (
-                                <View key={index} style={tw`bg-red-100 px-3 py-1 rounded-full mr-2 mb-2`}>
-                                    <Text style={tw`text-red-800 text-sm`}>{difficulty}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Programs */}
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Programas</Text>
-                        <View style={tw`flex-row flex-wrap`}>
-                            {userData.programs.map((program, index) => (
-                                <View key={index} style={tw`bg-blue-100 px-3 py-1 rounded-full mr-2 mb-2`}>
-                                    <Text style={tw`text-blue-800 text-sm`}>{program}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Monthly Progress */}
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Progresso Mensal</Text>
-                        <MiniChart data={userData.monthlyProgress} />
+                        <Text style={tw`mt-2 font-bold text-base`}>{userData?.name}</Text>
+                        <Text style={tw`text-xs text-gray-500`}>{userData?.role}</Text>
+                        <Text style={tw`text-xs text-gray-400`}>
+                            {getStatusText(userData?.status || 'offline')} • {userData?.lastActive}
+                        </Text>
                     </View>
                 </View>
-            )}
 
-            {activeTab === 'sessions' && (
-                <View style={tw`px-4`}>
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Sessões Recentes</Text>
-                        {userData.recentSessions.map((session, index) => (
-                            <View key={index} style={tw`border-b border-gray-100 py-3 ${index === userData.recentSessions.length - 1 ? 'border-b-0' : ''}`}>
-                                <View style={tw`flex-row justify-between items-start mb-2`}>
+                {/* Stats Cards */}
+                <View style={tw`px-4 py-4`}>
+                    <View style={tw`flex-row justify-between mb-4`}>
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
+                            <Text style={tw`text-2xl font-bold text-blue-600`}>{userData.totalHours}h</Text>
+                            <Text style={tw`text-xs text-gray-500`}>Total Horas</Text>
+                        </View>
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
+                            <Text style={tw`text-2xl font-bold text-green-600`}>{userData.completionRate}%</Text>
+                            <Text style={tw`text-xs text-gray-500`}>Conclusão</Text>
+                        </View>
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm flex-1 mx-1 items-center`}>
+                            <View style={tw`flex-row items-center`}>
+                                <Text style={tw`text-2xl font-bold text-yellow-600`}>{userData.averageRating}</Text>
+                                <MaterialIcons name="star" size={16} color="#EAB308" />
+                            </View>
+                            <Text style={tw`text-xs text-gray-500`}>Avaliação</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Tab Navigation */}
+                <View style={tw`px-4 mb-4`}>
+                    <View style={tw`flex-row bg-white rounded-xl p-1`}>
+                        {[
+                            { key: 'overview', label: 'Visão Geral' },
+                            { key: 'sessions', label: 'Sessões' },
+                            { key: 'connections', label: 'Conexões' }
+                        ].map((tab) => (
+                            <TouchableOpacity
+                                key={tab.key}
+                                style={tw`flex-1 py-3 rounded-lg ${activeTab === tab.key ? 'bg-blue-500' : ''}`}
+                                onPress={() => setActiveTab(tab.key as any)}
+                            >
+                                <Text style={tw`text-center font-medium ${activeTab === tab.key ? 'text-white' : 'text-gray-600'}`}>
+                                    {tab.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Tab Content */}
+                {activeTab === 'overview' && (
+                    <View style={tw`px-4`}>
+                        {/* Personal Information */}
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Informações Pessoais</Text>
+                            <View style={tw`space-y-2`}>
+                                <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
+                                    <Text style={tw`text-gray-600`}>Email:</Text>
+                                    <Text style={tw`font-medium`}>{userData.email}</Text>
+                                </View>
+                                <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
+                                    <Text style={tw`text-gray-600`}>Telefone:</Text>
+                                    <Text style={tw`font-medium`}>{userData.phone}</Text>
+                                </View>
+                                <View style={tw`flex-row justify-between py-2 border-b border-gray-100`}>
+                                    <Text style={tw`text-gray-600`}>Endereço:</Text>
+                                    <Text style={tw`font-medium flex-1 text-right`}>{userData.address}</Text>
+                                </View>
+                                <View style={tw`flex-row justify-between py-2`}>
+                                    <Text style={tw`text-gray-600`}>Portfólio:</Text>
+                                    <Text style={tw`font-medium text-blue-500`}>{userData.portfolio}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Skills & Difficulties */}
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Habilidades e Dificuldades</Text>
+
+                            <Text style={tw`text-sm text-gray-600 mb-2`}>Habilidades:</Text>
+                            <View style={tw`flex-row flex-wrap mb-4`}>
+                                {userData.skills.map((skill, index) => (
+                                    <View key={index} style={tw`bg-green-100 px-3 py-1 rounded-full mr-2 mb-2`}>
+                                        <Text style={tw`text-green-800 text-sm`}>{skill}</Text>
+                                    </View>
+                                ))}
+                            </View>
+
+                            <Text style={tw`text-sm text-gray-600 mb-2`}>Dificuldades:</Text>
+                            <View style={tw`flex-row flex-wrap`}>
+                                {userData.difficulties.map((difficulty, index) => (
+                                    <View key={index} style={tw`bg-red-100 px-3 py-1 rounded-full mr-2 mb-2`}>
+                                        <Text style={tw`text-red-800 text-sm`}>{difficulty}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+
+                        {/* Programs */}
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Programas</Text>
+                            <View style={tw`flex-row flex-wrap`}>
+                                {userData.programs.map((program, index) => (
+                                    <View key={index} style={tw`bg-blue-100 px-3 py-1 rounded-full mr-2 mb-2`}>
+                                        <Text style={tw`text-blue-800 text-sm`}>{program}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+
+                        {/* Monthly Progress */}
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Progresso Mensal</Text>
+                            <MiniChart data={userData.monthlyProgress} />
+                        </View>
+                    </View>
+                )}
+
+                {activeTab === 'sessions' && (
+                    <View style={tw`px-4`}>
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Sessões Recentes</Text>
+                            {userData.recentSessions.map((session, index) => (
+                                <View key={index} style={tw`border-b border-gray-100 py-3 ${index === userData.recentSessions.length - 1 ? 'border-b-0' : ''}`}>
+                                    <View style={tw`flex-row justify-between items-start mb-2`}>
+                                        <View style={tw`flex-1`}>
+                                            <Text style={tw`font-medium text-gray-800`}>{session.type}</Text>
+                                            <Text style={tw`text-sm text-gray-500`}>
+                                                {new Date(session.date).toLocaleDateString('pt-BR')} • {session.duration} min
+                                            </Text>
+                                        </View>
+                                        <View style={tw`flex-row items-center bg-yellow-50 px-2 py-1 rounded-full`}>
+                                            <MaterialIcons name="star" size={16} color="#EAB308" />
+                                            <Text style={tw`text-sm font-medium text-yellow-800 ml-1`}>{session.rating}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={tw`text-sm text-gray-600`}>{session.description}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                {activeTab === 'connections' && (
+                    <View style={tw`px-4`}>
+                        <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
+                            <Text style={tw`font-bold text-gray-800 mb-3`}>Conexões ({userData.connections.length})</Text>
+                            {userData.connections.map((connection, index) => (
+                                <TouchableOpacity onPress={() => handleViewProfile(connection.id)} key={connection.id} style={tw`flex-row items-center py-3 ${index !== userData.connections.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                    <Image
+                                        source={{ uri: connection.avatar }}
+                                        style={tw`w-12 h-12 rounded-full mr-3`}
+                                    />
                                     <View style={tw`flex-1`}>
-                                        <Text style={tw`font-medium text-gray-800`}>{session.type}</Text>
-                                        <Text style={tw`text-sm text-gray-500`}>
-                                            {new Date(session.date).toLocaleDateString('pt-BR')} • {session.duration} min
+                                        <Text style={tw`font-medium text-gray-800`}>{connection.name}</Text>
+                                        <Text style={tw`text-sm text-gray-500`}>{connection.province}, {connection.country}</Text>
+                                    </View>
+                                    <View style={tw`bg-${connection.role === 'Mentor' ? 'purple' : 'blue'}-100 px-2 py-1 rounded-full`}>
+                                        <Text style={tw`text-${connection.role === 'Mentor' ? 'purple' : 'blue'}-800 text-xs font-medium`}>
+                                            {connection.role}
                                         </Text>
                                     </View>
-                                    <View style={tw`flex-row items-center bg-yellow-50 px-2 py-1 rounded-full`}>
-                                        <MaterialIcons name="star" size={16} color="#EAB308" />
-                                        <Text style={tw`text-sm font-medium text-yellow-800 ml-1`}>{session.rating}</Text>
-                                    </View>
-                                </View>
-                                <Text style={tw`text-sm text-gray-600`}>{session.description}</Text>
-                            </View>
-                        ))}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
-                </View>
-            )}
+                )}
 
-            {activeTab === 'connections' && (
-                <View style={tw`px-4`}>
-                    <View style={tw`bg-white p-4 rounded-xl shadow-sm mb-4`}>
-                        <Text style={tw`font-bold text-gray-800 mb-3`}>Conexões ({userData.connections.length})</Text>
-                        {userData.connections.map((connection, index) => (
-                            <View key={connection.id} style={tw`flex-row items-center py-3 ${index !== userData.connections.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                                <Image
-                                    source={{ uri: connection.avatar }}
-                                    style={tw`w-12 h-12 rounded-full mr-3`}
-                                />
-                                <View style={tw`flex-1`}>
-                                    <Text style={tw`font-medium text-gray-800`}>{connection.name}</Text>
-                                    <Text style={tw`text-sm text-gray-500`}>{connection.province}, {connection.country}</Text>
-                                </View>
-                                <View style={tw`bg-${connection.role === 'Mentor' ? 'purple' : 'blue'}-100 px-2 py-1 rounded-full`}>
-                                    <Text style={tw`text-${connection.role === 'Mentor' ? 'purple' : 'blue'}-800 text-xs font-medium`}>
-                                        {connection.role}
-                                    </Text>
-                                </View>
-                            </View>
-                        ))}
+                {/* Action Buttons */}
+                {isAdmin() && (
+                    <View style={tw`px-4 pb-6`}>
+                        <View style={tw`flex-row justify-between`}>
+                            <TouchableOpacity
+                                style={tw`bg-red-200 px-6 py-3 rounded-xl flex-1 ml-2`}
+                                onPress={handleRemoveUser}
+                            >
+                                <Text style={tw`text-red-800 text-center font-medium`}>Remover</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            )}
+                )}
 
-            {/* Action Buttons */}
-            <View style={tw`px-4 pb-6`}>
-                <View style={tw`flex-row justify-between`}>
-                    <TouchableOpacity
-                        style={tw`bg-red-200 px-6 py-3 rounded-xl flex-1 ml-2`}
-                        onPress={handleRemoveUser}
-                    >
-                        <Text style={tw`text-red-800 text-center font-medium`}>Remover</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Photo Viewer Modal */}
-            <PhotoViewerModal />
-        </ScrollView>
+                {/* Photo Viewer Modal */}
+                <PhotoViewerModal />
+            </ScrollView>
+        </View>
     );
 };

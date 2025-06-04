@@ -18,6 +18,7 @@ import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardS
 import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScreen";
 import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen";
 import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
+import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -272,6 +273,7 @@ function MainStack() {
       />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }

@@ -104,16 +104,18 @@ export function Navbar({
   const navigateToProfile = () => {
     setShowProfileMenu(false);
     // @ts-ignore
-    router.push('Profile');
+    navigation.navigate('Profile');
   };
 
   const navigateToSettings = () => {
     setShowProfileMenu(false);
-    router.push('/settings');
+    // @ts-ignore
+    navigation.navigate('Settings');
   };
 
   const navigateToNotifications = () => {
-    router.push('/notifications');
+    // @ts-ignore
+    navigation.navigate('/notifications');
   };
 
   const getNavbarContent = () => {
