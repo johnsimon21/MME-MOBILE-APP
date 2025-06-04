@@ -68,7 +68,7 @@ export function SessionManagementScreen() {
             {/* Filters */}
             <View style={tw`flex flex-col justify-center px-4 my-1`}>
                 {/* Search Bar */}
-                <View style={tw`flex-row items-center`}>
+                <View style={tw`flex-row items-center py-2`}>
                     <TextInput
                         placeholder="Buscar sessão..."
                         style={tw`bg-white px-5 py-3 rounded-full text-gray-400 flex-1 mr-2`}
@@ -87,7 +87,7 @@ export function SessionManagementScreen() {
                     </Pressable>
                 </View>
 
-                <View style={tw`flex-row justify-between bg-[#F2F2F2] p-0.1 mt-4 rounded-full h-10`}>
+                {/* <View style={tw`flex-row justify-between bg-[#F2F2F2] p-0.1 mt-4 rounded-full h-10`}>
                     {["Todas", "Nova", "Concluída"].map(filter => (
                         <TouchableOpacity
                             key={filter}
@@ -97,7 +97,7 @@ export function SessionManagementScreen() {
                             <Text style={tw`${selectedFilter === filter ? "font-semibold text-[#4A4852]" : "text-[#4A4852]"}`}>{filter}</Text>
                         </TouchableOpacity>
                     ))}
-                </View>
+                </View> */}
             </View>
 
 
@@ -131,7 +131,7 @@ export function SessionManagementScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={tw`px-4 py-2`}
                 renderItem={({ item }) => (
-                    <View style={tw`bg-white p-4 mt-4 rounded-3xl`}>
+                    <View style={tw`bg-white p-4 mt-2 rounded-3xl`}>
                         <View style={tw`flex-row justify-between items-center`}>
                             <Text style={tw`text-lg font-semibold`}>{item.name}</Text>
                             <Text style={tw`w-14 py-[4px] text-center text-[10px] border border-[0.6px] rounded-1 ${item.status === "Nova"
