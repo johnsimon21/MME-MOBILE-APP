@@ -6,7 +6,7 @@ import tw from "twrnc";
 
 interface AuthHeaderProps {
     navigation: any;
-    activeTab: "Login" | "Cadastro";
+    activeTab: "Login" | "Cadastro" | "ForgotPassword" | "ResetPassword";
     step: number;
     showBackButton?: boolean;
 }

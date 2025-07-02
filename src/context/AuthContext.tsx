@@ -232,6 +232,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  
+
   const logout = async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
