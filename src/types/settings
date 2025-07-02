@@ -1,0 +1,147 @@
+export interface UserSettings {
+  id: string;
+  userId: string;
+  profile: {
+    displayName?: string;
+    bio?: string;
+    location?: string;
+    timezone: string;
+    language: string;
+    theme: 'light' | 'dark' | 'system';
+  };
+  privacy: {
+    profileVisibility: 'public' | 'mentors_only' | 'private';
+    showOnlineStatus: boolean;
+    allowDirectMessages: boolean;
+    showEmail: boolean;
+    showPhone: boolean;
+    twoFactorEnabled: boolean;
+  };
+  sessions: {
+    autoStartSession: boolean;
+    saveSessionHistory: boolean;
+    defaultSessionDuration: number;
+    sessionReminders: boolean;
+    recordingSetting: 'always' | 'ask' | 'never';
+    maxConcurrentSessions: number;
+  };
+  communication: {
+    chatSettings: {
+      showTypingIndicator: boolean;
+      readReceipts: boolean;
+      messagePreview: boolean;
+      soundEnabled: boolean;
+      vibrationEnabled: boolean;
+    };
+    callSettings: {
+      autoAnswer: boolean;
+      videoQuality: 'low' | 'medium' | 'high' | 'auto';
+      audioQuality: 'low' | 'medium' | 'high';
+      backgroundBlur: boolean;
+      noiseCancellation: boolean;
+    };
+    audioRecording: {
+      quality: 'low' | 'medium' | 'high';
+      format: 'mp3' | 'wav' | 'aac';
+      autoSave: boolean;
+    };
+  };
+  notifications: {
+    pushNotifications: boolean;
+    emailNotifications: boolean;
+    smsNotifications: boolean;
+    categories: {
+      session: NotificationCategory;
+      message: NotificationCategory;
+      system: NotificationCategory;
+      call: NotificationCategory;
+    };
+    quietHours: {
+      enabled: boolean;
+      startTime: string;
+      endTime: string;
+      timezone: string;
+    };
+    frequency: {
+      digest: 'immediate' | 'hourly' | 'daily' | 'weekly';
+      reminders: boolean;
+      batching: boolean;
+    };
+  };
+  dataStorage: {
+    autoBackup: boolean;
+    backupFrequency: 'daily' | 'weekly' | 'monthly';
+    dataRetention: number;
+    downloadQuality: 'original' | 'compressed';
+    cacheSize: number;
+    offlineMode: boolean;
+  };
+  appearance: {
+    theme: 'light' | 'dark' | 'system';
+    fontSize: 'small' | 'medium' | 'large' | 'extra_large';
+    colorScheme: 'blue' | 'green' | 'purple' | 'orange' | 'red';
+    floatingButtonPosition: 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom';
+    compactMode: boolean;
+    animationsEnabled: boolean;
+  };
+  accessibility: {
+    highContrast: boolean;
+    largeText: boolean;
+    screenReader: boolean;
+    reduceMotion: boolean;
+    colorBlindSupport: 'none' | 'deuteranopia' | 'protanopia' | 'tritanopia';
+  };
+  advanced: {
+    developerMode: boolean;
+    debugLogs: boolean;
+    betaFeatures: boolean;
+    analyticsEnabled: boolean;
+    crashReporting: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface NotificationCategory {
+  enabled: boolean;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  soundEnabled: boolean;
+}
+
+export interface SettingsCategory {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  settings: SettingItem[];
+}
+
+export interface SettingItem {
+  key: string;
+  type: 'boolean' | 'string' | 'number' | 'select' | 'multiselect' | 'time' | 'date';
+  label: string;
+  description?: string;
+  currentValue: any;
+  defaultValue: any;
+  options?: { value: any; label: string }[];
+  validation?: {
+    min?: number;
+    max?: number;
+    required?: boolean;
+    pattern?: string;
+  };
+  dependencies?: {
+    key: string;
+    value: any;
+  }[];
+}
+
+export interface BulkSettingsUpdateResult {
+  updated: number;
+  failed: number;
+  details: {
+    successful: string[];
+    failed: { userId: string; error: string }[];
+  };
+}

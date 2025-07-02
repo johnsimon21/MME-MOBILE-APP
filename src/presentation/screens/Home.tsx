@@ -13,16 +13,16 @@ interface Mentor {
   photo: string | null;
   location: string;
   mentorias: number;
-  subjects: number;
+  programs: number;
   userType: "Mentor" | "Mentorado";
   status: "Disponível" | "Indisponível";
 }
 
 const mentors: Mentor[] = [
-  { id: "1", name: "Lukombo Afonso", photo: null, location: "Luanda, Angola", mentorias: 406, subjects: 12, userType: "Mentor", status: "Disponível" },
-  { id: "2", name: "Cardoso Manuel", photo: null, location: "Luanda, Angola", mentorias: 126, subjects: 8, userType: "Mentor", status: "Indisponível" },
-  { id: "3", name: "Lucy Script", photo: null, location: "Washington, USA", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
-  { id: "4", name: "Java Simon", photo: "../../assets/images/passe.png", location: "Luanda, Angola", mentorias: 0, subjects: 0, userType: "Mentorado", status: "Disponível" },
+  { id: "1", name: "Lukombo Afonso", photo: null, location: "Luanda, Angola", mentorias: 406, programs: 12, userType: "Mentor", status: "Disponível" },
+  { id: "2", name: "Cardoso Manuel", photo: null, location: "Luanda, Angola", mentorias: 126, programs: 8, userType: "Mentor", status: "Indisponível" },
+  { id: "3", name: "Lucy Script", photo: null, location: "Washington, USA", mentorias: 0, programs: 0, userType: "Mentorado", status: "Disponível" },
+  { id: "4", name: "Java Simon", photo: "../../assets/images/passe.png", location: "Luanda, Angola", mentorias: 0, programs: 0, userType: "Mentorado", status: "Disponível" },
 ];
 
 export function HomeScreen() {
@@ -248,10 +248,10 @@ export function HomeScreen() {
                         <Text style={tw`text-xs text-gray-800`}>Mentorias</Text>
                       </View>
                     )}
-                    {mentor.subjects > 0 && (
+                    {mentor.programs > 0 && (
                       <View style={tw`flex-col items-center ml-2`}>
                         <Text style={tw`text-xs text-gray-800`}>
-                          {mentor.subjects}
+                          {mentor.programs}
                         </Text>
                         <Text style={tw`text-xs text-gray-800`}>Disciplinas</Text>
                       </View>

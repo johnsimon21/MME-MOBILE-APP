@@ -80,25 +80,25 @@ export default function FAQScreen() {
 
     const filteredFaqs = faqs.filter(faq => {
         const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
+            faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = selectedCategory === 'Todas' || faq.category === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
     const toggleFAQ = (id: string) => {
-        setFaqs(prev => prev.map(faq => 
+        setFaqs(prev => prev.map(faq =>
             faq.id === id ? { ...faq, isExpanded: !faq.isExpanded } : faq
         ));
     };
 
     const markHelpful = (id: string, isHelpful: boolean) => {
-        setFaqs(prev => prev.map(faq => 
-            faq.id === id 
-                ? { 
-                    ...faq, 
+        setFaqs(prev => prev.map(faq =>
+            faq.id === id
+                ? {
+                    ...faq,
                     helpful: isHelpful ? faq.helpful + 1 : faq.helpful,
                     notHelpful: !isHelpful ? faq.notHelpful + 1 : faq.notHelpful
-                  }
+                }
                 : faq
         ));
     };
@@ -123,10 +123,10 @@ export default function FAQScreen() {
                         </View>
                         <Text style={tw`font-semibold text-gray-800 leading-5`}>{item.question}</Text>
                     </View>
-                    <Feather 
-                        name={item.isExpanded ? "chevron-up" : "chevron-down"} 
-                        size={20} 
-                        color="#6B7280" 
+                    <Feather
+                        name={item.isExpanded ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6B7280"
                     />
                 </View>
             </TouchableOpacity>
@@ -134,7 +134,7 @@ export default function FAQScreen() {
             {item.isExpanded && (
                 <View style={tw`px-4 pb-4 border-t border-gray-100`}>
                     <Text style={tw`text-gray-600 leading-6 mt-3 mb-4`}>{item.answer}</Text>
-                    
+
                     <View style={tw`flex-row items-center justify-between`}>
                         <Text style={tw`text-gray-500 text-sm`}>Esta resposta foi útil?</Text>
                         <View style={tw`flex-row`}>
@@ -173,9 +173,9 @@ export default function FAQScreen() {
                     >
                         <Feather name="arrow-left" size={20} color="white" />
                     </TouchableOpacity>
-                    
+
                     <Text style={tw`text-white text-xl font-bold`}>Perguntas Frequentes</Text>
-                    
+
                     <View style={tw`w-10 h-10`} />
                 </View>
 
@@ -199,8 +199,8 @@ export default function FAQScreen() {
 
             {/* Categories */}
             <View style={tw`bg-white border-b border-gray-200`}>
-                <ScrollView 
-                    horizontal 
+                <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={tw`px-6 py-4`}
                 >
@@ -208,13 +208,11 @@ export default function FAQScreen() {
                         <TouchableOpacity
                             key={category}
                             onPress={() => setSelectedCategory(category)}
-                            style={tw`px-4 py-2 rounded-full mr-3 ${
-                                selectedCategory === category ? 'bg-blue-500' : 'bg-gray-100'
-                            }`}
+                            style={tw`px-4 py-2 rounded-full mr-3 ${selectedCategory === category ? 'bg-blue-500' : 'bg-gray-100'
+                                }`}
                         >
-                            <Text style={tw`font-medium ${
-                                selectedCategory === category ? 'text-white' : 'text-gray-600'
-                            }`}>
+                            <Text style={tw`font-medium ${selectedCategory === category ? 'text-white' : 'text-gray-600'
+                                }`}>
                                 {category}
                             </Text>
                         </TouchableOpacity>

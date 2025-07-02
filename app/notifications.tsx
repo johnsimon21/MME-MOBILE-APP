@@ -5,6 +5,7 @@ import tw from 'twrnc';
 import { formatMessageTime } from '@/src/utils/dateFormatter';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 
 interface Notification {
     id: string;
@@ -25,6 +26,8 @@ interface Notification {
 
 export default function NotificationScreen() {
     const router = useRouter();
+    const navigation = useNavigation();
+
 
     const [notifications, setNotifications] = useState<Notification[]>([
         {
@@ -202,7 +205,8 @@ export default function NotificationScreen() {
                 break;
 
             case 'system':
-                router.push('/settings');
+                // @ts-ignore
+                navigation.navigate('Settings');
                 break;
 
             default:

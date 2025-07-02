@@ -70,7 +70,6 @@ export default function SupportScreen() {
         }
     };
 
-
     return (
         <View style={tw`flex-1 bg-gray-50`}>
             {/* Header */}
