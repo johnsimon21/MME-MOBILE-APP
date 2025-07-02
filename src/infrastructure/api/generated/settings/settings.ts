@@ -31,15 +31,20 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSettings = () => {
   /**
    * @summary Get user settings
    */
-  const settingsGetUserSettings = (userId: string) => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/users/${userId}`,
-      method: "GET",
-    });
+  const settingsGetUserSettings = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/users/${userId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * @summary Update user settings
@@ -47,31 +52,41 @@ export const getSettings = () => {
   const settingsUpdateUserSettings = (
     userId: string,
     updateUserSettingsDto: UpdateUserSettingsDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/users/${userId}`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateUserSettingsDto,
-    });
+    return customInstance<UserSettingsResponseDto>(
+      {
+        url: `/api/settings/users/${userId}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateUserSettingsDto,
+      },
+      options,
+    );
   };
   /**
    * @summary Reset user settings to default
    */
-  const settingsResetUserSettings = (userId: string) => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/users/${userId}/reset`,
-      method: "POST",
-    });
+  const settingsResetUserSettings = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/users/${userId}/reset`, method: "POST" },
+      options,
+    );
   };
   /**
    * @summary Get settings categories with current values
    */
-  const settingsGetSettingsCategories = (userId: string) => {
-    return customInstance<SettingsCategoryResponseDto[]>({
-      url: `/api/settings/users/${userId}/categories`,
-      method: "GET",
-    });
+  const settingsGetSettingsCategories = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SettingsCategoryResponseDto[]>(
+      { url: `/api/settings/users/${userId}/categories`, method: "GET" },
+      options,
+    );
   };
   /**
    * Only coordinators can perform bulk updates on user settings
@@ -79,41 +94,53 @@ export const getSettings = () => {
    */
   const settingsBulkUpdateSettings = (
     bulkSettingsUpdateDto: BulkSettingsUpdateDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<BulkSettingsUpdateResponseDto>({
-      url: `/api/settings/bulk-update`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: bulkSettingsUpdateDto,
-    });
+    return customInstance<BulkSettingsUpdateResponseDto>(
+      {
+        url: `/api/settings/bulk-update`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: bulkSettingsUpdateDto,
+      },
+      options,
+    );
   };
   /**
    * @summary Export user settings
    */
-  const settingsExportUserSettings = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/settings/users/${userId}/export`,
-      method: "GET",
-    });
+  const settingsExportUserSettings = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/settings/users/${userId}/export`, method: "GET" },
+      options,
+    );
   };
   /**
    * @summary Import user settings
    */
-  const settingsImportUserSettings = (userId: string) => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/users/${userId}/import`,
-      method: "POST",
-    });
+  const settingsImportUserSettings = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/users/${userId}/import`, method: "POST" },
+      options,
+    );
   };
   /**
    * Get settings for the currently authenticated user
    * @summary Get current user settings
    */
-  const settingsGetMySettings = () => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/me`,
-      method: "GET",
-    });
+  const settingsGetMySettings = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/me`, method: "GET" },
+      options,
+    );
   };
   /**
    * Update settings for the currently authenticated user
@@ -121,53 +148,65 @@ export const getSettings = () => {
    */
   const settingsUpdateMySettings = (
     updateUserSettingsDto: UpdateUserSettingsDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/me`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateUserSettingsDto,
-    });
+    return customInstance<UserSettingsResponseDto>(
+      {
+        url: `/api/settings/me`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateUserSettingsDto,
+      },
+      options,
+    );
   };
   /**
    * Reset settings to default for the currently authenticated user
    * @summary Reset current user settings to default
    */
-  const settingsResetMySettings = () => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/me/reset`,
-      method: "POST",
-    });
+  const settingsResetMySettings = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/me/reset`, method: "POST" },
+      options,
+    );
   };
   /**
    * Get settings categories for the currently authenticated user
    * @summary Get current user settings categories
    */
-  const settingsGetMySettingsCategories = () => {
-    return customInstance<SettingsCategoryResponseDto[]>({
-      url: `/api/settings/me/categories`,
-      method: "GET",
-    });
+  const settingsGetMySettingsCategories = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SettingsCategoryResponseDto[]>(
+      { url: `/api/settings/me/categories`, method: "GET" },
+      options,
+    );
   };
   /**
    * Export settings for the currently authenticated user
    * @summary Export current user settings
    */
-  const settingsExportMySettings = () => {
-    return customInstance<void>({
-      url: `/api/settings/me/export`,
-      method: "GET",
-    });
+  const settingsExportMySettings = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/settings/me/export`, method: "GET" },
+      options,
+    );
   };
   /**
    * Import settings for the currently authenticated user
    * @summary Import current user settings
    */
-  const settingsImportMySettings = () => {
-    return customInstance<UserSettingsResponseDto>({
-      url: `/api/settings/me/import`,
-      method: "POST",
-    });
+  const settingsImportMySettings = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserSettingsResponseDto>(
+      { url: `/api/settings/me/import`, method: "POST" },
+      options,
+    );
   };
   return {
     settingsGetUserSettings,

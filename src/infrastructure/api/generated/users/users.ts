@@ -32,156 +32,228 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getUsers = () => {
   /**
    * @summary Get all users with filters
    */
-  const usersFindAll = (params?: UsersFindAllParams) => {
-    return customInstance<UsersListResponseDto>({
-      url: `/api/users`,
-      method: "GET",
-      params,
-    });
+  const usersFindAll = (
+    params?: UsersFindAllParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UsersListResponseDto>(
+      { url: `/api/users`, method: "GET", params },
+      options,
+    );
   };
   /**
    * @summary Get users by role
    */
-  const usersFindByRole = (role: "mentor" | "mentee" | "coordinator") => {
-    return customInstance<void>({
-      url: `/api/users/role/${role}`,
-      method: "GET",
-    });
+  const usersFindByRole = (
+    role: "mentor" | "mentee" | "coordinator",
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/role/${role}`, method: "GET" },
+      options,
+    );
   };
   /**
    * @summary Get users by school
    */
-  const usersFindBySchool = (school: string) => {
-    return customInstance<UserResponseDto>({
-      url: `/api/users/school/${school}`,
-      method: "GET",
-    });
+  const usersFindBySchool = (
+    school: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserResponseDto>(
+      { url: `/api/users/school/${school}`, method: "GET" },
+      options,
+    );
   };
   /**
    * @summary Get user by ID
    */
-  const usersFindOne = (uid: string) => {
-    return customInstance<UserResponseDto>({
-      url: `/api/users/${uid}`,
-      method: "GET",
-    });
+  const usersFindOne = (
+    uid: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserResponseDto>(
+      { url: `/api/users/${uid}`, method: "GET" },
+      options,
+    );
   };
   /**
    * @summary Update user profile
    */
-  const usersUpdate = (uid: string, updateUserDto: UpdateUserDto) => {
-    return customInstance<UserResponseDto>({
-      url: `/api/users/${uid}`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateUserDto,
-    });
+  const usersUpdate = (
+    uid: string,
+    updateUserDto: UpdateUserDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<UserResponseDto>(
+      {
+        url: `/api/users/${uid}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateUserDto,
+      },
+      options,
+    );
   };
   /**
    * @summary Delete user
    */
-  const usersRemove = (uid: string) => {
-    return customInstance<void>({ url: `/api/users/${uid}`, method: "DELETE" });
+  const usersRemove = (
+    uid: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${uid}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * @summary Update user profile image
    */
-  const usersUpdateImage = (uid: string) => {
-    return customInstance<void>({
-      url: `/api/users/${uid}/image`,
-      method: "PUT",
-    });
+  const usersUpdateImage = (
+    uid: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${uid}/image`, method: "PUT" },
+      options,
+    );
   };
   const connectionsSendConnectionRequest = (
     userId: string,
     sendConnectionRequestDto: SendConnectionRequestDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/send`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: sendConnectionRequestDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/send`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: sendConnectionRequestDto,
+      },
+      options,
+    );
   };
   const connectionsAcceptConnectionRequest = (
     userId: string,
     connectionId: string,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/${connectionId}/accept`,
-      method: "PUT",
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/${connectionId}/accept`,
+        method: "PUT",
+      },
+      options,
+    );
   };
   const connectionsRejectConnectionRequest = (
     userId: string,
     connectionId: string,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/${connectionId}/reject`,
-      method: "PUT",
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/${connectionId}/reject`,
+        method: "PUT",
+      },
+      options,
+    );
   };
-  const connectionsBlockUser = (userId: string, connectionId: string) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/${connectionId}/block`,
-      method: "PUT",
-    });
+  const connectionsBlockUser = (
+    userId: string,
+    connectionId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/${connectionId}/block`,
+        method: "PUT",
+      },
+      options,
+    );
   };
   const connectionsRemoveConnection = (
     userId: string,
     connectionId: string,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/${connectionId}`,
-      method: "DELETE",
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/${connectionId}`,
+        method: "DELETE",
+      },
+      options,
+    );
   };
-  const connectionsGetUserConnections = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections`,
-      method: "GET",
-    });
+  const connectionsGetUserConnections = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${userId}/connections`, method: "GET" },
+      options,
+    );
   };
-  const connectionsGetConnectionStats = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/stats`,
-      method: "GET",
-    });
+  const connectionsGetConnectionStats = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${userId}/connections/stats`, method: "GET" },
+      options,
+    );
   };
   const connectionsGetConnectionSuggestions = (
     userId: string,
     params: ConnectionsGetConnectionSuggestionsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/suggestions`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/suggestions`,
+        method: "GET",
+        params,
+      },
+      options,
+    );
   };
-  const connectionsGetPendingConnections = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/pending`,
-      method: "GET",
-    });
+  const connectionsGetPendingConnections = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${userId}/connections/pending`, method: "GET" },
+      options,
+    );
   };
-  const connectionsGetFriends = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/friends`,
-      method: "GET",
-    });
+  const connectionsGetFriends = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/users/${userId}/connections/friends`, method: "GET" },
+      options,
+    );
   };
   const connectionsGetMutualConnections = (
     userId: string,
     otherUserId: string,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/users/${userId}/connections/mutual/${otherUserId}`,
-      method: "GET",
-    });
+    return customInstance<void>(
+      {
+        url: `/api/users/${userId}/connections/mutual/${otherUserId}`,
+        method: "GET",
+      },
+      options,
+    );
   };
   return {
     usersFindAll,

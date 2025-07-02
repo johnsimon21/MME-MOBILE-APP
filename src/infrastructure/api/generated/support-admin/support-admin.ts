@@ -30,6 +30,8 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSupportAdmin = () => {
   /**
    * Obter estatísticas do sistema de suporte. Apenas coordenadores têm acesso.
@@ -37,12 +39,12 @@ export const getSupportAdmin = () => {
    */
   const supportAdminGetSupportStats = (
     params?: SupportAdminGetSupportStatsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SupportStatsResponseDto>({
-      url: `/api/support/admin/stats`,
-      method: "GET",
-      params,
-    });
+    return customInstance<SupportStatsResponseDto>(
+      { url: `/api/support/admin/stats`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Obter lista de usuários administradores. Apenas coordenadores têm acesso.
@@ -50,12 +52,12 @@ export const getSupportAdmin = () => {
    */
   const supportAdminGetAdminUsers = (
     params?: SupportAdminGetAdminUsersParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<AdminUsersResponseDto>({
-      url: `/api/support/admin/users`,
-      method: "GET",
-      params,
-    });
+    return customInstance<AdminUsersResponseDto>(
+      { url: `/api/support/admin/users`, method: "GET", params },
+      options,
+    );
   };
   return { supportAdminGetSupportStats, supportAdminGetAdminUsers };
 };

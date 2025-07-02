@@ -34,6 +34,8 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getDashboardAnalytics = () => {
   /**
    * Retrieve comprehensive dashboard statistics including user counts, session metrics, and system health. Only available to coordinators.
@@ -41,12 +43,12 @@ export const getDashboardAnalytics = () => {
    */
   const dashboardGetDashboardStats = (
     params?: DashboardGetDashboardStatsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<DashboardStatsResponseDto>({
-      url: `/api/dashboard/dashboard`,
-      method: "GET",
-      params,
-    });
+    return customInstance<DashboardStatsResponseDto>(
+      { url: `/api/dashboard/dashboard`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Retrieve detailed user analytics with filtering, sorting, and pagination. Only available to coordinators.
@@ -54,12 +56,12 @@ export const getDashboardAnalytics = () => {
    */
   const dashboardGetUserAnalytics = (
     params?: DashboardGetUserAnalyticsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<UserAnalyticsListResponseDto>({
-      url: `/api/dashboard/users`,
-      method: "GET",
-      params,
-    });
+    return customInstance<UserAnalyticsListResponseDto>(
+      { url: `/api/dashboard/users`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Retrieve comprehensive session analytics. Coordinators see all sessions, mentors see only their own sessions.
@@ -67,34 +69,42 @@ export const getDashboardAnalytics = () => {
    */
   const dashboardGetSessionAnalytics = (
     params?: DashboardGetSessionAnalyticsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SessionAnalyticsResponseDto>({
-      url: `/api/dashboard/sessions`,
-      method: "GET",
-      params,
-    });
+    return customInstance<SessionAnalyticsResponseDto>(
+      { url: `/api/dashboard/sessions`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Export user analytics data as CSV or Excel file. Only available to coordinators.
    * @summary Export user data
    */
-  const dashboardExportUserData = (params?: DashboardExportUserDataParams) => {
-    return customInstance<Blob>({
-      url: `/api/dashboard/export/users`,
-      method: "GET",
-      params,
-      responseType: "blob",
-    });
+  const dashboardExportUserData = (
+    params?: DashboardExportUserDataParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<Blob>(
+      {
+        url: `/api/dashboard/export/users`,
+        method: "GET",
+        params,
+        responseType: "blob",
+      },
+      options,
+    );
   };
   /**
    * Get real-time system statistics for live dashboard updates. Available to coordinators and mentors.
    * @summary Get real-time statistics
    */
-  const dashboardGetRealTimeStats = () => {
-    return customInstance<DashboardGetRealTimeStats200>({
-      url: `/api/dashboard/real-time/stats`,
-      method: "GET",
-    });
+  const dashboardGetRealTimeStats = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<DashboardGetRealTimeStats200>(
+      { url: `/api/dashboard/real-time/stats`, method: "GET" },
+      options,
+    );
   };
   return {
     dashboardGetDashboardStats,

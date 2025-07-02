@@ -31,72 +31,100 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSupportFaqs = () => {
   /**
    * Criar uma nova FAQ. Apenas coordenadores e mentores podem criar FAQs.
    * @summary Criar FAQ
    */
-  const fAQsCreateFAQ = (createFAQDto: CreateFAQDto) => {
-    return customInstance<FAQResponseDto>({
-      url: `/api/support/faqs`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createFAQDto,
-    });
+  const fAQsCreateFAQ = (
+    createFAQDto: CreateFAQDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<FAQResponseDto>(
+      {
+        url: `/api/support/faqs`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: createFAQDto,
+      },
+      options,
+    );
   };
   /**
    * Listar todas as FAQs. Endpoint público.
    * @summary Listar FAQs
    */
-  const fAQsGetFAQs = () => {
-    return customInstance<FAQsListResponseDto>({
-      url: `/api/support/faqs`,
-      method: "GET",
-    });
+  const fAQsGetFAQs = (options?: SecondParameter<typeof customInstance>) => {
+    return customInstance<FAQsListResponseDto>(
+      { url: `/api/support/faqs`, method: "GET" },
+      options,
+    );
   };
   /**
    * Obter uma FAQ específica pelo ID. Endpoint público.
    * @summary Obter FAQ por ID
    */
-  const fAQsGetFAQById = (faqId: string) => {
-    return customInstance<FAQResponseDto>({
-      url: `/api/support/faqs/${faqId}`,
-      method: "GET",
-    });
+  const fAQsGetFAQById = (
+    faqId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<FAQResponseDto>(
+      { url: `/api/support/faqs/${faqId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Atualizar uma FAQ específica pelo ID. Apenas o criador ou coordenadores podem atualizar.
    * @summary Atualizar FAQ por ID
    */
-  const fAQsUpdateFAQ = (faqId: string, updateFAQDto: UpdateFAQDto) => {
-    return customInstance<FAQResponseDto>({
-      url: `/api/support/faqs/${faqId}`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateFAQDto,
-    });
+  const fAQsUpdateFAQ = (
+    faqId: string,
+    updateFAQDto: UpdateFAQDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<FAQResponseDto>(
+      {
+        url: `/api/support/faqs/${faqId}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateFAQDto,
+      },
+      options,
+    );
   };
   /**
    * Excluir uma FAQ específica pelo ID. Apenas o criador ou coordenadores podem excluir.
    * @summary Excluir FAQ por ID
    */
-  const fAQsDeleteFAQ = (faqId: string) => {
-    return customInstance<void>({
-      url: `/api/support/faqs/${faqId}`,
-      method: "DELETE",
-    });
+  const fAQsDeleteFAQ = (
+    faqId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/support/faqs/${faqId}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Votar em uma FAQ específica. Usuários autenticados podem votar.
    * @summary Votar em uma FAQ
    */
-  const fAQsVoteFAQ = (faqId: string, voteFAQDto: VoteFAQDto) => {
-    return customInstance<void>({
-      url: `/api/support/faqs/${faqId}/vote`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: voteFAQDto,
-    });
+  const fAQsVoteFAQ = (
+    faqId: string,
+    voteFAQDto: VoteFAQDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      {
+        url: `/api/support/faqs/${faqId}/vote`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: voteFAQDto,
+      },
+      options,
+    );
   };
   return {
     fAQsCreateFAQ,

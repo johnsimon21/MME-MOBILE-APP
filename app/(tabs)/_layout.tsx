@@ -19,6 +19,7 @@ import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScree
 import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen";
 import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
 import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
+import { AuthGuard } from "@/src/components/auth/AuthGuard";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -142,7 +143,7 @@ function AdminTabNavigator() {
           shadowRadius: 12,
           borderTopWidth: 0,
           marginBottom: 5,
-          marginHorizontal: 4, 
+          marginHorizontal: 4,
         },
         tabBarItemStyle: {
           flex: 1,
@@ -266,16 +267,18 @@ function MainStack() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen
-        name="TabNavigator"
-        component={user.role === 'admin' ? AdminTabNavigator : UserTabNavigator}
-      />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
-    </Stack.Navigator>
+    <AuthGuard>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="TabNavigator"
+          component={user.role === 'coordinator' ? AdminTabNavigator : UserTabNavigator}
+        />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
+      </Stack.Navigator>
+    </AuthGuard>
   );
 }
 

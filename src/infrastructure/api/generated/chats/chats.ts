@@ -34,50 +34,70 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getChats = () => {
   /**
    * Create a new chat between users. Session chats require mentor role.
    * @summary Create new chat
    */
-  const chatCreateChat = (createChatDto: CreateChatDto) => {
-    return customInstance<ChatResponseDto>({
-      url: `/api/chats`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createChatDto,
-    });
+  const chatCreateChat = (
+    createChatDto: CreateChatDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ChatResponseDto>(
+      {
+        url: `/api/chats`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: createChatDto,
+      },
+      options,
+    );
   };
   /**
    * Get all chats for the current user
    * @summary Get user chats
    */
-  const chatGetUserChats = () => {
-    return customInstance<ChatsListResponseDto>({
-      url: `/api/chats`,
-      method: "GET",
-    });
+  const chatGetUserChats = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ChatsListResponseDto>(
+      { url: `/api/chats`, method: "GET" },
+      options,
+    );
   };
   /**
    * Send a message to a chat. User must be a participant of the chat.
    * @summary Send message
    */
-  const chatSendMessage = (chatId: string, sendMessageDto: SendMessageDto) => {
-    return customInstance<MessageResponseDto>({
-      url: `/api/chats/${chatId}/messages`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: sendMessageDto,
-    });
+  const chatSendMessage = (
+    chatId: string,
+    sendMessageDto: SendMessageDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<MessageResponseDto>(
+      {
+        url: `/api/chats/${chatId}/messages`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: sendMessageDto,
+      },
+      options,
+    );
   };
   /**
    * Get messages from a chat. User must be a participant of the chat.
    * @summary Get chat messages
    */
-  const chatGetChatMessages = (chatId: string) => {
-    return customInstance<MessagesListResponseDto>({
-      url: `/api/chats/${chatId}/messages`,
-      method: "GET",
-    });
+  const chatGetChatMessages = (
+    chatId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<MessagesListResponseDto>(
+      { url: `/api/chats/${chatId}/messages`, method: "GET" },
+      options,
+    );
   };
   /**
  * 
@@ -102,6 +122,7 @@ export const getChats = () => {
   const chatSendFileMessage = (
     chatId: string,
     chatSendFileMessageBody: ChatSendFileMessageBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
     const formData = new FormData();
     formData.append(`file`, chatSendFileMessageBody.file);
@@ -113,42 +134,59 @@ export const getChats = () => {
       formData.append(`replyTo`, chatSendFileMessageBody.replyTo);
     }
 
-    return customInstance<unknown>({
-      url: `/api/chats/${chatId}/messages/file`,
-      method: "POST",
-      headers: { "Content-Type": "multipart/form-data" },
-      data: formData,
-    });
+    return customInstance<unknown>(
+      {
+        url: `/api/chats/${chatId}/messages/file`,
+        method: "POST",
+        headers: { "Content-Type": "multipart/form-data" },
+        data: formData,
+      },
+      options,
+    );
   };
   /**
    * Mark all unread messages in a chat as read
    * @summary Mark messages as read
    */
-  const chatMarkMessagesAsRead = (chatId: string) => {
-    return customInstance<void>({
-      url: `/api/chats/${chatId}/messages/read`,
-      method: "POST",
-    });
+  const chatMarkMessagesAsRead = (
+    chatId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/chats/${chatId}/messages/read`, method: "POST" },
+      options,
+    );
   };
   /**
    * Delete a message. Users can only delete their own messages.
    * @summary Delete message
    */
-  const chatDeleteMessage = (chatId: string, messageId: string) => {
-    return customInstance<void>({
-      url: `/api/chats/${chatId}/messages/${messageId}`,
-      method: "DELETE",
-    });
+  const chatDeleteMessage = (
+    chatId: string,
+    messageId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/chats/${chatId}/messages/${messageId}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Delete a file message and its associated file
    * @summary Delete file message
    */
-  const chatDeleteFileMessage = (chatId: string, messageId: string) => {
-    return customInstance<void>({
-      url: `/api/chats/${chatId}/messages/${messageId}/file`,
-      method: "DELETE",
-    });
+  const chatDeleteFileMessage = (
+    chatId: string,
+    messageId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      {
+        url: `/api/chats/${chatId}/messages/${messageId}/file`,
+        method: "DELETE",
+      },
+      options,
+    );
   };
   /**
    * Add a mentee to a session chat. Only mentors can perform this action.
@@ -157,23 +195,34 @@ export const getChats = () => {
   const chatAddMenteeToSession = (
     chatId: string,
     addMenteeDto: AddMenteeDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/chats/${chatId}/participants`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: addMenteeDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/chats/${chatId}/participants`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: addMenteeDto,
+      },
+      options,
+    );
   };
   /**
    * Remove a mentee from a session chat. Only mentors can perform this action.
    * @summary Remove mentee from session chat
    */
-  const chatRemoveMenteeFromSession = (chatId: string, menteeId: string) => {
-    return customInstance<void>({
-      url: `/api/chats/${chatId}/participants/${menteeId}`,
-      method: "DELETE",
-    });
+  const chatRemoveMenteeFromSession = (
+    chatId: string,
+    menteeId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      {
+        url: `/api/chats/${chatId}/participants/${menteeId}`,
+        method: "DELETE",
+      },
+      options,
+    );
   };
   return {
     chatCreateChat,

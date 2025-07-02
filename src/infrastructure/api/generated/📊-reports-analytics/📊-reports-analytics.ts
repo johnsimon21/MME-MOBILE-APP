@@ -38,103 +38,139 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getReportsAnalytics = () => {
   /**
    * Generate detailed analytics report with customizable parameters. Available to coordinators and mentors.
    * @summary Generate comprehensive report
    */
-  const reportsGenerateReport = (generateReportDto: GenerateReportDto) => {
-    return customInstance<ReportResponseDto>({
-      url: `/api/reports/generate`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: generateReportDto,
-    });
+  const reportsGenerateReport = (
+    generateReportDto: GenerateReportDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ReportResponseDto>(
+      {
+        url: `/api/reports/generate`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: generateReportDto,
+      },
+      options,
+    );
   };
   /**
    * Retrieve paginated list of generated reports. Coordinators see all reports, mentors see only their own.
    * @summary Get all reports
    */
-  const reportsGetReports = (params?: ReportsGetReportsParams) => {
-    return customInstance<ReportsListResponseDto>({
-      url: `/api/reports`,
-      method: "GET",
-      params,
-    });
+  const reportsGetReports = (
+    params?: ReportsGetReportsParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ReportsListResponseDto>(
+      { url: `/api/reports`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Retrieve detailed report by ID. Users can only access reports they generated or have permission to view.
    * @summary Get specific report
    */
-  const reportsGetReport = (reportId: string) => {
-    return customInstance<ReportResponseDto>({
-      url: `/api/reports/${reportId}`,
-      method: "GET",
-    });
+  const reportsGetReport = (
+    reportId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ReportResponseDto>(
+      { url: `/api/reports/${reportId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Permanently delete a generated report. Users can only delete their own reports.
    * @summary Delete report
    */
-  const reportsDeleteReport = (reportId: string) => {
-    return customInstance<void>({
-      url: `/api/reports/${reportId}`,
-      method: "DELETE",
-    });
+  const reportsDeleteReport = (
+    reportId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/reports/${reportId}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Export report as PDF, Excel, CSV, or JSON with customizable options. Role-based data filtering applied.
    * @summary Export report in various formats
    */
-  const reportsExportReport = (exportReportDto: ExportReportDto) => {
-    return customInstance<ReportsExportReport200>({
-      url: `/api/reports/export`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: exportReportDto,
-    });
+  const reportsExportReport = (
+    exportReportDto: ExportReportDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ReportsExportReport200>(
+      {
+        url: `/api/reports/export`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: exportReportDto,
+      },
+      options,
+    );
   };
   /**
    * Set up recurring report generation with email delivery. Role-based data filtering applied.
    * @summary Schedule automatic report generation
    */
-  const reportsScheduleReport = (scheduleReportDto: ScheduleReportDto) => {
-    return customInstance<ReportsScheduleReport201>({
-      url: `/api/reports/schedule`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: scheduleReportDto,
-    });
+  const reportsScheduleReport = (
+    scheduleReportDto: ScheduleReportDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ReportsScheduleReport201>(
+      {
+        url: `/api/reports/schedule`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: scheduleReportDto,
+      },
+      options,
+    );
   };
   /**
    * Retrieve list of scheduled report configurations. Users see only their own scheduled reports.
    * @summary Get scheduled reports
    */
-  const reportsGetScheduledReports = () => {
-    return customInstance<void>({
-      url: `/api/reports/scheduled/list`,
-      method: "GET",
-    });
+  const reportsGetScheduledReports = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/reports/scheduled/list`, method: "GET" },
+      options,
+    );
   };
   /**
    * Cancel a scheduled report configuration. Users can only cancel their own scheduled reports.
    * @summary Cancel scheduled report
    */
-  const reportsCancelScheduledReport = (scheduleId: string) => {
-    return customInstance<void>({
-      url: `/api/reports/scheduled/${scheduleId}`,
-      method: "DELETE",
-    });
+  const reportsCancelScheduledReport = (
+    scheduleId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/reports/scheduled/${scheduleId}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Retrieve chart configuration data for report visualization. Access controlled by report ownership.
    * @summary Get report chart data
    */
-  const reportsGetReportCharts = (reportId: string) => {
-    return customInstance<void>({
-      url: `/api/reports/${reportId}/charts`,
-      method: "GET",
-    });
+  const reportsGetReportCharts = (
+    reportId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/reports/${reportId}/charts`, method: "GET" },
+      options,
+    );
   };
   /**
    * Quick overview metrics for dashboard display. Role-based data filtering applied.
@@ -142,12 +178,12 @@ export const getReportsAnalytics = () => {
    */
   const reportsGetDashboardAnalytics = (
     params?: ReportsGetDashboardAnalyticsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<unknown>({
-      url: `/api/reports/analytics/dashboard`,
-      method: "GET",
-      params,
-    });
+    return customInstance<unknown>(
+      { url: `/api/reports/analytics/dashboard`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Compare performance across schools, mentors, or subjects
@@ -155,23 +191,25 @@ export const getReportsAnalytics = () => {
    */
   const reportsGetComparisonAnalytics = (
     params: ReportsGetComparisonAnalyticsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/reports/analytics/comparison`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      { url: `/api/reports/analytics/comparison`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Quick performance report for the current mentor
    * @summary Get my performance report
    */
-  const reportsGetMyPerformance = (params?: ReportsGetMyPerformanceParams) => {
-    return customInstance<unknown>({
-      url: `/api/reports/quick/my-performance`,
-      method: "GET",
-      params,
-    });
+  const reportsGetMyPerformance = (
+    params?: ReportsGetMyPerformanceParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<unknown>(
+      { url: `/api/reports/quick/my-performance`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Quick overview report for all schools or specific school
@@ -179,12 +217,12 @@ export const getReportsAnalytics = () => {
    */
   const reportsGetSchoolOverview = (
     params?: ReportsGetSchoolOverviewParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<unknown>({
-      url: `/api/reports/quick/school-overview`,
-      method: "GET",
-      params,
-    });
+    return customInstance<unknown>(
+      { url: `/api/reports/quick/school-overview`, method: "GET", params },
+      options,
+    );
   };
   return {
     reportsGenerateReport,

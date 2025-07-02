@@ -48,6 +48,8 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getNotifications = () => {
   /**
    * Create a new notification for a specific user. Only coordinators and mentors can create notifications.
@@ -55,13 +57,17 @@ export const getNotifications = () => {
    */
   const notificationsCreateNotification = (
     createNotificationDto: CreateNotificationDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationResponseDto>({
-      url: `/api/notifications`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createNotificationDto,
-    });
+    return customInstance<NotificationResponseDto>(
+      {
+        url: `/api/notifications`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: createNotificationDto,
+      },
+      options,
+    );
   };
   /**
    * Create notifications for multiple users at once. Only coordinators can create bulk notifications.
@@ -69,13 +75,17 @@ export const getNotifications = () => {
    */
   const notificationsCreateBulkNotifications = (
     bulkNotificationDto: BulkNotificationDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationsCreateBulkNotifications201>({
-      url: `/api/notifications/bulk`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: bulkNotificationDto,
-    });
+    return customInstance<NotificationsCreateBulkNotifications201>(
+      {
+        url: `/api/notifications/bulk`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: bulkNotificationDto,
+      },
+      options,
+    );
   };
   /**
    * Retrieve paginated list of notifications for a specific user. Users can only access their own notifications.
@@ -84,32 +94,42 @@ export const getNotifications = () => {
   const notificationsGetUserNotifications = (
     userId: string,
     params?: NotificationsGetUserNotificationsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationsListResponseDto>({
-      url: `/api/notifications/users/${userId}`,
-      method: "GET",
-      params,
-    });
+    return customInstance<NotificationsListResponseDto>(
+      { url: `/api/notifications/users/${userId}`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Mark a specific notification as read. Users can only mark their own notifications as read.
    * @summary Mark notification as read
    */
-  const notificationsMarkAsRead = (userId: string, notificationId: string) => {
-    return customInstance<NotificationsMarkAsRead200>({
-      url: `/api/notifications/users/${userId}/${notificationId}/read`,
-      method: "PUT",
-    });
+  const notificationsMarkAsRead = (
+    userId: string,
+    notificationId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationsMarkAsRead200>(
+      {
+        url: `/api/notifications/users/${userId}/${notificationId}/read`,
+        method: "PUT",
+      },
+      options,
+    );
   };
   /**
    * Mark all unread notifications as read for a user. Users can only mark their own notifications as read.
    * @summary Mark all notifications as read
    */
-  const notificationsMarkAllAsRead = (userId: string) => {
-    return customInstance<NotificationsMarkAllAsRead200>({
-      url: `/api/notifications/users/${userId}/read-all`,
-      method: "PUT",
-    });
+  const notificationsMarkAllAsRead = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationsMarkAllAsRead200>(
+      { url: `/api/notifications/users/${userId}/read-all`, method: "PUT" },
+      options,
+    );
   };
   /**
    * Delete a specific notification. Users can only delete their own notifications.
@@ -118,41 +138,54 @@ export const getNotifications = () => {
   const notificationsDeleteNotification = (
     userId: string,
     notificationId: string,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationsDeleteNotification200>({
-      url: `/api/notifications/users/${userId}/${notificationId}`,
-      method: "DELETE",
-    });
+    return customInstance<NotificationsDeleteNotification200>(
+      {
+        url: `/api/notifications/users/${userId}/${notificationId}`,
+        method: "DELETE",
+      },
+      options,
+    );
   };
   /**
    * Delete all notifications for a user. Users can only clear their own notifications.
    * @summary Clear all notifications
    */
-  const notificationsClearAllNotifications = (userId: string) => {
-    return customInstance<NotificationsClearAllNotifications200>({
-      url: `/api/notifications/users/${userId}/clear-all`,
-      method: "DELETE",
-    });
+  const notificationsClearAllNotifications = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationsClearAllNotifications200>(
+      { url: `/api/notifications/users/${userId}/clear-all`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Get comprehensive notification statistics for a user. Users can only see their own stats.
    * @summary Get notification statistics
    */
-  const notificationsGetNotificationStats = (userId: string) => {
-    return customInstance<NotificationStatsDto>({
-      url: `/api/notifications/users/${userId}/stats`,
-      method: "GET",
-    });
+  const notificationsGetNotificationStats = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationStatsDto>(
+      { url: `/api/notifications/users/${userId}/stats`, method: "GET" },
+      options,
+    );
   };
   /**
    * Get user notification preferences and settings. Users can only see their own preferences.
    * @summary Get notification preferences
    */
-  const notificationsGetNotificationPreferences = (userId: unknown) => {
-    return customInstance<NotificationPreferencesResponseDto>({
-      url: `/api/notifications/users/${userId}/preferences`,
-      method: "GET",
-    });
+  const notificationsGetNotificationPreferences = (
+    userId: unknown,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationPreferencesResponseDto>(
+      { url: `/api/notifications/users/${userId}/preferences`, method: "GET" },
+      options,
+    );
   };
   /**
    * Update user notification preferences and settings. Users can only update their own preferences.
@@ -161,13 +194,17 @@ export const getNotifications = () => {
   const notificationsUpdateNotificationPreferences = (
     userId: string,
     updateNotificationPreferencesDto: UpdateNotificationPreferencesDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationPreferencesResponseDto>({
-      url: `/api/notifications/users/${userId}/preferences`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateNotificationPreferencesDto,
-    });
+    return customInstance<NotificationPreferencesResponseDto>(
+      {
+        url: `/api/notifications/users/${userId}/preferences`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateNotificationPreferencesDto,
+      },
+      options,
+    );
   };
   /**
    * Send notifications when a mentoring session starts
@@ -175,13 +212,17 @@ export const getNotifications = () => {
    */
   const notificationsNotifySessionStarted = (
     notificationsNotifySessionStartedBody: NotificationsNotifySessionStartedBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/session/started`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsNotifySessionStartedBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/session/started`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsNotifySessionStartedBody,
+      },
+      options,
+    );
   };
   /**
    * Send notification when a new message is received
@@ -189,13 +230,17 @@ export const getNotifications = () => {
    */
   const notificationsNotifyNewMessage = (
     notificationsNotifyNewMessageBody: NotificationsNotifyNewMessageBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/message/received`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsNotifyNewMessageBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/message/received`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsNotifyNewMessageBody,
+      },
+      options,
+    );
   };
   /**
    * Send notification for incoming call
@@ -203,13 +248,17 @@ export const getNotifications = () => {
    */
   const notificationsNotifyIncomingCall = (
     notificationsNotifyIncomingCallBody: NotificationsNotifyIncomingCallBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/call/incoming`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsNotifyIncomingCallBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/call/incoming`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsNotifyIncomingCallBody,
+      },
+      options,
+    );
   };
   /**
    * Send notifications when a mentee is assigned to a mentor
@@ -217,13 +266,17 @@ export const getNotifications = () => {
    */
   const notificationsNotifyMenteeAssigned = (
     notificationsNotifyMenteeAssignedBody: NotificationsNotifyMenteeAssignedBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/assignment/mentee`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsNotifyMenteeAssignedBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/assignment/mentee`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsNotifyMenteeAssignedBody,
+      },
+      options,
+    );
   };
   /**
    * Send notification when a report is generated
@@ -231,13 +284,17 @@ export const getNotifications = () => {
    */
   const notificationsNotifyReportGenerated = (
     notificationsNotifyReportGeneratedBody: NotificationsNotifyReportGeneratedBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/report/generated`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsNotifyReportGeneratedBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/report/generated`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsNotifyReportGeneratedBody,
+      },
+      options,
+    );
   };
   /**
    * Send system-wide announcement to all users or specific users
@@ -245,13 +302,17 @@ export const getNotifications = () => {
    */
   const notificationsSendSystemAnnouncement = (
     notificationsSendSystemAnnouncementBody: NotificationsSendSystemAnnouncementBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/notifications/system/announcement`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: notificationsSendSystemAnnouncementBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/notifications/system/announcement`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: notificationsSendSystemAnnouncementBody,
+      },
+      options,
+    );
   };
   /**
    * Get system-wide notification analytics and insights
@@ -259,22 +320,24 @@ export const getNotifications = () => {
    */
   const notificationsGetNotificationAnalytics = (
     params?: NotificationsGetNotificationAnalyticsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<NotificationsGetNotificationAnalytics200>({
-      url: `/api/notifications/analytics/overview`,
-      method: "GET",
-      params,
-    });
+    return customInstance<NotificationsGetNotificationAnalytics200>(
+      { url: `/api/notifications/analytics/overview`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Get predefined notification templates for common scenarios
    * @summary Get notification templates
    */
-  const notificationsGetNotificationTemplates = () => {
-    return customInstance<NotificationsGetNotificationTemplates200Item[]>({
-      url: `/api/notifications/templates`,
-      method: "GET",
-    });
+  const notificationsGetNotificationTemplates = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<NotificationsGetNotificationTemplates200Item[]>(
+      { url: `/api/notifications/templates`, method: "GET" },
+      options,
+    );
   };
   return {
     notificationsCreateNotification,

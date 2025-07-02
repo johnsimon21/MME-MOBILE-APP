@@ -37,42 +37,62 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getAuthentication = () => {
   /**
    * Create a new user account with role-specific information
    * @summary Register new user
    */
-  const authRegister = (registerDto: RegisterDto) => {
-    return customInstance<RegisterResponseDto>({
-      url: `/api/auth/register`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: registerDto,
-    });
+  const authRegister = (
+    registerDto: RegisterDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<RegisterResponseDto>(
+      {
+        url: `/api/auth/register`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: registerDto,
+      },
+      options,
+    );
   };
   /**
    * Authenticate user and return JWT token
    * @summary User login
    */
-  const authLogin = (loginDto: LoginDto) => {
-    return customInstance<LoginResponseDto>({
-      url: `/api/auth/login`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: loginDto,
-    });
+  const authLogin = (
+    loginDto: LoginDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<LoginResponseDto>(
+      {
+        url: `/api/auth/login`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: loginDto,
+      },
+      options,
+    );
   };
   /**
    * Send password reset email to user
    * @summary Request password reset
    */
-  const authForgotPassword = (forgotPasswordDto: ForgotPasswordDto) => {
-    return customInstance<ForgotPasswordResponseDto>({
-      url: `/api/auth/forgot-password`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: forgotPasswordDto,
-    });
+  const authForgotPassword = (
+    forgotPasswordDto: ForgotPasswordDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ForgotPasswordResponseDto>(
+      {
+        url: `/api/auth/forgot-password`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: forgotPasswordDto,
+      },
+      options,
+    );
   };
   /**
    * Reset user password using the token from email
@@ -81,49 +101,65 @@ export const getAuthentication = () => {
   const authResetPassword = (
     resetPasswordDto: ResetPasswordDto,
     params: AuthResetPasswordParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<ResetPasswordResponseDto>({
-      url: `/api/auth/reset-password`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: resetPasswordDto,
-      params,
-    });
+    return customInstance<ResetPasswordResponseDto>(
+      {
+        url: `/api/auth/reset-password`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: resetPasswordDto,
+        params,
+      },
+      options,
+    );
   };
   /**
    * @summary Validate reset token
    */
-  const authValidateResetToken = (params: AuthValidateResetTokenParams) => {
-    return customInstance<void>({
-      url: `/api/auth/validate-reset-token`,
-      method: "GET",
-      params,
-    });
+  const authValidateResetToken = (
+    params: AuthValidateResetTokenParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/auth/validate-reset-token`, method: "GET", params },
+      options,
+    );
   };
   /**
    * @summary Verify JWT token
    */
-  const authVerifyToken = () => {
-    return customInstance<TokenVerificationResponseDto>({
-      url: `/api/auth/verify-token`,
-      method: "POST",
-    });
+  const authVerifyToken = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<TokenVerificationResponseDto>(
+      { url: `/api/auth/verify-token`, method: "POST" },
+      options,
+    );
   };
   /**
    * @summary Get user profile
    */
-  const authGetUserProfile = (uid: string) => {
-    return customInstance<void>({
-      url: `/api/auth/profile/${uid}`,
-      method: "GET",
-    });
+  const authGetUserProfile = (
+    uid: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/auth/profile/${uid}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Get the profile of the currently authenticated user
    * @summary Get current user profile
    */
-  const authGetCurrentUserProfile = () => {
-    return customInstance<void>({ url: `/api/auth/me`, method: "GET" });
+  const authGetCurrentUserProfile = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/auth/me`, method: "GET" },
+      options,
+    );
   };
   return {
     authRegister,

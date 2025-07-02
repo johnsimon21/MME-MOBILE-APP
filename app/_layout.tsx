@@ -8,10 +8,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { View } from 'react-native';
-import { FloatingOptionsButton } from '@/components/ui/FloatingUnfoldVerticalButton';
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { FloatingButtonProvider } from '@/src/context/FloatingButtonContext';
 import { SupportProvider } from '@/src/context/SupportContext';
+import { FloatingOptionsButton } from '@/src/presentation/components/ui/FloatingUnfoldVerticalButton';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

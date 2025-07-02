@@ -25,6 +25,8 @@ import type { DevAuthExchangeCustomTokenBody } from ".././model";
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getDevelopmentAuthHelpers = () => {
   /**
    * Development helper to exchange custom token for proper ID token
@@ -32,33 +34,42 @@ export const getDevelopmentAuthHelpers = () => {
    */
   const devAuthExchangeCustomToken = (
     devAuthExchangeCustomTokenBody: DevAuthExchangeCustomTokenBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/auth/dev/exchange-custom-token`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: devAuthExchangeCustomTokenBody,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/auth/dev/exchange-custom-token`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: devAuthExchangeCustomTokenBody,
+      },
+      options,
+    );
   };
   /**
    * Get user information for development testing
    * @summary 🚧 DEV - Get user info for testing
    */
-  const devAuthGetUserInfo = (userId: string) => {
-    return customInstance<void>({
-      url: `/api/auth/dev/user-info/${userId}`,
-      method: "GET",
-    });
+  const devAuthGetUserInfo = (
+    userId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/auth/dev/user-info/${userId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Get list of available development endpoints
    * @summary 🚧 DEV - List test endpoints
    */
-  const devAuthGetTestEndpoints = () => {
-    return customInstance<void>({
-      url: `/api/auth/dev/test-endpoints`,
-      method: "GET",
-    });
+  const devAuthGetTestEndpoints = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/auth/dev/test-endpoints`, method: "GET" },
+      options,
+    );
   };
   return {
     devAuthExchangeCustomToken,

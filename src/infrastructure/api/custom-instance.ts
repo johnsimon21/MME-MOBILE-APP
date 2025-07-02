@@ -1,6 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { ENV } from '@/src/config/env';
+import { auth } from '@/src/config/firebase';
 
 // Types for better TypeScript support
 export interface CustomAxiosRequestConfig extends AxiosRequestConfig {
@@ -10,8 +11,9 @@ export interface CustomAxiosRequestConfig extends AxiosRequestConfig {
 
 // Base URL configuration
 const BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api'  // Development
-  : 'https://your-production-domain.com/api'; // Production
+  ? `${ENV.API_BASE_URL}`  // Development
+  : 'https://your-production-domain.com/'; // Production
+
 
 // Create axios instance
 export const instance = axios.create({
@@ -22,92 +24,89 @@ export const instance = axios.create({
   },
 });
 
-// Token management
-const TOKEN_KEY = '@mme_auth_token';
-const USER_KEY = '@mme_user_data';
-
+// Token management using Firebase
 export const tokenManager = {
   async getToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(TOKEN_KEY);
-    } catch (error) {
-      console.error('Error getting token:', error);
+      const user = auth.currentUser;
+      if (user) {
+        return await user.getIdToken();
+      }
       return null;
-    }
-  },
-
-  async setToken(token: string): Promise<void> {
-    try {
-      await AsyncStorage.setItem(TOKEN_KEY, token);
     } catch (error) {
-      console.error('Error setting token:', error);
-    }
-  },
-
-  async removeToken(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      await AsyncStorage.removeItem(USER_KEY);
-    } catch (error) {
-      console.error('Error removing token:', error);
+      console.error('Error getting Firebase ID token:', error);
+      return null;
     }
   },
 
   async getUserData(): Promise<any> {
     try {
-      const userData = await AsyncStorage.getItem(USER_KEY);
-      return userData ? JSON.parse(userData) : null;
+      const user = auth.currentUser;
+      return user ? {
+        uid: user.uid,
+        email: user.email,
+        emailVerified: user.emailVerified,
+      } : null;
     } catch (error) {
       console.error('Error getting user data:', error);
       return null;
     }
   },
 
+  // These methods are kept for compatibility but use Firebase auth state
+  async setToken(token: string): Promise<void> {
+    // Firebase handles token storage automatically
+    console.log('Token storage handled by Firebase');
+  },
+
+  async removeToken(): Promise<void> {
+    // Firebase handles token removal on signOut
+    console.log('Token removal handled by Firebase');
+  },
+
   async setUserData(userData: any): Promise<void> {
-    try {
-      await AsyncStorage.setItem(USER_KEY, JSON.stringify(userData));
-    } catch (error) {
-      console.error('Error setting user data:', error);
-    }
+    // User data is stored in Firestore, not locally
+    console.log('User data stored in Firestore');
   },
 };
 
-// Request interceptor - Fixed TypeScript compatibility
+// Request interceptor
 instance.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    // Cast to our custom config to access custom properties
     const customConfig = config as InternalAxiosRequestConfig & CustomAxiosRequestConfig;
     
-    // Add auth token if not skipped
-    if (!customConfig.skipAuth) {
+    // Skip auth for certain endpoints
+    if (customConfig.skipAuth) {
+      return config;
+    }
+
+    try {
+      // Get Firebase ID token
       const token = await tokenManager.getToken();
+      
       if (token) {
-        config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('🔑 Added Firebase ID token to request');
+      } else {
+        console.warn('⚠️ No Firebase ID token available');
       }
+    } catch (error) {
+      console.error('❌ Error adding auth token:', error);
     }
 
-    // Add development user ID if in development mode
+    // Add development headers if needed
     if (__DEV__) {
-      const userData = await tokenManager.getUserData();
-      if (userData?.uid) {
-        config.headers = config.headers || {};
-        config.headers['X-Dev-User-Id'] = userData.uid;
+      const user = auth.currentUser;
+      if (user) {
+        config.headers['X-Dev-User-Id'] = user.uid;
       }
     }
 
-    // Log requests in development
-    if (__DEV__) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-      if (config.data) {
-        console.log('📤 Request Data:', config.data);
-      }
-    }
-
+    console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
-  (error) => {
-    console.error('❌ Request Error:', error);
+  (error: AxiosError) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -115,172 +114,97 @@ instance.interceptors.request.use(
 // Response interceptor
 instance.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log responses in development
-    if (__DEV__) {
-      console.log(`✅ API Response: ${response.status} ${response.config.url}`);
-      console.log('📥 Response Data:', response.data);
-    }
-
+    console.log(`📥 ${response.status} ${response.config.url}`);
     return response;
   },
   async (error: AxiosError) => {
-    const config = error.config as InternalAxiosRequestConfig & CustomAxiosRequestConfig;
+    const customConfig = error.config as InternalAxiosRequestConfig & CustomAxiosRequestConfig;
     
-    // Log errors in development
-    if (__DEV__) {
-      console.error('❌ API Error:', error.response?.status, error.response?.data);
+    console.error(`❌ ${error.response?.status || 'Network Error'} ${error.config?.url}:`, error.message);
+
+    // Handle token expiration
+    if (error.response?.status === 401) {
+      console.log('🔄 Token expired, attempting refresh...');
+      
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          // Force refresh the token
+          await user.getIdToken(true);
+          
+          // Retry the original request
+          if (error.config) {
+            const token = await user.getIdToken();
+            error.config.headers.Authorization = `Bearer ${token}`;
+            return instance.request(error.config);
+          }
+        } else {
+          // User is not authenticated, redirect to login
+          console.log('🚪 User not authenticated, should redirect to login');
+          // You might want to emit an event here to trigger logout
+        }
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        // Force logout
+        try {
+          await auth.signOut();
+        } catch (signOutError) {
+          console.error('❌ Sign out error:', signOutError);
+        }
+      }
+    }
+
+    // Skip error handling for certain requests
+    if (customConfig?.skipErrorHandling) {
+      return Promise.reject(error);
     }
 
     // Handle different error types
     if (error.response) {
+      // Server responded with error status
       const { status, data } = error.response;
-
+      
       switch (status) {
-        case 401:
-          // Unauthorized - clear token and redirect to login
-          await tokenManager.removeToken();
-          if (!config?.skipErrorHandling) {
-            Alert.alert(
-              'Sessão Expirada',
-              'Sua sessão expirou. Por favor, faça login novamente.',
-              [{ text: 'OK' }]
-            );
-            // You can add navigation to login screen here
-            // NavigationService.navigate('Login');
-          }
+        case 400:
+          console.warn('⚠️ Bad Request:', (data as any)?.message);
           break;
-
         case 403:
-          // Forbidden
-          if (!config?.skipErrorHandling) {
-            Alert.alert(
-              'Acesso Negado',
-              'Você não tem permissão para realizar esta ação.',
-              [{ text: 'OK' }]
-            );
-          }
+          console.warn('⚠️ Forbidden:', (data as any)?.message);
+          Alert.alert('Acesso Negado', (data as any)?.message || 'Você não tem permissão para esta ação.');
           break;
-
         case 404:
-          // Not Found
-          if (!config?.skipErrorHandling) {
-            Alert.alert(
-              'Não Encontrado',
-              'O recurso solicitado não foi encontrado.',
-              [{ text: 'OK' }]
-            );
-          }
+          console.warn('⚠️ Not Found:', (data as any)?.message);
           break;
-
-        case 422:
-          // Validation Error
-          if (!config?.skipErrorHandling) {
-            const message = Array.isArray((data as any)?.message) 
-              ? (data as any).message.join('\n') 
-              : (data as any)?.message || 'Dados inválidos';
-            Alert.alert('Erro de Validação', message, [{ text: 'OK' }]);
-          }
-          break;
-
         case 429:
-          // Rate Limit
-          if (!config?.skipErrorHandling) {
-            Alert.alert(
-              'Muitas Tentativas',
-              'Você fez muitas tentativas. Tente novamente mais tarde.',
-              [{ text: 'OK' }]
-            );
-          }
+          console.warn('⚠️ Too Many Requests:', (data as any)?.message);
+          Alert.alert('Muitas Tentativas', 'Aguarde um momento antes de tentar novamente.');
           break;
-
         case 500:
-          // Server Error
-          if (!config?.skipErrorHandling) {
-            Alert.alert(
-              'Erro do Servidor',
-              'Ocorreu um erro interno. Tente novamente mais tarde.',
-              [{ text: 'OK' }]
-            );
-          }
+          console.error('❌ Server Error:', (data as any)?.message);
+          Alert.alert('Erro do Servidor', 'Ocorreu um erro interno. Tente novamente mais tarde.');
           break;
-
         default:
-          if (!config?.skipErrorHandling) {
-            const message = (data as any)?.message || 'Ocorreu um erro inesperado';
-            Alert.alert('Erro', message, [{ text: 'OK' }]);
-          }
+          console.error(`❌ HTTP ${status}:`, (data as any)?.message);
       }
     } else if (error.request) {
-      // Network Error
-      if (!config?.skipErrorHandling) {
-        Alert.alert(
-          'Erro de Conexão',
-          'Verifique sua conexão com a internet e tente novamente.',
-          [{ text: 'OK' }]
-        );
-      }
+      // Network error
+      console.error('❌ Network Error:', error.message);
+      Alert.alert(
+        'Erro de Conexão', 
+        'Verifique sua conexão com a internet e tente novamente.'
+      );
+    } else {
+      // Other error
+      console.error('❌ Request Error:', error.message);
     }
 
     return Promise.reject(error);
   }
 );
 
-// Helper functions for common operations
-export const apiHelpers = {
-  // Login helper that stores token
-  async login(credentials: { email: string; password: string }) {
-    try {
-      const response = await instance.post('/auth/login', credentials, {
-        skipAuth: true,
-      } as CustomAxiosRequestConfig);
-      
-      const { customToken, ...userData } = response.data;
-      
-      // In a real app, you'd exchange customToken for ID token using Firebase SDK
-      // For now, we'll store the custom token
-      await tokenManager.setToken(customToken);
-      await tokenManager.setUserData(userData);
-      
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Logout helper
-  async logout() {
-    await tokenManager.removeToken();
-    // You can add additional logout logic here
-  },
-
-  // Upload file helper
-  async uploadFile(file: any, endpoint: string, additionalData?: any) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    if (additionalData) {
-      Object.keys(additionalData).forEach(key => {
-        formData.append(key, additionalData[key]);
-      });
-    }
-
-    return instance.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  },
-
-  // Check if user is authenticated
-  async isAuthenticated(): Promise<boolean> {
-    const token = await tokenManager.getToken();
-    return !!token;
-  },
-
-  // Get current user data
-  async getCurrentUser() {
-    return await tokenManager.getUserData();
-  },
+// Custom instance function for the generated API
+export const customInstance = <T>(config: AxiosRequestConfig): Promise<T> => {
+  return instance.request<T>(config).then(response => response.data);
 };
 
-export const customInstance = () => instance;
+export default instance;

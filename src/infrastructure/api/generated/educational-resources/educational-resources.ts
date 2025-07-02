@@ -34,16 +34,20 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getEducationalResources = () => {
   /**
    * Get educational resources uploaded by the current user
    * @summary Get my educational resources
    */
-  const educationalResourcesGetMyResources = () => {
-    return customInstance<void>({
-      url: `/api/educational-resources/my-resources`,
-      method: "GET",
-    });
+  const educationalResourcesGetMyResources = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/my-resources`, method: "GET" },
+      options,
+    );
   };
   /**
    * Upload a new educational resource. Only mentors and coordinators can upload.
@@ -51,23 +55,29 @@ export const getEducationalResources = () => {
    */
   const educationalResourcesUploadResource = (
     uploadResourceDto: UploadResourceDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/upload`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: uploadResourceDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/upload`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: uploadResourceDto,
+      },
+      options,
+    );
   };
   /**
    * Browse educational resources. Public endpoint with optional authentication for personalized results.
    * @summary Get educational resources
    */
-  const educationalResourcesGetResources = () => {
-    return customInstance<void>({
-      url: `/api/educational-resources`,
-      method: "GET",
-    });
+  const educationalResourcesGetResources = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources`, method: "GET" },
+      options,
+    );
   };
   /**
    * Get statistics about educational resources. Mentors see their own stats, coordinators see all.
@@ -75,22 +85,24 @@ export const getEducationalResources = () => {
    */
   const educationalResourcesGetResourceStats = (
     params: EducationalResourcesGetResourceStatsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/stats`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      { url: `/api/educational-resources/stats`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Get unpublished resources for the current user
    * @summary Get unpublished resources
    */
-  const educationalResourcesGetUnpublishedResources = () => {
-    return customInstance<void>({
-      url: `/api/educational-resources/unpublished`,
-      method: "GET",
-    });
+  const educationalResourcesGetUnpublishedResources = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/unpublished`, method: "GET" },
+      options,
+    );
   };
   /**
    * Publish multiple resources at once
@@ -98,13 +110,17 @@ export const getEducationalResources = () => {
    */
   const educationalResourcesBulkPublish = (
     bulkResourceActionDto: BulkResourceActionDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/bulk/publish`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: bulkResourceActionDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/bulk/publish`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: bulkResourceActionDto,
+      },
+      options,
+    );
   };
   /**
    * Delete multiple resources at once. Users can only delete their own resources.
@@ -112,33 +128,43 @@ export const getEducationalResources = () => {
    */
   const educationalResourcesBulkDeleteResources = (
     bulkDeleteDto: BulkDeleteDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/bulk/delete`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: bulkDeleteDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/bulk/delete`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: bulkDeleteDto,
+      },
+      options,
+    );
   };
   /**
    * Get detailed information about a specific resource
    * @summary Get resource by ID
    */
-  const educationalResourcesGetResourceById = (id: string) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}`,
-      method: "GET",
-    });
+  const educationalResourcesGetResourceById = (
+    id: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/${id}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Delete a resource. Users can only delete their own resources.
    * @summary Delete resource
    */
-  const educationalResourcesDeleteResource = (id: string) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}`,
-      method: "DELETE",
-    });
+  const educationalResourcesDeleteResource = (
+    id: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/${id}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Update resource information. Users can only update their own resources.
@@ -147,13 +173,17 @@ export const getEducationalResources = () => {
   const educationalResourcesUpdateResource = (
     id: string,
     updateEducationalResourceDto: UpdateEducationalResourceDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: updateEducationalResourceDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/${id}`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: updateEducationalResourceDto,
+      },
+      options,
+    );
   };
   /**
    * Download the actual file using a valid download token
@@ -162,42 +192,55 @@ export const getEducationalResources = () => {
   const educationalResourcesDownloadResource = (
     id: string,
     params: EducationalResourcesDownloadResourceParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}/download`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/${id}/download`,
+        method: "GET",
+        params,
+      },
+      options,
+    );
   };
   /**
    * Generate a secure download link for a resource
    * @summary Generate download link
    */
-  const educationalResourcesGenerateDownloadLink = (id: string) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}/download-link`,
-      method: "POST",
-    });
+  const educationalResourcesGenerateDownloadLink = (
+    id: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/${id}/download-link`, method: "POST" },
+      options,
+    );
   };
   /**
    * Publish a resource to make it publicly available
    * @summary Publish resource
    */
-  const educationalResourcesPublishResource = (id: string) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}/publish`,
-      method: "POST",
-    });
+  const educationalResourcesPublishResource = (
+    id: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/${id}/publish`, method: "POST" },
+      options,
+    );
   };
   /**
    * Generate a thumbnail for a resource
    * @summary Generate thumbnail
    */
-  const educationalResourcesGenerateThumbnail = (id: string) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}/thumbnail`,
-      method: "POST",
-    });
+  const educationalResourcesGenerateThumbnail = (
+    id: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/${id}/thumbnail`, method: "POST" },
+      options,
+    );
   };
   /**
    * Add a comment and optional rating to a resource
@@ -206,13 +249,17 @@ export const getEducationalResources = () => {
   const educationalResourcesAddComment = (
     id: string,
     resourceCommentDto: ResourceCommentDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/${id}/comments`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: resourceCommentDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/${id}/comments`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: resourceCommentDto,
+      },
+      options,
+    );
   };
   /**
    * Get search suggestions for resources
@@ -220,32 +267,40 @@ export const getEducationalResources = () => {
    */
   const educationalResourcesGetSearchSuggestions = (
     params: EducationalResourcesGetSearchSuggestionsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/educational-resources/search/suggestions`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/educational-resources/search/suggestions`,
+        method: "GET",
+        params,
+      },
+      options,
+    );
   };
   /**
    * Get list of available subjects for resources
    * @summary Get available subjects
    */
-  const educationalResourcesGetSubjects = () => {
-    return customInstance<void>({
-      url: `/api/educational-resources/categories/subjects`,
-      method: "GET",
-    });
+  const educationalResourcesGetSubjects = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/categories/subjects`, method: "GET" },
+      options,
+    );
   };
   /**
    * Get list of popular tags used in resources
    * @summary Get popular tags
    */
-  const educationalResourcesGetPopularTags = () => {
-    return customInstance<void>({
-      url: `/api/educational-resources/categories/tags`,
-      method: "GET",
-    });
+  const educationalResourcesGetPopularTags = (
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<void>(
+      { url: `/api/educational-resources/categories/tags`, method: "GET" },
+      options,
+    );
   };
   return {
     educationalResourcesGetMyResources,

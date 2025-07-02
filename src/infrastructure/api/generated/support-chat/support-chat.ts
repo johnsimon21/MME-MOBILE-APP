@@ -35,6 +35,8 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSupportChat = () => {
   /**
    * Iniciar uma nova sessão de chat de suporte. Usuários autenticados podem iniciar sessões.
@@ -42,13 +44,17 @@ export const getSupportChat = () => {
    */
   const supportChatStartChatSession = (
     startChatSessionDto: StartChatSessionDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SupportChatSessionResponseDto>({
-      url: `/api/support/chat/sessions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: startChatSessionDto,
-    });
+    return customInstance<SupportChatSessionResponseDto>(
+      {
+        url: `/api/support/chat/sessions`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: startChatSessionDto,
+      },
+      options,
+    );
   };
   /**
    * Obter sessões de chat do usuário. Usuários veem suas próprias sessões, coordenadores veem todas.
@@ -56,22 +62,25 @@ export const getSupportChat = () => {
    */
   const supportChatGetChatSessions = (
     params?: SupportChatGetChatSessionsParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<ChatSessionsListResponseDto>({
-      url: `/api/support/chat/sessions`,
-      method: "GET",
-      params,
-    });
+    return customInstance<ChatSessionsListResponseDto>(
+      { url: `/api/support/chat/sessions`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Obter detalhes de uma sessão de chat específica. Usuários podem ver apenas suas próprias sessões.
    * @summary Get chat session details
    */
-  const supportChatGetChatSession = (sessionId: string) => {
-    return customInstance<SupportChatSessionResponseDto>({
-      url: `/api/support/chat/sessions/${sessionId}`,
-      method: "GET",
-    });
+  const supportChatGetChatSession = (
+    sessionId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SupportChatSessionResponseDto>(
+      { url: `/api/support/chat/sessions/${sessionId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Enviar mensagem em uma sessão de chat. Apenas participantes da sessão podem enviar mensagens.
@@ -80,13 +89,17 @@ export const getSupportChat = () => {
   const supportChatSendMessage = (
     sessionId: string,
     sendChatMessageDto: SendChatMessageDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SupportChatMessageResponseDto>({
-      url: `/api/support/chat/sessions/${sessionId}/messages`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: sendChatMessageDto,
-    });
+    return customInstance<SupportChatMessageResponseDto>(
+      {
+        url: `/api/support/chat/sessions/${sessionId}/messages`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: sendChatMessageDto,
+      },
+      options,
+    );
   };
   /**
    * Obter mensagens de uma sessão de chat. Apenas participantes podem ver as mensagens.
@@ -95,12 +108,16 @@ export const getSupportChat = () => {
   const supportChatGetChatMessages = (
     sessionId: string,
     params?: SupportChatGetChatMessagesParams,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/support/chat/sessions/${sessionId}/messages`,
-      method: "GET",
-      params,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/support/chat/sessions/${sessionId}/messages`,
+        method: "GET",
+        params,
+      },
+      options,
+    );
   };
   /**
    * Fechar uma sessão de chat. Usuários podem fechar suas próprias sessões, coordenadores podem fechar qualquer sessão.
@@ -109,13 +126,17 @@ export const getSupportChat = () => {
   const supportChatCloseChatSession = (
     sessionId: string,
     closeChatSessionDto: CloseChatSessionDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SupportChatSessionResponseDto>({
-      url: `/api/support/chat/sessions/${sessionId}/close`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: closeChatSessionDto,
-    });
+    return customInstance<SupportChatSessionResponseDto>(
+      {
+        url: `/api/support/chat/sessions/${sessionId}/close`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: closeChatSessionDto,
+      },
+      options,
+    );
   };
   /**
    * Atribuir sessão de chat a um agente. Apenas coordenadores podem atribuir sessões.
@@ -124,13 +145,17 @@ export const getSupportChat = () => {
   const supportChatAssignChatSession = (
     sessionId: string,
     supportChatAssignChatSessionBody: SupportChatAssignChatSessionBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SupportChatSessionResponseDto>({
-      url: `/api/support/chat/sessions/${sessionId}/assign`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: supportChatAssignChatSessionBody,
-    });
+    return customInstance<SupportChatSessionResponseDto>(
+      {
+        url: `/api/support/chat/sessions/${sessionId}/assign`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: supportChatAssignChatSessionBody,
+      },
+      options,
+    );
   };
   return {
     supportChatStartChatSession,

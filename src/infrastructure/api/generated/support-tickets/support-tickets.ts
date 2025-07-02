@@ -35,12 +35,17 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSupportTickets = () => {
   /**
    * Criar um ticket de suporte. Usuários autenticados podem criar tickets.
    * @summary Create support ticket
    */
-  const ticketsCreateTicket = (createTicketDto: CreateTicketDto) => {
+  const ticketsCreateTicket = (
+    createTicketDto: CreateTicketDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
     const formData = new FormData();
     formData.append(`title`, createTicketDto.title);
     formData.append(`description`, createTicketDto.description);
@@ -50,33 +55,41 @@ export const getSupportTickets = () => {
       formData.append(`attachment`, createTicketDto.attachment);
     }
 
-    return customInstance<TicketResponseDto>({
-      url: `/api/support/tickets`,
-      method: "POST",
-      headers: { "Content-Type": "multipart/form-data" },
-      data: formData,
-    });
+    return customInstance<TicketResponseDto>(
+      {
+        url: `/api/support/tickets`,
+        method: "POST",
+        headers: { "Content-Type": "multipart/form-data" },
+        data: formData,
+      },
+      options,
+    );
   };
   /**
    * Obter tickets. Usuários veem seus próprios tickets, coordenadores veem todos.
    * @summary Get tickets
    */
-  const ticketsGetTickets = (params?: TicketsGetTicketsParams) => {
-    return customInstance<TicketsListResponseDto>({
-      url: `/api/support/tickets`,
-      method: "GET",
-      params,
-    });
+  const ticketsGetTickets = (
+    params?: TicketsGetTicketsParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<TicketsListResponseDto>(
+      { url: `/api/support/tickets`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Obter detalhes de um ticket específico. Usuários podem ver apenas seus próprios tickets.
    * @summary Get ticket details
    */
-  const ticketsGetTicketById = (ticketId: string) => {
-    return customInstance<TicketDetailsResponseDto>({
-      url: `/api/support/tickets/${ticketId}`,
-      method: "GET",
-    });
+  const ticketsGetTicketById = (
+    ticketId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<TicketDetailsResponseDto>(
+      { url: `/api/support/tickets/${ticketId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Atualizar um ticket. Usuários podem atualizar seus próprios tickets, coordenadores podem atualizar qualquer ticket.
@@ -85,13 +98,17 @@ export const getSupportTickets = () => {
   const ticketsUpdateTicket = (
     ticketId: string,
     updateTicketDto: UpdateTicketDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<TicketResponseDto>({
-      url: `/api/support/tickets/${ticketId}`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateTicketDto,
-    });
+    return customInstance<TicketResponseDto>(
+      {
+        url: `/api/support/tickets/${ticketId}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateTicketDto,
+      },
+      options,
+    );
   };
   /**
    * Atualizar status de um ticket. Apenas coordenadores podem alterar o status.
@@ -100,24 +117,32 @@ export const getSupportTickets = () => {
   const ticketsUpdateTicketStatus = (
     ticketId: string,
     ticketsUpdateTicketStatusBody: TicketsUpdateTicketStatusBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<TicketResponseDto>({
-      url: `/api/support/tickets/${ticketId}/status`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: ticketsUpdateTicketStatusBody,
-    });
+    return customInstance<TicketResponseDto>(
+      {
+        url: `/api/support/tickets/${ticketId}/status`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: ticketsUpdateTicketStatusBody,
+      },
+      options,
+    );
   };
   const ticketsAddMessage = (
     ticketId: string,
     addTicketMessageDto: AddTicketMessageDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<void>({
-      url: `/api/support/tickets/${ticketId}/messages`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: addTicketMessageDto,
-    });
+    return customInstance<void>(
+      {
+        url: `/api/support/tickets/${ticketId}/messages`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: addTicketMessageDto,
+      },
+      options,
+    );
   };
   /**
    * Atribuir ticket a um agente. Apenas coordenadores podem atribuir tickets.
@@ -126,13 +151,17 @@ export const getSupportTickets = () => {
   const ticketsAssignTicket = (
     ticketId: string,
     ticketsAssignTicketBody: TicketsAssignTicketBody,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<TicketResponseDto>({
-      url: `/api/support/tickets/${ticketId}/assign`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: ticketsAssignTicketBody,
-    });
+    return customInstance<TicketResponseDto>(
+      {
+        url: `/api/support/tickets/${ticketId}/assign`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: ticketsAssignTicketBody,
+      },
+      options,
+    );
   };
   return {
     ticketsCreateTicket,

@@ -37,50 +37,65 @@ import type {
 
 import { customInstance } from "../../custom-instance";
 
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 export const getSessions = () => {
   /**
    * Create a new session with specified mentees and configuration. Only mentors can create sessions.
    * @summary Create new mentoring session
    */
-  const sessionsCreateSession = (createSessionDto: CreateSessionDto) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createSessionDto,
-    });
+  const sessionsCreateSession = (
+    createSessionDto: CreateSessionDto,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SessionResponseDto>(
+      {
+        url: `/api/sessions`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: createSessionDto,
+      },
+      options,
+    );
   };
   /**
    * Retrieve sessions based on user role and filters. Users see only sessions they have access to.
    * @summary Get sessions with filters
    */
-  const sessionsFindSessions = (params?: SessionsFindSessionsParams) => {
-    return customInstance<ChatSessionsListResponseDto>({
-      url: `/api/sessions`,
-      method: "GET",
-      params,
-    });
+  const sessionsFindSessions = (
+    params?: SessionsFindSessionsParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<ChatSessionsListResponseDto>(
+      { url: `/api/sessions`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Retrieve session statistics. Coordinators see all stats, mentors see only their own.
    * @summary Get session statistics
    */
-  const sessionsGetSessionStats = (params?: SessionsGetSessionStatsParams) => {
-    return customInstance<SessionStatsResponseDto>({
-      url: `/api/sessions/stats`,
-      method: "GET",
-      params,
-    });
+  const sessionsGetSessionStats = (
+    params?: SessionsGetSessionStatsParams,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SessionStatsResponseDto>(
+      { url: `/api/sessions/stats`, method: "GET", params },
+      options,
+    );
   };
   /**
    * Retrieve session details. Access controlled by user role and session participation.
    * @summary Get session details
    */
-  const sessionsFindSessionById = (sessionId: string) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions/${sessionId}`,
-      method: "GET",
-    });
+  const sessionsFindSessionById = (
+    sessionId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SessionResponseDto>(
+      { url: `/api/sessions/${sessionId}`, method: "GET" },
+      options,
+    );
   };
   /**
    * Update session details. Coordinators can update any session, mentors can update only their own.
@@ -89,23 +104,30 @@ export const getSessions = () => {
   const sessionsUpdateSession = (
     sessionId: string,
     updateSessionDto: UpdateSessionDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions/${sessionId}`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateSessionDto,
-    });
+    return customInstance<SessionResponseDto>(
+      {
+        url: `/api/sessions/${sessionId}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: updateSessionDto,
+      },
+      options,
+    );
   };
   /**
    * Cancel a scheduled session or delete it permanently. Coordinators can delete any session, mentors only their own.
    * @summary Cancel/Delete session
    */
-  const sessionsDeleteSession = (sessionId: string) => {
-    return customInstance<SessionsDeleteSession200>({
-      url: `/api/sessions/${sessionId}`,
-      method: "DELETE",
-    });
+  const sessionsDeleteSession = (
+    sessionId: string,
+    options?: SecondParameter<typeof customInstance>,
+  ) => {
+    return customInstance<SessionsDeleteSession200>(
+      { url: `/api/sessions/${sessionId}`, method: "DELETE" },
+      options,
+    );
   };
   /**
    * Perform actions like start, pause, resume, end, or cancel session. Access controlled by role and ownership.
@@ -114,13 +136,17 @@ export const getSessions = () => {
   const sessionsPerformSessionAction = (
     sessionId: string,
     sessionActionDto: SessionActionDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions/${sessionId}/actions`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: sessionActionDto,
-    });
+    return customInstance<SessionResponseDto>(
+      {
+        url: `/api/sessions/${sessionId}/actions`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: sessionActionDto,
+      },
+      options,
+    );
   };
   /**
    * Add a mentee to an existing session. Coordinators can add to any session, mentors only to their own.
@@ -129,13 +155,17 @@ export const getSessions = () => {
   const sessionsAddParticipant = (
     sessionId: string,
     addParticipantDto: AddParticipantDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions/${sessionId}/participants`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: addParticipantDto,
-    });
+    return customInstance<SessionResponseDto>(
+      {
+        url: `/api/sessions/${sessionId}/participants`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: addParticipantDto,
+      },
+      options,
+    );
   };
   /**
    * Remove a mentee from a session. Coordinators can remove from any session, mentors only from their own.
@@ -145,13 +175,17 @@ export const getSessions = () => {
     sessionId: string,
     menteeId: string,
     removeParticipantDto: RemoveParticipantDto,
+    options?: SecondParameter<typeof customInstance>,
   ) => {
-    return customInstance<SessionResponseDto>({
-      url: `/api/sessions/${sessionId}/participants/${menteeId}`,
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      data: removeParticipantDto,
-    });
+    return customInstance<SessionResponseDto>(
+      {
+        url: `/api/sessions/${sessionId}/participants/${menteeId}`,
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        data: removeParticipantDto,
+      },
+      options,
+    );
   };
   return {
     sessionsCreateSession,

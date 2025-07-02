@@ -37,3 +37,13 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Firebase credentials
+credentials.json
+service-account-key.json
+firebase-adminsdk-*.json
+
+# Environment files
+.env
+.env.local
+.env.production
