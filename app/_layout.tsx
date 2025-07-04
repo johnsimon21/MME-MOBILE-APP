@@ -8,10 +8,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { View } from 'react-native';
-import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { FloatingButtonProvider } from '@/src/context/FloatingButtonContext';
 import { SupportProvider } from '@/src/context/SupportContext';
 import { FloatingOptionsButton } from '@/src/presentation/components/ui/FloatingUnfoldVerticalButton';
+import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -62,6 +62,8 @@ function RootLayoutContent() {
             <View style={{ flex: 1 }}> 
               <Stack>
                 <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/ForgotPasswordScreen" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/ResetPasswordScreen" options={{ headerShown: false }} />
                 <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="+not-found" />

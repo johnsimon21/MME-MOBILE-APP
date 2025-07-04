@@ -11,7 +11,6 @@ import Home from ".";
 import { SessionManagementScreen } from "@/src/presentation/screens/SessionManagementScreen";
 import { EducationalResourcesScreen } from "@/src/presentation/screens/EducationalResourcesScreen";
 import { ProfileScreen } from "@/src/presentation/screens/ProfileScreen";
-import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardScreen";
@@ -20,6 +19,7 @@ import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen"
 import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
 import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
+import { useAuth } from "@/src/context/AuthContext";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();

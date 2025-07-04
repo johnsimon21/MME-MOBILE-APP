@@ -1,362 +1,181 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import {
-  signInWithCustomToken,
-  onAuthStateChanged,
-  signOut,
-  User as FirebaseUser,
-  signInWithEmailAndPassword
-} from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
-import {
-  getAuthentication,
-  AuthVerifyTokenResult
-} from '../infrastructure/api/generated/authentication/authentication';
-import { AuthResetPasswordParams, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from '../infrastructure/api/generated/model';
+import axios from "axios";
+import { User as FirebaseUser, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { ENV } from "../config/env";
+import { auth, db } from "../config/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { AuthState } from "../interfaces/auth.interface";
+import { useRouter } from "expo-router";
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../infrastructure/api";
 
-// Types matching your backend
-export interface User {
-  uid: string;
-  email: string;
-  fullName: string;
-  role: 'mentor' | 'mentee' | 'coordinator';
-  school: string;
-  // Add other user fields from your backend
-  cellphone?: string;
-  birth?: Date;
-  gender?: string;
-  municipality?: string;
-  province?: string;
-  image?: string;
+interface AuthContextProps {
+    user: any | null;
+    firebaseUser: FirebaseUser | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    error: string | null;
+    clearError: () => void;
+    login: (email: string, password: string) => Promise<boolean>;
+    register: (data: any) => Promise<void>;
+    logout: () => Promise<void>;
+    getIdToken: () => Promise<string | null>;
+    forgotPassword: (email: string) => Promise<void>;
+    resetPassword: (uid: string, newPassword: string) => Promise<void>;
 }
 
-export interface AuthState {
-  user: User | null;
-  firebaseUser: FirebaseUser | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  idToken: string | null;
-}
+const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 
-export interface AuthContextType extends AuthState {
-  // Auth actions
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterDto) => Promise<void>;
-  logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, data: ResetPasswordDto) => Promise<void>;
+export const useAuth = () => useContext(AuthContext);
 
-  // Utility functions
-  refreshUser: () => Promise<void>;
-  getIdToken: () => Promise<string | null>;
-  clearError: () => void;
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<any | null>(null);
+    const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  // Error state
-  error: string | null;
-}
+    const router = useRouter();
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    firebaseUser: null,
-    isLoading: true,
-    isAuthenticated: false,
-    idToken: null,
-  });
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
-  // Get API functions
-  const api = getAuthentication();
-
-  // Listen to Firebase auth state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('🔥 Firebase auth state changed:', firebaseUser?.uid);
-
-      if (firebaseUser) {
-        try {
-          // Get ID token
-          const idToken = await firebaseUser.getIdToken();
-
-          // Get user data from Firestore
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-
-            setState({
-              user: userData,
-              firebaseUser,
-              isLoading: false,
-              isAuthenticated: true,
-              idToken,
-            });
-
-            console.log('✅ User authenticated:', userData.email);
-          } else {
-            console.warn('⚠️ User document not found in Firestore');
-            setState({
-              user: null,
-              firebaseUser: null,
-              isLoading: false,
-              isAuthenticated: false,
-              idToken: null,
-            });
-          }
-        } catch (error) {
-          console.error('❌ Error getting user data:', error);
-          setState({
-            user: null,
-            firebaseUser: null,
-            isLoading: false,
-            isAuthenticated: false,
-            idToken: null,
-          });
-        }
-      } else {
-        setState({
-          user: null,
-          firebaseUser: null,
-          isLoading: false,
-          isAuthenticated: false,
-          idToken: null,
+    // Listen for Firebase Auth state changes
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+            setFirebaseUser(fbUser);
+            if (fbUser) {
+                // Fetch user profile from backend
+                const idToken = await fbUser.getIdToken();
+                try {
+                    const res = await api.get(`/auth/me`);
+                    console.log("✅ Usuário autenticado:", res.data);
+                    setUser(res.data);
+                } catch {
+                    setUser(null);
+                }
+            } else {
+                setUser(null);
+            }
+            setIsLoading(false);
         });
-      }
-    });
+        return () => unsubscribe();
+    }, []);
 
-    return unsubscribe;
-  }, []);
+    // Login: call backend, get customToken, sign in with Firebase
+    const login = async (email: string, password: string) => {
+        try {
+            setError(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      setError(null);
-      setState(prev => ({ ...prev, isLoading: true }));
+            console.log('🔄 Iniciando login com Firebase...');
 
-      console.log('🔄 Iniciando login com Firebase...', email+"-----"+password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
 
-      // 🔑 Etapa 1: Login com Firebase Auth (direto)
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
+            console.log('✅ Firebase login bem-sucedido:', firebaseUser.uid);
 
-      console.log('✅ Firebase login bem-sucedido:', firebaseUser.uid);
+            const idToken = await firebaseUser.getIdToken();
+            await AsyncStorage.setItem('@token_id', idToken);
 
-      // 🔐 Etapa 2: Obter ID Token (JWT)
-      const idToken = await firebaseUser.getIdToken();
+            const response = await api.post('/auth/verify-token');
 
-      // 📦 Etapa 3: Buscar dados do usuário no Firestore
-      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
-      if (!userDoc.exists()) {
-        throw new Error('Dados do usuário não encontrados no Firestore');
-      }
+            console.log('✅ Login completo:', response.data.email);
 
-      const userData = userDoc.data() as User;
+            // Redirecionar
+            router.replace('/(tabs)');
+            return true;
+        } catch (error: any) {
+            console.error('❌ Falha no login:', error);
 
-      // Atualizar estado global
-      setState({
-        user: userData,
-        firebaseUser,
-        isLoading: false,
-        isAuthenticated: true,
-        idToken,
-      });
+            let errorMessage = 'Erro ao fazer login';
 
-      console.log('✅ Login completo:', userData.email);
+            if (error.code) {
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        errorMessage = 'E-mail ou senha incorretos';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erro de conexão. Verifique sua internet.';
+                        break;
+                    default:
+                        errorMessage = error.message || errorMessage;
+                }
+            } else {
+                errorMessage = error.message || errorMessage;
+            }
 
-      // Redirecionar
-      router.replace('/(tabs)');
-      return true;
-    } catch (error: any) {
-      console.error('❌ Falha no login:', error);
-      setState(prev => ({ ...prev, isLoading: false }));
-
-      let errorMessage = 'Erro ao fazer login';
-
-      if (error.code) {
-        switch (error.code) {
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-            errorMessage = 'E-mail ou senha incorretos';
-            break;
-          case 'auth/network-request-failed':
-            errorMessage = 'Erro de conexão. Verifique sua internet.';
-            break;
-          default:
-            errorMessage = error.message || errorMessage;
+            setError(errorMessage);
+            Alert.alert('Erro no Login', errorMessage);
+            return false;
         }
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
+    };
 
-      setError(errorMessage);
-      Alert.alert('Erro no Login', errorMessage);
-      return false;
-    }
-  };
-
-  const register = async (userData: RegisterDto) => {
-    try {
-      setError(null);
-      setState(prev => ({ ...prev, isLoading: true }));
-
-      const response = await api.authRegister(userData);
-      console.log('✅ Registration successful:', response);
-
-      setState(prev => ({ ...prev, isLoading: false }));
-
-      Alert.alert(
-        'Cadastro Realizado',
-        'Sua conta foi criada com sucesso! Faça login para continuar.',
-        [{
-          text: 'OK',
-          onPress: () => router.push('/auth/LoginScreen')
-        }]
-      );
-    } catch (error: any) {
-      console.error('❌ Registration failed:', error);
-      setState(prev => ({ ...prev, isLoading: false }));
-
-      const errorMessage = error.response?.data?.message || 'Erro ao criar conta';
-      setError(errorMessage);
-      Alert.alert('Erro no Cadastro', errorMessage);
-      throw error;
-    }
-  };
-
-  
-
-  const logout = async () => {
-    try {
-      setState(prev => ({ ...prev, isLoading: true }));
-
-      // Sign out from Firebase
-      await signOut(auth);
-
-      setState({
-        user: null,
-        firebaseUser: null,
-        isLoading: false,
-        isAuthenticated: false,
-        idToken: null,
-      });
-
-      setError(null);
-      console.log('✅ Logout successful');
-
-      // Navigate to login
-      router.replace('/auth/LoginScreen');
-    } catch (error) {
-      console.error('❌ Logout error:', error);
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  const forgotPassword = async (email: string) => {
-    try {
-      setError(null);
-      const emailData: ForgotPasswordDto = { email };
-      const response = await api.authForgotPassword(emailData);
-
-      Alert.alert(
-        'Email Enviado',
-        response.message || 'Verifique seu email para redefinir a senha.',
-        [{ text: 'OK' }]
-      );
-    } catch (error: any) {
-      console.error('❌ Forgot password failed:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao enviar email';
-      setError(errorMessage);
-      Alert.alert('Erro', errorMessage);
-      throw error;
-    }
-  };
-
-  const resetPassword = async (token: string, data: ResetPasswordDto) => {
-    try {
-      setError(null);
-      const params: AuthResetPasswordParams = { token };
-      const response = await api.authResetPassword(data, params);
-
-      Alert.alert(
-        'Senha Redefinida',
-        response.message || 'Sua senha foi redefinida com sucesso!',
-        [{
-          text: 'OK',
-          onPress: () => router.push('/auth/LoginScreen')
-        }]
-      );
-    } catch (error: any) {
-      console.error('❌ Reset password failed:', error);
-      const errorMessage = error.response?.data?.message || 'Erro ao redefinir senha';
-      setError(errorMessage);
-      Alert.alert('Erro', errorMessage);
-      throw error;
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      if (state.firebaseUser) {
-        const userDoc = await getDoc(doc(db, 'users', state.firebaseUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
-          setState(prev => ({ ...prev, user: userData }));
+    // Register: call backend
+    const register = async (data: any) => {
+        setIsLoading(true);
+        try {
+            await api.post(`/auth/register`, data);
+            // Optionally auto-login after registration
+        } finally {
+            setIsLoading(false);
         }
-      }
-    } catch (error) {
-      console.error('Error refreshing user:', error);
-    }
-  };
+    };
 
-  const getIdToken = async (): Promise<string | null> => {
-    try {
-      if (state.firebaseUser) {
-        return await state.firebaseUser.getIdToken();
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting ID token:', error);
-      return null;
-    }
-  };
+    // Logout
+    const logout = async () => {
+        await signOut(auth);
+        await AsyncStorage.removeItem('@token_id');
+        setUser(null);
+        setFirebaseUser(null);
+    };
 
-  const clearError = () => {
-    setError(null);
-  };
+    // Get Firebase ID token
+    const getIdToken = async () => {
+        return firebaseUser ? firebaseUser.getIdToken() : null;
+    };
 
-  const contextValue: AuthContextType = {
-    ...state,
-    error,
-    login,
-    register,
-    logout,
-    forgotPassword,
-    resetPassword,
-    refreshUser,
-    getIdToken,
-    clearError,
-  };
+    // Forgot Password: call backend
+    const forgotPassword = async (email: string) => {
+        setIsLoading(true);
+        try {
+            await api.post(`/auth/forgot-password`, { email });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+    // Reset Password: call backend
+    const resetPassword = async (uid: string, newPassword: string) => {
+        setIsLoading(true);
+        try {
+            await axios.post(`/auth/reset-password`, { uid, newPassword });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const clearError = () => {
+        setError(null);
+    };
+
+    return (
+        <AuthContext.Provider
+            value={{
+                user,
+                firebaseUser,
+                isAuthenticated: !!user,
+                isLoading,
+                login,
+                register,
+                logout,
+                getIdToken,
+                forgotPassword,
+                resetPassword,
+                error,
+                clearError
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 };

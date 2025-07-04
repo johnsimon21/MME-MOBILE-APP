@@ -2,10 +2,10 @@ import React, { useContext, useState } from "react";
 import AuthHeader from "../../src/presentation/components/AuthHeader";
 import SelectProfile from "../../src/presentation/components/SelectProfile";
 import Form1 from "../../src/presentation/components/RegistrationForm1";
-import { AuthContext, RegisterFullFormData } from "../../src/context/AuthContext";
 import Form2 from "../../src/presentation/components/RegistrationForm2";
 import { Text, TouchableOpacity, View } from "react-native";
 import tw from "twrnc";
+import { useAuth } from "@/src/context/AuthContext";
 
 export type FormData1 = {
     profile: "MENTOR" | "MENTORADO" | "COORDENADOR";
@@ -28,7 +28,7 @@ export default function RegisterScreen({ navigation }: any) {
     const [selectedProfile, setSelectedProfile] = useState<FormData1["profile"]>("MENTOR");
     var [registerStep, setRegisterStep] = useState<number>(1);
     const [submitMessage, setSubmitMessage] = useState<"Próximo" | "Criar">("Próximo");
-    const auth = useContext(AuthContext);
+    const { register } = useAuth();
 
     const [formData1, setFormData1] = useState<FormData1>({
         profile: selectedProfile,
@@ -78,15 +78,15 @@ export default function RegisterScreen({ navigation }: any) {
             return;
         }
 
-        const registerData: RegisterFullFormData = {
+        const registerData: any = {
             ...formData1,
             ...formData2,
             profile: selectedProfile,
         };
         console.log(registerData)
-        if (!auth) return; // Ensure auth context is available
+        if (!register) return; // Ensure auth context is available
 
-        await auth.register(registerData);
+        await register(registerData);
     };
 
     return (

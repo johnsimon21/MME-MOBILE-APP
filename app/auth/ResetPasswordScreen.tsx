@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, TextInput, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import tw from "twrnc";
 import AuthHeader from "../../src/presentation/components/AuthHeader";
-import { useAuth } from "../../src/context/AuthContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 interface ResetPasswordScreenProps {
     navigation: any;
@@ -62,8 +62,8 @@ export default function ResetPasswordScreen({ navigation, route }: ResetPassword
             return;
         }
 
-        if (!token || !uid) {
-            Alert.alert("Erro", "Token ou ID do usuário inválido");
+        if (!uid) {
+            Alert.alert("Erro", "ID do usuário inválido");
             return;
         }
 
@@ -71,10 +71,10 @@ export default function ResetPasswordScreen({ navigation, route }: ResetPassword
             setIsLoading(true);
             console.log("🔄 Redefinindo senha...");
             
-            await resetPassword(token, {
-                uid: uid,
-                newPassword: newPassword
-            });
+            await resetPassword(
+                uid,
+                newPassword
+            );
             
             console.log("✅ Senha redefinida com sucesso");
             

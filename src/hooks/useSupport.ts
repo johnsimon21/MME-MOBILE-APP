@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import { SupportTicket, FAQ, ChatMessage } from '@/src/types/support.types';
-import { useAuth } from '@/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { useAuthState } from './useAuthState';
 
 export function useSupport() {
-    const { user, isAdmin } = useAuth();
-    
+    const { user } = useAuth();
+    const { isCoordinator } = useAuthState();
+
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [faqs, setFaqs] = useState<FAQ[]>([]);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -45,7 +47,7 @@ export function useSupport() {
     }, [user]);
 
     const updateTicket = useCallback((updatedTicket: SupportTicket) => {
-        setTickets(prev => prev.map(ticket => 
+        setTickets(prev => prev.map(ticket =>
             ticket.id === updatedTicket.id ? updatedTicket : ticket
         ));
     }, []);
@@ -56,7 +58,7 @@ export function useSupport() {
 
     // FAQ operations
     const updateFAQHelpful = useCallback((faqId: string, helpful: number) => {
-        setFaqs(prev => prev.map(faq => 
+        setFaqs(prev => prev.map(faq =>
             faq.id === faqId ? { ...faq, helpful } : faq
         ));
     }, []);
@@ -66,30 +68,30 @@ export function useSupport() {
         const newMessage: ChatMessage = {
             id: Date.now().toString(),
             message,
-            sender: isAdmin() ? 'admin' : 'user',
+            sender: isCoordinator ? 'admin' : 'user',
             timestamp: new Date().toISOString(),
-            senderName: isAdmin() ? 'Admin' : user?.fullName || 'Usuário'
+            senderName: isCoordinator ? 'Admin' : user?.fullName || 'Usuário'
         };
 
         setChatMessages(prev => [...prev, newMessage]);
         return newMessage;
-    }, [user, isAdmin]);
+    }, [user, isCoordinator]);
 
     // Filter functions
     const getFilteredTickets = useCallback((searchQuery: string) => {
         return tickets.filter(ticket => {
-            const matchesUser = isAdmin() || ticket.userId === user?.id;
+            const matchesUser = isCoordinator || ticket.userId === user?.id;
             const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+                ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesUser && matchesSearch;
         });
-    }, [tickets, user, isAdmin]);
+    }, [tickets, user, isCoordinator]);
 
     const getFilteredFAQs = useCallback((searchQuery: string, category: string) => {
         return faqs.filter(faq => {
             const matchesCategory = category === 'all' || faq.category === category;
             const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
+                faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesCategory && matchesSearch;
         });
     }, [faqs]);
@@ -101,18 +103,18 @@ export function useSupport() {
         chatMessages,
         loading,
         error,
-        
+
         // Actions
         createTicket,
         updateTicket,
         deleteTicket,
         updateFAQHelpful,
         sendChatMessage,
-        
+
         // Filters
         getFilteredTickets,
         getFilteredFAQs,
-        
+
         // Setters
         setTickets,
         setFaqs,

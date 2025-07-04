@@ -1,6 +1,7 @@
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from "../context/AuthContext";
+import { AuthState } from "../interfaces/auth.interface";
 
-export const useAuthState = () => {
+export const useAuthState = (): AuthState => {
   const { user, isLoading, isAuthenticated } = useAuth();
   
   return {

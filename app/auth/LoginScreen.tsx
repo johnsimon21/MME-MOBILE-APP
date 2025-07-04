@@ -2,23 +2,25 @@ import React, { useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import tw from "twrnc";
 import AuthHeader from "../../src/presentation/components/AuthHeader";
-import { useAuth } from "../../src/context/AuthContext";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function LoginScreen({ navigation }: any) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    
+    const router = useRouter();
+
     const { login, isLoading, error, clearError } = useAuth();
 
     const handleLogin = async () => {
         clearError();
-        
+
         // Validation
         if (!email.trim()) {
             alert("Por favor, insira seu email");
             return;
         }
-        
+
         if (!password.trim()) {
             alert("Por favor, insira sua senha");
             return;
@@ -31,9 +33,9 @@ export default function LoginScreen({ navigation }: any) {
 
         try {
             console.log("🔄 Iniciando login com Firebase...");
-            
+
             const success = await login(email.trim().toLowerCase(), password);
-            
+
             if (success) {
                 console.log("✅ Login com Firebase bem-sucedido!");
                 // Navigation is handled automatically by the auth context
@@ -42,6 +44,16 @@ export default function LoginScreen({ navigation }: any) {
             console.error("❌ Erro no login com Firebase:", error);
             // Error handling is done in the auth context
         }
+    };
+
+    const handleForgotPassword = () => {
+        // @ts-ignore
+        router.push('auth/ForgotPasswordScreen');
+    };
+
+    const handleRegister = () => {
+        // @ts-ignore
+        router.push('auth/RegisterScreen');
     };
 
     return (
@@ -101,7 +113,7 @@ export default function LoginScreen({ navigation }: any) {
 
                 {/* Forgot Password Link */}
                 <TouchableOpacity
-                    onPress={() => navigation.navigate('ForgotPassword')}
+                    onPress={handleForgotPassword}
                     disabled={isLoading}
                     style={tw`mb-5`}
                 >
@@ -116,7 +128,7 @@ export default function LoginScreen({ navigation }: any) {
                         Não tem uma conta?{" "}
                     </Text>
                     <TouchableOpacity
-                        onPress={() => navigation.navigate('Register')}
+                        onPress={handleRegister}
                         disabled={isLoading}
                     >
                         <Text style={tw`text-[#007AFF] text-sm font-semibold`}>

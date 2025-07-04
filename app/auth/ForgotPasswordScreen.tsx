@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import tw from "twrnc";
 import AuthHeader from "../../src/presentation/components/AuthHeader";
-import { useAuth } from "../../src/context/AuthContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function ForgotPasswordScreen({ navigation }: any) {
     const [email, setEmail] = useState("");

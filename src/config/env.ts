@@ -15,8 +15,8 @@ export const ENV = {
 
   // API Configuration
   API_BASE_URL: __DEV__
-    ? `http://${IP}:3000/`
-    : 'https://your-production-domain.com/api',
+    ? `http://${IP}:3000/api`
+    : 'https://your-production-domain.com/',
 
   // Other environment variables
   DEBUG_MODE: __DEV__,
