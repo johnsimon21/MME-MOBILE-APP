@@ -1,6 +1,6 @@
-import * as React from "react";
-import { View, Text, TextInput, Modal, Pressable } from "react-native";
-import tw from "twrnc";
+import React from 'react';
+import { Modal, View, Text, TouchableOpacity, TextInput } from 'react-native';
+import tw from 'twrnc';
 
 interface FilterModalProps {
   visible: boolean;
@@ -10,25 +10,33 @@ interface FilterModalProps {
     status: "Disponível" | "Indisponível" | null;
     location: string | null;
   };
-  setFilters: React.Dispatch<
-    React.SetStateAction<{
-      userType: "Mentor" | "Mentorado" | null;
-      status: "Disponível" | "Indisponível" | null;
-      location: string | null;
-    }>
-  >;
+  setFilters: (filters: any) => void;
   onApply: () => void;
   onReset: () => void;
 }
 
-export function FilterModal({
+export const FilterModal: React.FC<FilterModalProps> = ({
   visible,
   onClose,
   filters,
   setFilters,
   onApply,
   onReset,
-}: FilterModalProps) {
+}) => {
+  const [localLocation, setLocalLocation] = React.useState(filters.location || '');
+
+  React.useEffect(() => {
+    setLocalLocation(filters.location || '');
+  }, [filters.location]);
+
+  const handleApply = () => {
+    setFilters({
+      ...filters,
+      location: localLocation.trim() || null,
+    });
+    onApply();
+  };
+
   return (
     <Modal
       animationType="slide"
@@ -36,71 +44,112 @@ export function FilterModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={tw`flex-1 justify-end bg-black bg-opacity-50`}>
-        <View style={tw`bg-white rounded-t-3xl p-5 h-2/3`}>
-          <Text style={tw`text-xl font-bold mb-5 text-center`}>Filtrar por</Text>
-          
+      <TouchableOpacity
+        style={tw`flex-1 bg-black bg-opacity-50 justify-center items-center`}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <View style={tw`bg-white rounded-xl p-6 w-11/12 max-w-md mx-4`}>
+          <Text style={tw`text-xl font-bold mb-6 text-center`}>Filtros</Text>
+
           {/* User Type Filter */}
-          <Text style={tw`text-lg font-semibold mb-2`}>Tipo de Usuário</Text>
-          <View style={tw`flex-row mb-4`}>
-            <Pressable
-              style={tw`mr-2 px-4 py-2 rounded-full ${filters.userType === "Mentor" ? "bg-blue-500" : "bg-gray-200"}`}
-              onPress={() => setFilters({...filters, userType: filters.userType === "Mentor" ? null : "Mentor"})}
-            >
-              <Text style={tw`${filters.userType === "Mentor" ? "text-white" : "text-gray-800"}`}>Mentor</Text>
-            </Pressable>
-            <Pressable
-              style={tw`px-4 py-2 rounded-full ${filters.userType === "Mentorado" ? "bg-blue-500" : "bg-gray-200"}`}
-              onPress={() => setFilters({...filters, userType: filters.userType === "Mentorado" ? null : "Mentorado"})}
-            >
-              <Text style={tw`${filters.userType === "Mentorado" ? "text-white" : "text-gray-800"}`}>Mentorado</Text>
-            </Pressable>
+          <View style={tw`mb-6`}>
+            <Text style={tw`text-base font-semibold mb-3`}>Tipo de Usuário</Text>
+            <View style={tw`flex-row flex-wrap`}>
+              {['Mentor', 'Mentorado'].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={tw`mr-3 mb-2 px-4 py-2 rounded-full border ${
+                    filters.userType === type
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'bg-gray-100 border-gray-300'
+                  }`}
+                  onPress={() =>
+                    setFilters({
+                      ...filters,
+                      userType: filters.userType === type ? null : type as "Mentor" | "Mentorado",
+                    })
+                  }
+                >
+                  <Text
+                    style={tw`${
+                      filters.userType === type ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-          
+
           {/* Status Filter */}
-          <Text style={tw`text-lg font-semibold mb-2`}>Status</Text>
-          <View style={tw`flex-row mb-4`}>
-            <Pressable
-              style={tw`mr-2 px-4 py-2 rounded-full ${filters.status === "Disponível" ? "bg-green-500" : "bg-gray-200"}`}
-              onPress={() => setFilters({...filters, status: filters.status === "Disponível" ? null : "Disponível"})}
-            >
-              <Text style={tw`${filters.status === "Disponível" ? "text-white" : "text-gray-800"}`}>Disponível</Text>
-            </Pressable>
-            <Pressable
-              style={tw`px-4 py-2 rounded-full ${filters.status === "Indisponível" ? "bg-red-500" : "bg-gray-200"}`}
-              onPress={() => setFilters({...filters, status: filters.status === "Indisponível" ? null : "Indisponível"})}
-            >
-              <Text style={tw`${filters.status === "Indisponível" ? "text-white" : "text-gray-800"}`}>Indisponível</Text>
-            </Pressable>
+          <View style={tw`mb-6`}>
+            <Text style={tw`text-base font-semibold mb-3`}>Status</Text>
+            <View style={tw`flex-row flex-wrap`}>
+              {['Disponível', 'Indisponível'].map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  style={tw`mr-3 mb-2 px-4 py-2 rounded-full border ${
+                    filters.status === status
+                      ? 'bg-green-500 border-green-500'
+                      : 'bg-gray-100 border-gray-300'
+                  }`}
+                  onPress={() =>
+                    setFilters({
+                      ...filters,
+                      status: filters.status === status ? null : status as "Disponível" | "Indisponível",
+                    })
+                  }
+                >
+                  <Text
+                    style={tw`${
+                      filters.status === status ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    {status}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-          
+
           {/* Location Filter */}
-          <Text style={tw`text-lg font-semibold mb-2`}>Localização</Text>
-          <TextInput
-            placeholder="Digite a localização"
-            value={filters.location || ""}
-            onChangeText={(text) => setFilters({...filters, location: text || null})}
-            style={tw`bg-gray-100 px-4 py-2 rounded-lg mb-5`}
-          />
-          
+          <View style={tw`mb-6`}>
+            <Text style={tw`text-base font-semibold mb-3`}>Localização</Text>
+            <TextInput
+              style={tw`border border-gray-300 rounded-lg px-4 py-3 text-base`}
+              placeholder="Digite a cidade ou província"
+              value={localLocation}
+              onChangeText={setLocalLocation}
+            />
+          </View>
+
           {/* Action Buttons */}
-          <View style={tw`flex-row justify-between mt-4`}>
-            <Pressable
-              style={tw`flex-1 border border-gray-300 py-3 rounded-full mr-2`}
-              onPress={onReset}
+          <View style={tw`flex-row justify-between`}>
+            <TouchableOpacity
+              style={tw`flex-1 bg-gray-200 py-3 rounded-lg mr-2`}
+              onPress={() => {
+                onReset();
+                setLocalLocation('');
+              }}
             >
-              <Text style={tw`text-center`}>Limpar Filtros</Text>
-            </Pressable>
-            
-            <Pressable
-              style={tw`flex-1 bg-blue-500 py-3 rounded-full ml-2`}
-              onPress={onApply}
+              <Text style={tw`text-center font-semibold text-gray-700`}>
+                Limpar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={tw`flex-1 bg-blue-500 py-3 rounded-lg ml-2`}
+              onPress={handleApply}
             >
-              <Text style={tw`text-center text-white`}>Aplicar</Text>
-            </Pressable>
+              <Text style={tw`text-center font-semibold text-white`}>
+                Aplicar
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   );
-}
+};

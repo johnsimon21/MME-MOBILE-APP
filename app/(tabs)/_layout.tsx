@@ -246,7 +246,7 @@ function UserTabNavigator() {
       {/* <Tab.Screen name="Tarefas" component={AnalyticsScreen} /> */}
       <Tab.Screen name="Emparelhamento" component={Home} />
       <Tab.Screen name="Mensagens" component={MessagesStack} />
-      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{tabBarShowLabel: isMentor}} />
+      {isMentor && <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{tabBarShowLabel: isMentor}} />}
       <Tab.Screen name="Recursos educacionais" component={EducationalResourcesScreen} />
     </Tab.Navigator>
   );
@@ -259,7 +259,6 @@ function MainStack() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      console.log('Not authenticated', { isAuthenticated, isLoading });
       router.replace('/auth/LoginScreen');
     }
   }, [isAuthenticated, isLoading]);
