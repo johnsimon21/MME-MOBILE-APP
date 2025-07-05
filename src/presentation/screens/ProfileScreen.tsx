@@ -43,7 +43,7 @@ interface Connection {
 export const ProfileScreen = () => {
     const { fetchUser, user, isLoading: loadingUser } = useAuth();
     const { getFriends } = useConnections();
-    const { updateUser } = useUsers();
+    const { updateUser, updateUserImage } = useUsers();
     const navigation = useNavigation();
 
     // ✅ Initialize states properly
@@ -51,12 +51,12 @@ export const ProfileScreen = () => {
     const [editedData, setEditedData] = useState<IUser | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Initialize with user data from context
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
     const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
-    
+
     const [connections, setConnections] = useState<IFriends[]>([]);
     const [filteredConnections, setFilteredConnections] = useState<IFriends[]>([]);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -107,7 +107,7 @@ export const ProfileScreen = () => {
             console.log('👤 User data received:', user);
             setUserData(user);
             setEditedData(user);
-            
+
             // Initialize form data
             setSelectedDifficulties(user.difficulties || []);
             setSelectedSkills(user.skills || []);
@@ -154,7 +154,7 @@ export const ProfileScreen = () => {
 
                 // Update via API first
                 const updatedUser = await updateUser(user.uid, updateData);
-                
+
                 console.log('✅ User updated successfully:', updatedUser);
 
                 // Update local storage with the response from API
@@ -164,11 +164,12 @@ export const ProfileScreen = () => {
                 setUserData(updatedUser);
                 setEditedData(updatedUser);
                 setIsEditing(false);
-                
+                await fetchUser();
+
                 Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
             } catch (error: any) {
                 console.error("❌ Error updating user:", error);
-                
+
                 // Better error handling
                 let errorMessage = "Falha ao atualizar o perfil";
                 if (error.response?.data?.message) {
@@ -176,7 +177,7 @@ export const ProfileScreen = () => {
                 } else if (error.message) {
                     errorMessage = error.message;
                 }
-                
+
                 Alert.alert("Erro", errorMessage);
             } finally {
                 setIsLoading(false);
@@ -353,13 +354,8 @@ export const ProfileScreen = () => {
 
             console.log('🔄 Updating profile image for user:', user.uid);
 
-            // For now, just update the image field via regular update
-            // Later you can implement the image upload endpoint
-            const updateData = {
-                image: imageUri
-            };
-
-            const updatedUser = await updateUser(user.uid, updateData);
+            // ✅ Use the dedicated image upload endpoint
+            const updatedUser = await updateUserImage(user.uid, imageUri);
             
             console.log('✅ Profile image updated successfully');
 

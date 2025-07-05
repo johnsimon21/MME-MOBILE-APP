@@ -89,14 +89,38 @@ export const useUsers = () => {
   };
 
   // Update user image
-  const updateUserImage = async (uid: string, image: any): Promise<IUser> => {
-    const headers = await getHeaders();
-    const formData = new FormData();
-    formData.append("image", image);
-    const response = await api.put<IUser>(`/users/${uid}/image`, formData, {
-      headers: { ...headers, "Content-Type": "multipart/form-data" }
-    });
-    return response.data;
+  const updateUserImage = async (uid: string, imageUri: string): Promise<IUser> => {
+    try {
+      console.log('🔄 useUsers: Updating user image for', uid);
+      
+      const headers = await getHeaders();
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add the image file to FormData
+      formData.append('image', {
+        uri: imageUri,
+        type: 'image/jpeg', // or detect the actual type
+        name: 'profile-image.jpg',
+      } as any);
+      
+      console.log('🔄 Uploading image via FormData');
+      
+      const response = await api.put<IUser>(`/users/${uid}/image`, formData, {
+        headers: {
+          ...headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('✅ useUsers: User image updated successfully:', response.data);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ useUsers: Failed to update user image:', error);
+      throw error;
+    }
   };
 
   // Delete user

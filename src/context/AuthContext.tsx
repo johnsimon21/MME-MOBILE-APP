@@ -83,15 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
             console.log('✅ Login completo:', response.data);
-
-            if (response.data.role === UserRole.COORDINATOR) {
-                const token = await AsyncStorage.getItem('@token_id');
-                console.log('🔄 Redirecionando para Analytics - Token == ', token);
-                router.replace('/(tabs)/analytics');
-            } else {
-                //@ts-ignore
-                router.replace('/(tabs)/Emparelhamento');
-            }
+            
+            router.replace('/(tabs)');
+            // if (response.data.role === UserRole.COORDINATOR) {
+            //     const token = await AsyncStorage.getItem('@token_id');
+            //     console.log('🔄 Redirecionando para Analytics - Token == ', token);
+            // } else {
+            //     //@ts-ignore
+            //     router.replace('/(tabs)/Emparelhamento');
+            // }
 
             return true;
         } catch (error: any) {
