@@ -6,6 +6,7 @@ import tw from "twrnc";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Navbar } from "@/src/presentation/components/ui/navbar";
 import { useAuth } from "@/src/context/AuthContext";
+import { useAuthState } from "@/src/hooks/useAuthState";
 
 interface Relationship {
     id: string;
@@ -56,7 +57,7 @@ export const UserProfileScreen = () => {
     const route = useRoute();
 
     const { userId } = route.params as { userId: string };
-    const { isAdmin } = useAuth();
+    const { isCoordinator } = useAuthState();
 
     const [userData, setUserData] = useState<UserProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -641,7 +642,7 @@ export const UserProfileScreen = () => {
                         </Text>
                     </View>
 
-                    {!isAdmin() && ( // This section need more atention to be more dynamic
+                    {!isCoordinator && ( // This section need more atention to be more dynamic
                         <TouchableOpacity
                             onPress={pairingRequest.bind(null, userData?.id)}
                             style={tw`flex-row ${pairingStatus(userData?.id).status === 'paired' ? `bg-[${pairingStatus(userData?.id).status}]` : 'bg-[#75A5F5]'} rounded-3 px-3 py-3 absolute bottom-2 right-4 shadow-lg`}
@@ -815,7 +816,7 @@ export const UserProfileScreen = () => {
                 )}
 
                 {/* Action Buttons */}
-                {isAdmin() && (
+                {isCoordinator && (
                     <View style={tw`px-4 pb-6`}>
                         <View style={tw`flex-row justify-between`}>
                             <TouchableOpacity

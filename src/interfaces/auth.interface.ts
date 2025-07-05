@@ -1,27 +1,5 @@
+import { Gender, Grade, School, UserRole } from "./index.interface";
 
-export enum UserRole {
-  MENTOR = 'mentor',
-  MENTEE = 'mentee',
-  COORDINATOR = 'coordinator'
-}
-
-export enum Gender {
-  MALE = 'male',
-  FEMALE = 'female'
-}
-
-export enum School {
-  CAXITO = 'CAXITO',
-  MALANJE = 'MALANJE',
-  NDALATANDO = 'NDALATANDO',
-  ONDJIVA = 'ONDJIVA'
-}
-
-export enum Grade {
-  GRADE_10 = '10',
-  GRADE_11 = '11',
-  GRADE_12 = '12'
-}
 
 export interface AuthState {
   user: any | null;
@@ -31,3 +9,24 @@ export interface AuthState {
   isMentor: boolean;
   isMentee: boolean;
 }
+
+export type FormData1 = {
+  role: UserRole;
+  fullName: string;
+  gender: Gender;
+  birth: Date;
+  cellphone: string;
+  email: string;
+};
+
+export type FormData2 = {
+  school: School;
+  grade: Grade | null;
+  password: string;
+  schoolYear: number | null;
+  province: string;
+  municipality: string;
+  maxMenteeNumber: number | null;
+};
+
+export interface UserRegisterData extends FormData1, FormData2 { }

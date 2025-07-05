@@ -4,25 +4,29 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { ENV } from "../config/env";
 import { auth, db } from "../config/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { AuthState } from "../interfaces/auth.interface";
+import { AuthState, UserRegisterData } from "../interfaces/auth.interface";
 import { useRouter } from "expo-router";
 import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../infrastructure/api";
+import { IUser } from "../interfaces/user.interface";
+import { UserRole } from "../interfaces/index.interface";
+import { set } from "date-fns";
 
 interface AuthContextProps {
-    user: any | null;
+    user: IUser | null;
     firebaseUser: FirebaseUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
     clearError: () => void;
     login: (email: string, password: string) => Promise<boolean>;
-    register: (data: any) => Promise<void>;
+    register: (data: UserRegisterData) => Promise<void>;
     logout: () => Promise<void>;
     getIdToken: () => Promise<string | null>;
     forgotPassword: (email: string) => Promise<void>;
     resetPassword: (uid: string, newPassword: string) => Promise<void>;
+    fetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
@@ -30,7 +34,7 @@ const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any | null>(null);
+    const [user, setUser] = useState<IUser | null>(null);
     const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setFirebaseUser(fbUser);
             if (fbUser) {
                 // Fetch user profile from backend
-                const idToken = await fbUser.getIdToken();
                 try {
                     const res = await api.get(`/auth/me`);
                     console.log("✅ Usuário autenticado:", res.data);
@@ -58,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(false);
         });
         return () => unsubscribe();
-    }, []);
+    }, [setUser, setFirebaseUser, setIsLoading]);
 
     // Login: call backend, get customToken, sign in with Firebase
     const login = async (email: string, password: string) => {
@@ -73,15 +76,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('✅ Firebase login bem-sucedido:', firebaseUser.uid);
 
             const idToken = await firebaseUser.getIdToken();
+            await AsyncStorage.removeItem('@token_id');
             await AsyncStorage.setItem('@token_id', idToken);
 
             const response = await api.post('/auth/verify-token');
 
 
-            console.log('✅ Login completo:', response.data.email);
+            console.log('✅ Login completo:', response.data);
 
-            // Redirecionar
-            router.replace('/(tabs)');
+            if (response.data.role === UserRole.COORDINATOR) {
+                const token = await AsyncStorage.getItem('@token_id');
+                console.log('🔄 Redirecionando para Analytics - Token == ', token);
+                router.replace('/(tabs)/analytics');
+            } else {
+                //@ts-ignore
+                router.replace('/(tabs)/Emparelhamento');
+            }
+
             return true;
         } catch (error: any) {
             console.error('❌ Falha no login:', error);
@@ -111,13 +122,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     // Register: call backend
-    const register = async (data: any) => {
+    const register = async (data: UserRegisterData) => {
         setIsLoading(true);
         try {
             await api.post(`/auth/register`, data);
             // Optionally auto-login after registration
         } finally {
             setIsLoading(false);
+        }
+    };
+    
+    const fetchUser = async () => {
+        try {
+            const response = await api.get(`/auth/me`);
+            setUser(response.data);
+        } catch (error) {
+            console.error("Error fetching user data:", error);
         }
     };
 
@@ -164,6 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 user,
                 firebaseUser,
                 isAuthenticated: !!user,
+                fetchUser,
                 isLoading,
                 login,
                 register,

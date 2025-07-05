@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { FormData2 } from "../../../app/auth/RegisterScreen";
 import tw from "twrnc";
+import { FormData2 } from "@/src/interfaces/auth.interface";
+import { UserRole } from "@/src/interfaces/index.interface";
 
 interface Form2Props {
   onChange: (field: keyof FormData2, value: string) => void;
   setConfirmPassword: (value: string) => void;
-  profile: "MENTOR" | "MENTORADO" | "COORDENADOR";
+  role: UserRole;
 }
 
-const Form2: React.FC<Form2Props> = ({ onChange, setConfirmPassword, profile }) => {
+const Form2: React.FC<Form2Props> = ({ onChange, setConfirmPassword, role }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPass] = useState("");
 
@@ -51,7 +52,7 @@ const Form2: React.FC<Form2Props> = ({ onChange, setConfirmPassword, profile }) 
 
       >
         <option value="" disabled selected hidden>
-          {profile === "MENTORADO" ? "Selecione o Liceu" : "Selecione o Liceu que frequentou*"}
+          {role === UserRole.MENTEE ? "Selecione o Liceu" : "Selecione o Liceu que frequentou*"}
 
         </option>
         {schoolOptions.map((option, index) => (
@@ -61,9 +62,9 @@ const Form2: React.FC<Form2Props> = ({ onChange, setConfirmPassword, profile }) 
         ))}
       </select>
 
-      {profile === "MENTORADO" ?
+      {role === UserRole.MENTEE ?
         <select
-          required={profile === "MENTORADO"}
+          required={role === UserRole.MENTEE}
           style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}
           onChange={(event) => {
             onChange("grade", event.target.value);
@@ -93,7 +94,7 @@ const Form2: React.FC<Form2Props> = ({ onChange, setConfirmPassword, profile }) 
         </select>
       }
 
-      {profile !== "MENTORADO" && (
+      {role !== UserRole.MENTEE && (
         <input
           type="number"
           style={tw`w-full py-4 px-5 mb-5 bg-[#F5F5F5] text-[#A5A3B1] rounded-full border-0`}

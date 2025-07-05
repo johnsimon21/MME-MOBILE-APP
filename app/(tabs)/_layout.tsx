@@ -20,6 +20,7 @@ import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
 import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 import { useAuth } from "@/src/context/AuthContext";
+import { useAuthState } from "@/src/hooks/useAuthState";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -167,6 +168,9 @@ function AdminTabNavigator() {
 
 // Regular User Tab Navigator
 function UserTabNavigator() {
+  const { isMentor } = useAuthState();
+
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -176,17 +180,18 @@ function UserTabNavigator() {
           let label;
           let badge;
 
-          if (route.name === "Tarefas") {
-            iconName = "bar-chart";
-            label = "Analytics";
-          } else if (route.name === "Mensagens") {
+          // if (route.name === "Tarefas") {
+          //   iconName = "bar-chart";
+          //   label = "Analytics";
+          // } else 
+          if (route.name === "Mensagens") {
             iconName = "chatbubble-ellipses";
             label = "Mensagens";
             badge = 5; // Example unread messages
           } else if (route.name === "Emparelhamento") {
             iconName = "apps";
             label = "Home";
-          } else if (route.name === "Gerenciamento de sessões") {
+          } else if (route.name === "Gerenciamento de sessões" && isMentor) {
             iconName = "calendar";
             label = "Sessões";
             badge = 2; // Example pending sessions
@@ -238,10 +243,10 @@ function UserTabNavigator() {
         tabBarInactiveTintColor: "#9CA3AF",
       })}
     >
-      <Tab.Screen name="Tarefas" component={AnalyticsScreen} />
-      <Tab.Screen name="Mensagens" component={MessagesStack} />
+      {/* <Tab.Screen name="Tarefas" component={AnalyticsScreen} /> */}
       <Tab.Screen name="Emparelhamento" component={Home} />
-      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} />
+      <Tab.Screen name="Mensagens" component={MessagesStack} />
+      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{tabBarShowLabel: isMentor}} />
       <Tab.Screen name="Recursos educacionais" component={EducationalResourcesScreen} />
     </Tab.Navigator>
   );
@@ -249,20 +254,21 @@ function UserTabNavigator() {
 
 // Main Stack Navigator with role-based routing
 function MainStack() {
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isCoordinator } = useAuthState();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !isAuthenticated) {
+      console.log('Not authenticated', { isAuthenticated, isLoading });
       router.replace('/auth/LoginScreen');
     }
-  }, [user, isLoading]);
+  }, [isAuthenticated, isLoading]);
 
   if (isLoading) {
     return null; // Or loading screen
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return null; // Will redirect to login
   }
 
@@ -271,7 +277,7 @@ function MainStack() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="TabNavigator"
-          component={user.role === 'coordinator' ? AdminTabNavigator : UserTabNavigator}
+          component={isCoordinator ? AdminTabNavigator : UserTabNavigator}
         />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />

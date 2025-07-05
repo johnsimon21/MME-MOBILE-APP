@@ -1,47 +1,33 @@
-import React, { useContext, useState } from "react";
-import AuthHeader from "../../src/presentation/components/AuthHeader";
-import SelectProfile from "../../src/presentation/components/SelectProfile";
-import Form1 from "../../src/presentation/components/RegistrationForm1";
-import Form2 from "../../src/presentation/components/RegistrationForm2";
+import { useAuth } from "@/src/context/AuthContext";
+import { FormData1, FormData2, UserRegisterData } from "@/src/interfaces/auth.interface";
+import { Gender, Grade, School, UserRole } from "@/src/interfaces/index.interface";
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import tw from "twrnc";
-import { useAuth } from "@/src/context/AuthContext";
+import AuthHeader from "../../src/presentation/components/AuthHeader";
+import Form1 from "../../src/presentation/components/RegistrationForm1";
+import Form2 from "../../src/presentation/components/RegistrationForm2";
+import SelectProfile from "../../src/presentation/components/SelectProfile";
 
-export type FormData1 = {
-    profile: "MENTOR" | "MENTORADO" | "COORDENADOR";
-    fullName: string;
-    gender: "MASCULINO" | "FEMININO";
-    birth: Date;
-    cellphone: string;
-    email: string;
-};
-
-export type FormData2 = {
-    school: "CAXITO" | "MALANJE" | "NDALATANDO" | "ONDJIVA";
-    grade: "10" | "11" | "12" | null;
-    password: string;
-    schoolYear: number | null;
-    maxMenteeNumber: number | null;
-};
 
 export default function RegisterScreen({ navigation }: any) {
-    const [selectedProfile, setSelectedProfile] = useState<FormData1["profile"]>("MENTOR");
+    const [selectedProfile, setSelectedProfile] = useState<UserRole>(UserRole.MENTOR); // Default to MENTOR
     var [registerStep, setRegisterStep] = useState<number>(1);
     const [submitMessage, setSubmitMessage] = useState<"Próximo" | "Criar">("Próximo");
     const { register } = useAuth();
 
     const [formData1, setFormData1] = useState<FormData1>({
-        profile: selectedProfile,
+        role: selectedProfile,
         fullName: "",
-        gender: "MASCULINO",
+        gender: Gender.MALE,
         birth: new Date(),
         cellphone: "",
         email: "",
     });
 
     const [formData2, setFormData2] = useState<FormData2>({
-        school: "CAXITO",
-        grade: "10",
+        school: School.CAXITO,
+        grade: Grade.GRADE_10,
         password: "",
         maxMenteeNumber: null,
         schoolYear: null,
@@ -78,10 +64,10 @@ export default function RegisterScreen({ navigation }: any) {
             return;
         }
 
-        const registerData: any = {
+        const registerData: UserRegisterData = {
             ...formData1,
             ...formData2,
-            profile: selectedProfile,
+            role: selectedProfile,
         };
         console.log(registerData)
         if (!register) return; // Ensure auth context is available
@@ -99,7 +85,7 @@ export default function RegisterScreen({ navigation }: any) {
                         selectedProfile={selectedProfile}
                         setSelectedProfile={(value) => {
                             setSelectedProfile(value);
-                            setFormData1((prev) => ({ ...prev, profile: value }));
+                            setFormData1((prev) => ({ ...prev, role: value }));
                         }}
                     />
                 }
@@ -107,7 +93,7 @@ export default function RegisterScreen({ navigation }: any) {
                     <Form1 formData={formData1} onChange={handleForm1Change} />
                 }
                 {registerStep === 3 &&
-                    <Form2 onChange={handleForm2Change} setConfirmPassword={setConfirmPassword} profile={selectedProfile} />
+                    <Form2 onChange={handleForm2Change} setConfirmPassword={setConfirmPassword} role={selectedProfile} />
                 }
 
                 <TouchableOpacity style={tw`w-full bg-[#4285F4] rounded-3xl mt-8 p-4 border-0 cursor-pointer`} onPress={handleSubmit}>

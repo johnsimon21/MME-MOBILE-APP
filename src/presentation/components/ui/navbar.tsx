@@ -290,13 +290,13 @@ export function Navbar({
             {/* User Info */}
             <View style={tw`p-4 border-b border-gray-100`}>
               <View style={tw`flex-row items-center`}>
-                <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3`}>
-                  <Text style={tw`text-indigo-600 font-bold text-lg`}>
+                <View style={tw`w-10 h-10 bg-indigo-100 rounded-full items-center justify-center mr-2`}>
+                  <Text style={tw`text-indigo-600 font-bold`}>
                     {user?.fullName?.charAt(0) || 'U'}
                   </Text>
                 </View>
                 <View style={tw`flex-1`}>
-                  <Text style={tw`font-semibold text-gray-800`} numberOfLines={1}>
+                  <Text style={tw`font-semibold text-gray-800 text-sm`} numberOfLines={1}>
                     {user?.fullName || 'Usuário'}
                   </Text>
                   <Text style={tw`text-sm text-gray-500`} numberOfLines={1}>

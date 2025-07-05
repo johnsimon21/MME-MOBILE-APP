@@ -1,19 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Modal, FlatList, Dimensions } from "react-native";
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import tw from "twrnc";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Navbar } from "../components/ui/navbar";
 import { useAuth } from "@/src/context/AuthContext";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Dimensions, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import tw from "twrnc";
+import { Navbar } from "../components/ui/navbar";
 
+import { useConnections } from "@/src/hooks/useConnections";
+import { IUser } from "@/src/interfaces/user.interface";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from 'expo-file-system';
 import { NameEditor } from "../components/NameEditor";
+import { IConnectionResponse, IFriends } from "@/src/interfaces/connections.interface";
+import { UserRole } from "@/src/interfaces/index.interface";
+import { useUsers } from "@/src/hooks/useUsers";
+import { ProfileSkeleton } from "../components/ui/ProfileSkeleton";
 
 interface UserData {
-    name: string;
+    fullName: string;
     email: string;
     phone: string;
     address: string;
@@ -28,41 +32,33 @@ interface UserData {
 
 interface Connection {
     id: string;
-    name: string;
+    fullName: string;
     country: string;
     province: string;
     role: "Mentor" | "Mentorado";
     avatar: string;
 }
 
-const defaultUserData: UserData = {
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    image: "",
-    portfolio: "",
-    role: "Mentorado",
-    difficulties: ["Gestão de tempo", "Organização"],
-    skills: ["Empatia", "Ouvir", "Análise"],
-    emotions: ["Nenhum"],
-    programs: ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"]
-};
-
 
 export const ProfileScreen = () => {
-    const { user } = useAuth();
+    const { fetchUser, user, isLoading: loadingUser } = useAuth();
+    const { getFriends } = useConnections();
+    const { updateUser } = useUsers();
     const navigation = useNavigation();
-    defaultUserData.name = user?.fullName || "";
-    defaultUserData.name = user?.fullName || "";
 
-    // Initialize state with default values
-    const [userData, setUserData] = useState<UserData>(defaultUserData);
-    const [editedData, setEditedData] = useState<UserData>(defaultUserData);
+    // ✅ Initialize states properly
+    const [userData, setUserData] = useState<IUser | null>(null);
+    const [editedData, setEditedData] = useState<IUser | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [connections, setConnections] = useState<Connection[]>([]);
-    const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
+    
+    // Initialize with user data from context
+    const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
+    
+    const [connections, setConnections] = useState<IFriends[]>([]);
+    const [filteredConnections, setFilteredConnections] = useState<IFriends[]>([]);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
     const [activeFilter, setActiveFilter] = useState<"Todos" | "Mentor" | "Mentorado">("Todos");
     const [imagePickerVisible, setImagePickerVisible] = useState(false);
@@ -74,32 +70,52 @@ export const ProfileScreen = () => {
     const skillOptions = ["Informática", "Cálculos", "Línguas", "Teoria", "Empatia", "Ouvir", "Análise"];
     const emotionOptions = ["Ansiedade", "Depressão", "Estresse", "Nenhum", "Outro"];
     const programsOptions = ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"];
-    const [selectedEmotions, setSelectedEmotions] = useState<string[]>(["Nenhum"]);
 
     // State variables
-    const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(["Gestão de tempo", "Organização"]);
-    const [selectedSkills, setSelectedSkills] = useState<string[]>(["Empatia", "Ouvir", "Análise"]);
     const [selectedPrograms, setSelectedPrograms] = useState<string[]>(["Programação", "Plano de Carreira"]);
     const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
 
-    const loadMockConnections = () => {
-        const mockConnections: Connection[] = [
-            { id: '1', name: 'Ana Silva', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/1.jpg' },
-            { id: '2', name: 'Carlos Mendes', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/2.jpg' },
-            { id: '3', name: 'Maria Luísa', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/3.jpg' },
-            { id: '4', name: 'João Paulo', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/4.jpg' },
-            { id: '5', name: 'Sofia Costa', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/5.jpg' },
-            { id: '6', name: 'Pedro Santos', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/6.jpg' },
-            { id: '7', name: 'Luísa Ferreira', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/7.jpg' },
-            { id: '8', name: 'Miguel Oliveira', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/8.jpg' },
-            { id: '9', name: 'Catarina Alves', role: 'Mentor', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/women/9.jpg' },
-            { id: '10', name: 'Ricardo Nunes', role: 'Mentorado', country: "Angola", province: "Luanda", avatar: 'https://randomuser.me/api/portraits/men/10.jpg' },
-        ];
-        setConnections(mockConnections);
-        setFilteredConnections(mockConnections);
-    };
+    // Fetch user and connections from backend
+    useEffect(() => {
+        const loadData = async () => {
+            setIsLoading(true);
+            try {
+                await fetchUser();
+                const friendsRes = await getFriends();
+                const friends = friendsRes.connections.map((conn: IConnectionResponse) => ({
+                    ...conn.connectedUser,
+                    id: conn.connectedUser.uid,
+                    fullName: conn.connectedUser.fullName,
+                    role: conn.connectedUser.role === UserRole.MENTOR ? "Mentor" : "Mentorado",
+                    province: conn.connectedUser.school || "",
+                    image: conn.connectedUser.image || 'https://randomuser.me/api/portraits/men/75.jpg',
+                }));
+                setConnections(friends);
+                setFilteredConnections(friends);
+            } catch (error) {
+                console.error("Error loading profile data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadData();
+    }, []); // ✅ Only run once on mount
 
-    // Function to apply filters
+    // Separate effect for user data updates
+    useEffect(() => {
+        if (user) {
+            console.log('👤 User data received:', user);
+            setUserData(user);
+            setEditedData(user);
+            
+            // Initialize form data
+            setSelectedDifficulties(user.difficulties || []);
+            setSelectedSkills(user.skills || []);
+            setSelectedEmotions(user.emotions || []);
+        }
+    }, [user]);
+
+    // Filter logic
     const applyFilter = (filter: "Todos" | "Mentor" | "Mentorado") => {
         setActiveFilter(filter);
         if (filter === "Todos") {
@@ -116,70 +132,52 @@ export const ProfileScreen = () => {
         navigation.navigate('UserProfile', { userId });
     };
 
-    // Load connections when the component mounts
-    useEffect(() => {
-        loadUserData();
-        loadMockConnections();
-    }, []);
-
-    const loadUserData = async () => {
-        try {
-            setIsLoading(true);
-            const userDataString = await AsyncStorage.getItem('user');
-            if (userDataString) {
-                const parsedData = JSON.parse(userDataString);
-                // Ensure all required fields exist by merging with default data
-                const completeData = { ...defaultUserData, ...parsedData };
-                setUserData(completeData);
-                setEditedData(completeData);
-            } else {
-                // Mock data for demonstration
-                const mockData: UserData = {
-                    name: "Lukombo Afonso",
-                    email: "johnmiradojr@gmail.com",
-                    image: "https://randomuser.me/api/portraits/men/1.jpg",
-                    phone: "+244 942 032 806",
-                    address: "Cazenga, Luanda, Angola",
-                    portfolio: "https://lukomiron.vercel.app",
-                    role: "Mentorado",
-                    difficulties: ["Gestão de tempo", "Organização"],
-                    skills: ["Empatia", "Ouvir", "Análise"],
-                    emotions: ["Nenhum"],
-                    programs: ["Programação", "Plano de Carreira", "Empreendedorismo", "Educação Financeira", "Comunicação Eficiente"]
-                };
-                setUserData(mockData);
-                setEditedData(mockData);
-                await AsyncStorage.setItem('user', JSON.stringify(mockData));
-            }
-        } catch (error) {
-            console.error("Error loading user data:", error);
-            Alert.alert("Error", "Failed to load profile data");
-            // Even on error, set default data to prevent null values
-            setUserData(defaultUserData);
-            setEditedData(defaultUserData);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const toggleEditMode = async () => {
-        if (isEditing) {
+        if (isEditing && user && editedData) {
             try {
                 setIsLoading(true);
-                const updatedUserData: UserData = {
-                    ...editedData,
+
+                // ✅ Prepare update data with only the fields that changed
+                const updateData: Partial<IUser> = {
+                    fullName: editedData.fullName,
+                    cellphone: editedData.cellphone,
+                    portfolio: editedData.portfolio,
+                    province: editedData.province,
+                    municipality: editedData.municipality,
                     difficulties: selectedDifficulties,
                     skills: selectedSkills,
                     emotions: selectedEmotions,
-                    programs: editedData.programs
+                    programs: editedData.programs || []
                 };
-                await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
-                setUserData(updatedUserData);
+
+                console.log('🔄 Updating user with data:', updateData);
+
+                // Update via API first
+                const updatedUser = await updateUser(user.uid, updateData);
+                
+                console.log('✅ User updated successfully:', updatedUser);
+
+                // Update local storage with the response from API
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+
+                // Update local state
+                setUserData(updatedUser);
+                setEditedData(updatedUser);
                 setIsEditing(false);
-                Alert.alert("Success", "Profile updated successfully");
-            } catch (error) {
-                console.error("Error saving user data:", error);
-                Alert.alert("Error", "Failed to save profile data");
+                
+                Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+            } catch (error: any) {
+                console.error("❌ Error updating user:", error);
+                
+                // Better error handling
+                let errorMessage = "Falha ao atualizar o perfil";
+                if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                Alert.alert("Erro", errorMessage);
             } finally {
                 setIsLoading(false);
             }
@@ -204,6 +202,7 @@ export const ProfileScreen = () => {
     };
 
     const handleCancel = () => {
+        if (!userData) return;
         setEditedData({ ...userData });
         setIsEditing(false);
     };
@@ -227,7 +226,7 @@ export const ProfileScreen = () => {
 
                 {/* User info overlay */}
                 <View style={tw`absolute top-12 left-4 z-10`}>
-                    <Text style={tw`text-white text-xl font-bold`}>{userData?.name}</Text>
+                    <Text style={tw`text-white text-xl font-bold`}>{userData?.fullName}</Text>
                     <Text style={tw`text-gray-300 text-sm`}>{userData?.role || "Mentorado"}</Text>
                 </View>
 
@@ -348,20 +347,41 @@ export const ProfileScreen = () => {
         try {
             setIsLoading(true);
 
-            // Update the user data with new image
-            const updatedUserData = {
-                ...userData,
+            if (!user?.uid) {
+                throw new Error('Usuário não autenticado');
+            }
+
+            console.log('🔄 Updating profile image for user:', user.uid);
+
+            // For now, just update the image field via regular update
+            // Later you can implement the image upload endpoint
+            const updateData = {
                 image: imageUri
             };
 
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
-            setUserData(updatedUserData);
-            setEditedData(updatedUserData);
+            const updatedUser = await updateUser(user.uid, updateData);
+            
+            console.log('✅ Profile image updated successfully');
+
+            // Update local storage
+            await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            
+            // Update local state
+            setUserData(updatedUser);
+            setEditedData(updatedUser);
 
             Alert.alert("Sucesso", "Foto de perfil atualizada com sucesso!");
-        } catch (error) {
-            console.error("Error updating profile image:", error);
-            Alert.alert("Erro", "Falha ao atualizar a foto de perfil");
+        } catch (error: any) {
+            console.error("❌ Error updating profile image:", error);
+            
+            let errorMessage = "Falha ao atualizar a foto de perfil";
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            Alert.alert("Erro", errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -369,7 +389,7 @@ export const ProfileScreen = () => {
 
     // Name editing functions
     const showNameEditor = () => {
-        setTempName(userData?.name || "");
+        setTempName(userData?.fullName || "");
         setNameEditVisible(true);
     };
 
@@ -384,8 +404,8 @@ export const ProfileScreen = () => {
 
             const updatedUserData = {
                 ...userData,
-                name: tempName.trim()
-            };
+                fullName: tempName.trim()
+            } as IUser;
 
             await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
             setUserData(updatedUserData);
@@ -442,14 +462,11 @@ export const ProfileScreen = () => {
         </Modal>
     );
 
-
-    if (isLoading) {
+    if (isLoading || !userData) {
         return (
             <View style={tw`flex-1 bg-white`}>
                 <Navbar title="Meu Perfil" showBackButton={true} theme="light" />
-                <View style={tw`flex-1 justify-center items-center`}>
-                    <ActivityIndicator size="large" color="#0000ff" />
-                </View>
+                <ProfileSkeleton />
             </View>
         );
     }
@@ -505,7 +522,7 @@ export const ProfileScreen = () => {
                         </View>
 
                         <TouchableOpacity onPress={showNameEditor} style={tw`mt-2 flex-row items-center`}>
-                            <Text style={tw`font-bold text-base mr-1`}>{userData?.name}</Text>
+                            <Text style={tw`font-bold text-base mr-1`}>{userData?.fullName}</Text>
                             <Feather name="edit-2" size={14} color="#6B7280" />
                         </TouchableOpacity>
 
@@ -668,7 +685,7 @@ export const ProfileScreen = () => {
                             <TextInput
                                 style={tw`text-xs text-blue-500 border-b border-gray-300 p-1 w-1/2 text-right`}
                                 value={editedData?.portfolio || ""}
-                                onChangeText={(text: string) => setEditedData({ ...editedData, portfolio: text })}
+                                onChangeText={(text: string) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, portfolio: text } : null)}
                                 placeholder="Seu portfólio"
                             />
                         ) : (
@@ -682,7 +699,7 @@ export const ProfileScreen = () => {
                             <TextInput
                                 style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
                                 value={editedData?.email || ""}
-                                onChangeText={(text) => setEditedData({ ...editedData, email: text })}
+                                onChangeText={(text) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, email: text } : null)}
                                 placeholder="Seu email"
                                 keyboardType="email-address"
                             />
@@ -696,27 +713,38 @@ export const ProfileScreen = () => {
                         {isEditing ? (
                             <TextInput
                                 style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
-                                value={editedData?.phone || ""}
-                                onChangeText={(text) => setEditedData({ ...editedData, phone: text })}
+                                value={editedData?.cellphone || ""}
+                                onChangeText={(text: string) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, cellphone: text } : null)}
                                 placeholder="Seu telefone"
                                 keyboardType="phone-pad"
                             />
                         ) : (
-                            <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.phone}</Text>
+                            <Text style={tw`text-xs text-gray-800 mb-2`}>{userData?.cellphone}</Text>
                         )}
                     </View>
 
                     <View style={tw`flex-row items-center justify-between mb-2`}>
                         <Text style={tw`text-xs text-[#999CA1]`}>📍 Endereço</Text>
                         {isEditing ? (
-                            <TextInput
-                                style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
-                                value={editedData?.address || ""}
-                                onChangeText={(text) => setEditedData({ ...editedData, address: text })}
-                                placeholder="Seu endereço"
-                            />
+                            <>
+                                <TextInput
+                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                                    value={editedData?.province || ""}
+                                    onChangeText={(text) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, province: text } : null)}
+                                    placeholder="Seu endereço"
+                                />
+                                <TextInput
+                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                                    value={editedData?.municipality || ""}
+                                    onChangeText={(text) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, municipality: text } : null)}
+                                    placeholder="Seu endereço"
+                                />
+                            </>
                         ) : (
-                            <Text style={tw`text-xs text-gray-800`}>{userData?.address}</Text>
+                            <Text style={tw`text-xs text-gray-800`}>
+                                {userData?.province || ""}{userData?.province && userData?.municipality ? ", " : ""}
+                                {userData?.municipality || ""}
+                            </Text>
                         )}
                     </View>
 
@@ -800,12 +828,12 @@ export const ProfileScreen = () => {
                             <TouchableOpacity onPress={() => handleViewProfile(connection.id)} key={connection.id} style={tw`flex-row justify-between items-center py-2 border-b border-gray-100`}>
                                 <View style={tw`flex-row items-center`}>
                                     <Image
-                                        source={{ uri: connection.avatar }}
+                                        source={{ uri: connection.image }}
                                         style={tw`w-10 h-10 rounded-full mr-3`}
                                     />
                                     <View>
-                                        <Text style={tw`text-sm`}>{connection.name}</Text>
-                                        <Text style={tw`text-sm text-gray-500 `}>{connection.country}, {connection.province}</Text>
+                                        <Text style={tw`text-sm`}>{connection.fullName}</Text>
+                                        <Text style={tw`text-sm text-gray-500 `}>{connection.province}, {connection.province}</Text>
                                     </View>
                                 </View>
                                 <View>
@@ -876,12 +904,12 @@ export const ProfileScreen = () => {
                 {/* Name Editor Modal */}
                 <NameEditor
                     visible={nameEditVisible}
-                    initialName={userData?.name || ""}
+                    initialName={userData?.fullName || ""}
                     onClose={() => setNameEditVisible(false)}
                     onSave={async (newName) => {
                         try {
                             setIsLoading(true);
-                            const updatedUserData = { ...userData, name: newName };
+                            const updatedUserData = { ...userData, fullName: newName };
                             await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
                             setUserData(updatedUserData);
                             setEditedData(updatedUserData);

@@ -1,6 +1,6 @@
+import { FormData1 } from "@/src/interfaces/auth.interface";
 import React from "react";
 import { TextInput, View } from "react-native";
-import { FormData1 } from "../../../app/auth/RegisterScreen";
 import tw from "twrnc";
 
 interface Form1Props {
@@ -10,7 +10,10 @@ interface Form1Props {
 
 
 export default function Form1({ formData, onChange }: Form1Props) {
-    const genderOptions = ['MASCULINO', 'FEMININO'];
+    const genderOptions = {
+        "Masculino": "male",
+        "Feminino": "female",
+    };
 
     return (
         <View style={tw`bg-transparent m-0 p-0 w-full flex flex-col justify-start items-center`} >
@@ -31,9 +34,9 @@ export default function Form1({ formData, onChange }: Form1Props) {
                 }}
 
             >
-                {genderOptions.map((option, index) => (
-                    <option key={index} value={option}>
-                         {option}
+                {Object.entries(genderOptions).map(([key, value], index) => (
+                    <option key={index} value={key}>
+                        {value}
                     </option>
                 ))}
             </select>
