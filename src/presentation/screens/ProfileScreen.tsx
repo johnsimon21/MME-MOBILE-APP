@@ -42,7 +42,7 @@ interface Connection {
 
 export const ProfileScreen = () => {
     const { fetchUser, user, isLoading: loadingUser } = useAuth();
-    const { getFriends } = useConnections();
+    const { getAcceptedConnections } = useConnections();
     const { updateUser, updateUserImage } = useUsers();
     const navigation = useNavigation();
 
@@ -81,7 +81,7 @@ export const ProfileScreen = () => {
             setIsLoading(true);
             try {
                 await fetchUser();
-                const friendsRes = await getFriends();
+                const friendsRes = await getAcceptedConnections();
                 const friends = friendsRes.connections.map((conn: IConnectionResponse) => ({
                     ...conn.connectedUser,
                     id: conn.connectedUser.uid,
@@ -720,26 +720,32 @@ export const ProfileScreen = () => {
                     </View>
 
                     <View style={tw`flex-row items-center justify-between mb-2`}>
-                        <Text style={tw`text-xs text-[#999CA1]`}>📍 Endereço</Text>
+                        <Text style={tw`text-xs text-[#999CA1]`}>📍 Localização</Text>
                         {isEditing ? (
-                            <>
+                            <View style={tw`flex-1 flex-row justify-end gap-2`}>
                                 <TextInput
-                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-20 text-right`}
                                     value={editedData?.province || ""}
-                                    onChangeText={(text) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, province: text } : null)}
-                                    placeholder="Seu endereço"
+                                    onChangeText={(text) =>
+                                        setEditedData(editedData ? { ...editedData, province: text } : null)
+                                    }
+                                    placeholder="Província"
+                                    maxLength={30}
                                 />
+                                <Text style={tw`text-xs text-gray-400 mx-1`}>/</Text>
                                 <TextInput
-                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-1/2 text-right`}
+                                    style={tw`text-xs text-gray-800 border-b border-gray-300 p-1 w-20 text-right`}
                                     value={editedData?.municipality || ""}
-                                    onChangeText={(text) => setEditedData(editedData ? { ...editedData, uid: editedData.uid, municipality: text } : null)}
-                                    placeholder="Seu endereço"
+                                    onChangeText={(text) =>
+                                        setEditedData(editedData ? { ...editedData, municipality: text } : null)
+                                    }
+                                    placeholder="Município"
+                                    maxLength={30}
                                 />
-                            </>
+                            </View>
                         ) : (
-                            <Text style={tw`text-xs text-gray-800`}>
-                                {userData?.province || ""}{userData?.province && userData?.municipality ? ", " : ""}
-                                {userData?.municipality || ""}
+                            <Text style={tw`text-xs text-gray-800 text-right`}>
+                                {[userData?.province, userData?.municipality].filter(Boolean).join(" / ") || "Não informado"}
                             </Text>
                         )}
                     </View>

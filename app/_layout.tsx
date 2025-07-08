@@ -12,6 +12,8 @@ import { FloatingButtonProvider } from '@/src/context/FloatingButtonContext';
 import { SupportProvider } from '@/src/context/SupportContext';
 import { FloatingOptionsButton } from '@/src/presentation/components/ui/FloatingUnfoldVerticalButton';
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
+import { SocketProvider } from '@/src/context/SocketContext';
+import { ChatProvider } from '@/src/context/ChatContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -43,7 +45,7 @@ function RootLayoutContent() {
     '/+not-found',
     '/support',
     '/auth/LoginScreen',
-     '/faq',
+    '/faq',
     '/chat-support',
     '/create-ticket',
     '/quick-questions'
@@ -89,7 +91,7 @@ function RootLayoutContent() {
                     presentation: 'modal',
                     animation: 'slide_from_bottom'
                   }}
-                />
+                /> 
               </Stack>
               <StatusBar style="auto" />
               {shouldShowSettings && <FloatingOptionsButton />}

@@ -19,18 +19,22 @@ export interface IConnectedUser {
   school: School;      // Import from your user interface or redefine if needed
   image?: string;
   gender: Gender;      // Import from your user interface or redefine if needed
+  connectionStatus: 'pending' | 'accepted' | 'blocked';
+  connectionType: 'sent' | 'received';
+  canCancel: boolean;
+  mutualConnections?: number;
 }
- 
+
 export interface IFriends {
-    id: string;
-    fullName: string;
-    role: string;
-    province: string;
-    image: string; 
-    uid: string;
-    email: string;
-    school: School;
-    gender: Gender;
+  id: string;
+  fullName: string;
+  role: string;
+  province: string;
+  image: string;
+  uid: string;
+  email: string;
+  school: School;
+  gender: Gender;
 }
 
 export interface IConnectionResponse {
@@ -54,15 +58,20 @@ export interface IConnectionsListResponse {
 
 export interface IConnectionStats {
   totalConnections: number;
-  pendingSent: number;
-  pendingReceived: number;
-  accepted: number;
-  blocked: number;
+  acceptedConnections: number;
+  pendingConnections: number;
+  sentRequests: number;
+  receivedRequests: number;
+  blockedUsers: number;
 }
 
 export interface IConnectionSuggestion {
   uid: string;
   fullName: string;
   email: string;
-  role: UserRole;
+  role: string;
+  school: string;
+  image?: string;
+  mutualConnections: number;
+  suggestionReason: string;
 }

@@ -1,5 +1,5 @@
 // Environment configuration
-const IP = '192.168.1.103';
+const IP = '192.168.1.103' // '192.168.1.11';
 
 export const ENV = {
   // 🔥 FRONTEND Firebase Config (Web App Config)

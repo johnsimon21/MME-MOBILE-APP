@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, StatusBar } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import tw from "twrnc";
 
 interface AuthHeaderProps {
@@ -14,32 +15,105 @@ interface AuthHeaderProps {
 export default function AuthHeader({ navigation, activeTab, step, showBackButton = true }: AuthHeaderProps) {
     const router = useRouter();
 
-    return (
-        <View style={step !== 1 && activeTab === "Cadastro" ? tw`flex-1 h-[155px] w-full max-h-[155px] justify-center items-center bg-[#4285F4] p-5` : tw`flex-1 h-[220px] max-h-[220px] w-full justify-center items-center bg-[#4285F4] p-5`}>
-            {showBackButton &&
-                <TouchableOpacity style={tw`w-8 h-8 flex justify-center items-center bg-white rounded-full absolute elevation-10 shadow-lg z-100 border border-[#A5A3B1] border-[0.2px] overflow-visible bottom-[-14px] left-5`} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-            }
-            <Text style={tw`text-white text-2xl font-bold`}>Bem-vindo ao Meu Mentor Eiffel</Text>
-            <Text style={tw`text-sm text-white mt-1`}>
-                Conectando mentores e mentorados para um aprendizado eficaz
-            </Text>
+    const getHeaderHeight = () => {
+        if (step !== 1 && activeTab === "Cadastro") return 155;
+        if (activeTab === "ForgotPassword" || activeTab === "ResetPassword") return 180;
+        return 200;
+    };
 
-            <View style={tw`flex-1 justify-center items-center flex-row rounded-2xl p-0.5 w-[174px] max-h-[36px] bg-[#F3F5F5] absolute bottom-[-16px] z-100 elevation-10 shadow-md overflow-visible`}>
-                <TouchableOpacity
-                    style={activeTab === "Login" ? tw`flex-1 justify-center items-center bg-white rounded-2xl border-0 text-black h-[30px]` : tw`flex-1 justify-center items-center rounded-2xl border-0 text-black h-[26px]`}
-                    onPress={() => router.push("/auth/LoginScreen")}
-                >
-                    <Text>Entrar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={activeTab === "Cadastro" ? tw`flex-1 justify-center items-center bg-white rounded-2xl border-0 text-black h-[26px]` : tw`flex-1 justify-center items-center rounded-2xl border-0 text-black h-[26px]`}
-                    onPress={() => router.push("/auth/RegisterScreen")}
-                >
-                    <Text>Cadastro</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+    return (
+        <>
+            <StatusBar barStyle="light-content" backgroundColor="#4285F4" />
+            <LinearGradient
+                colors={['#4285F4', '#6366F1', '#8B5CF6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[tw`w-full justify-center items-center px-5 pt-12 pb-8`, { height: getHeaderHeight() }]}
+            >
+                {/* Background Pattern */}
+                <View style={tw`absolute inset-0 opacity-10`}>
+                    <View style={tw`absolute top-10 right-10 w-20 h-20 rounded-full bg-white`} />
+                    <View style={tw`absolute top-20 left-5 w-12 h-12 rounded-full bg-white`} />
+                    <View style={tw`absolute bottom-10 right-20 w-8 h-8 rounded-full bg-white`} />
+                </View>
+
+                {/* Back Button */}
+                {showBackButton && (
+                    <TouchableOpacity 
+                        style={tw`w-10 h-10 flex justify-center items-center bg-white/20 backdrop-blur-sm rounded-full absolute top-14 left-5 border border-white/30`} 
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                )}
+
+                {/* Title Section */}
+                <View style={tw`items-center mb-6`}>
+                    <Text style={tw`text-white text-3xl font-bold text-center mb-2`}>
+                        Meu Mentor Eiffel
+                    </Text>
+                    <Text style={tw`text-white/90 text-base text-center leading-6 px-4`}>
+                        Conectando mentores e mentorados para um aprendizado eficaz
+                    </Text>
+                </View>
+
+                {/* Tab Switcher - Only show for Login/Register */}
+                {(activeTab === "Login" || activeTab === "Cadastro") && (
+                    <View style={[tw`flex-row bg-white/20 backdrop-blur-sm rounded-2xl p-1 border border-white/30 absolute -bottom-6 shadow-lg`, {zIndex: 10}]}>
+                        <TouchableOpacity
+                            style={[
+                                tw`px-6 py-3 rounded-xl min-w-20 items-center`,
+                                activeTab === "Login" ? tw`bg-white shadow-sm` : tw`bg-transparent`
+                            ]}
+                            onPress={() => router.push("/auth/LoginScreen")}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[
+                                tw`font-semibold text-sm`,
+                                activeTab === "Login" ? tw`text-gray-800` : tw`text-black`
+                            ]}>
+                                Entrar
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                tw`px-6 py-3 rounded-xl min-w-20 items-center`,
+                                activeTab === "Cadastro" ? tw`bg-white shadow-sm` : tw`bg-transparent`
+                            ]}
+                            onPress={() => router.push("/auth/RegisterScreen")}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[
+                                tw`font-semibold text-sm`,
+                                activeTab === "Cadastro" ? tw`text-gray-800` : tw`text-black`
+                            ]}>
+                                Cadastro
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Progress Indicator for Registration */}
+                {activeTab === "Cadastro" && (
+                    <View style={tw`flex-row items-center absolute -bottom-3`}>
+                        {[1, 2, 3].map((stepNumber) => (
+                            <View key={stepNumber} style={tw`flex-row items-center`}>
+                                <View style={[
+                                    tw`w-3 h-3 rounded-full`,
+                                    step >= stepNumber ? tw`bg-white` : tw`bg-white/40`
+                                ]} />
+                                {stepNumber < 3 && (
+                                    <View style={[
+                                        tw`w-8 h-0.5 mx-1`,
+                                        step > stepNumber ? tw`bg-white` : tw`bg-white/40`
+                                    ]} />
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                )}
+            </LinearGradient>
+        </>
     );
 }

@@ -21,6 +21,7 @@ import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useAuthState } from "@/src/hooks/useAuthState";
+import { useChatContext } from "@/src/context/ChatContext";
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -67,9 +68,9 @@ const TabIcon = ({
       {/* Badge - same as before */}
       {badge && badge > 0 && (
         <View style={tw`
-                    absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full 
-                    items-center justify-center border-2 border-white
-                `}>
+          absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full 
+          items-center justify-center border-2 border-white
+        `}>
           <Text style={tw`text-white text-xs font-bold`}>
             {badge > 9 ? '9+' : badge.toString()}
           </Text>
@@ -169,7 +170,7 @@ function AdminTabNavigator() {
 // Regular User Tab Navigator
 function UserTabNavigator() {
   const { isMentor } = useAuthState();
-
+  // const { getUnreadCount } = useChatContext();
 
   return (
     <Tab.Navigator
@@ -187,7 +188,7 @@ function UserTabNavigator() {
           if (route.name === "Mensagens") {
             iconName = "chatbubble-ellipses";
             label = "Mensagens";
-            badge = 5; // Example unread messages
+            badge = 2 //getUnreadCount();
           } else if (route.name === "Emparelhamento") {
             iconName = "apps";
             label = "Home";
@@ -246,7 +247,7 @@ function UserTabNavigator() {
       {/* <Tab.Screen name="Tarefas" component={AnalyticsScreen} /> */}
       <Tab.Screen name="Emparelhamento" component={Home} />
       <Tab.Screen name="Mensagens" component={MessagesStack} />
-      {isMentor && <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{tabBarShowLabel: isMentor}} />}
+      {isMentor && <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{ tabBarShowLabel: isMentor }} />}
       <Tab.Screen name="Recursos educacionais" component={EducationalResourcesScreen} />
     </Tab.Navigator>
   );
@@ -279,7 +280,7 @@ function MainStack() {
           component={isCoordinator ? AdminTabNavigator : UserTabNavigator}
         />
         <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+        <Stack.Screen name="UserProfile" component={UserProfileScreen as React.ComponentType<any>} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
       </Stack.Navigator>

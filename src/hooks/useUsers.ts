@@ -26,6 +26,16 @@ export const useUsers = () => {
     return data;
   };
 
+  // ✅ NEW: Get available users for connections (not already connected)
+  const getAvailableUsers = async (userId: string, params = {}): Promise<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }> => {
+    const headers = await getHeaders();
+    const { data } = await api.get<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>(
+      `/users/${userId}/connections/available`,
+      { params, headers }
+    );
+    return data;
+  };
+
   // Get users by role
   const findByRole = async (role: UserRole): Promise<IUser[]> => {
     const headers = await getHeaders();
@@ -130,8 +140,30 @@ export const useUsers = () => {
     return data;
   };
 
+  // ✅ NEW: Search users with advanced filters
+  const searchUsers = async (searchParams: {
+    search?: string;
+    role?: UserRole;
+    school?: School;
+    municipality?: string;
+    province?: string;
+    gender?: string;
+    grade?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }> => {
+    const headers = await getHeaders();
+    const { data } = await api.get<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>(
+      "/users",
+      { params: searchParams, headers }
+    );
+    return data;
+  };
+
   return {
     getUsers,
+    getAvailableUsers, // ✅ NEW
+    searchUsers, // ✅ NEW
     findByRole,
     findBySchool,
     getUserById,

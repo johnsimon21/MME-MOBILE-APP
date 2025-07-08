@@ -23,7 +23,7 @@ export type FormData2 = {
   school: School;
   grade: Grade | null;
   password: string;
-  schoolYear: number | null;
+  schoolYear: string | null;
   province: string;
   municipality: string;
   maxMenteeNumber: number | null;
