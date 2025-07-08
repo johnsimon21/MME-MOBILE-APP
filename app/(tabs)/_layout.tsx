@@ -22,6 +22,9 @@ import { AuthGuard } from "@/src/components/auth/AuthGuard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useAuthState } from "@/src/hooks/useAuthState";
 import { useChatContext } from "@/src/context/ChatContext";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -288,7 +291,21 @@ function MainStack() {
   );
 }
 
-// Export the MainStack instead of TabNavigator
+
 export default function TabLayout() {
-  return <MainStack />;
+    const { loadChats } = useChatContext();
+
+    // Load chats only when the tab layout is focused
+    useFocusEffect(
+        useCallback(() => {
+            // Add a small delay to ensure everything is initialized
+            const timer = setTimeout(() => {
+                loadChats();
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }, [loadChats])
+    );
+
+    return <MainStack />;
 }

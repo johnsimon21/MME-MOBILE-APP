@@ -35,35 +35,33 @@ export default function LoginScreen({ navigation }: any) {
 
     const handleLogin = async () => {
         clearError();
-        setEmailError("");
-        setPasswordError("");
 
         // Validation
-        let hasError = false;
-
         if (!email.trim()) {
-            setEmailError("Email é obrigatório");
-            hasError = true;
-        } else if (!validateEmail(email.trim())) {
-            setEmailError("Email inválido");
-            hasError = true;
+            alert("Por favor, insira seu email");
+            return;
         }
 
         if (!password.trim()) {
-            setPasswordError("Senha é obrigatória");
-            hasError = true;
-        } else if (password.length < 6) {
-            setPasswordError("Senha deve ter pelo menos 6 caracteres");
-            hasError = true;
+            alert("Por favor, insira sua senha");
+            return;
         }
 
-        if (hasError) return;
+        if (password.length < 6) {
+            alert("A senha deve ter pelo menos 6 caracteres");
+            return;
+        }
 
         try {
             console.log("🔄 Iniciando login com Firebase...");
+
             const success = await login(email.trim().toLowerCase(), password);
+
             if (success) {
                 console.log("✅ Login com Firebase bem-sucedido!");
+                // Don't navigate here, let AuthContext handle it
+            } else {
+                console.log("❌ Login falhou");
             }
         } catch (error) {
             console.error("❌ Erro no login com Firebase:", error);
@@ -81,13 +79,13 @@ export default function LoginScreen({ navigation }: any) {
     };
 
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             style={tw`flex-1 bg-gray-50`}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
             <AuthHeader navigation={navigation} showBackButton={false} activeTab="Login" step={1} />
-            
-            <ScrollView 
+
+            <ScrollView
                 style={tw`flex-1`}
                 contentContainerStyle={tw`flex-grow justify-center`}
                 showsVerticalScrollIndicator={false}
@@ -161,10 +159,10 @@ export default function LoginScreen({ navigation }: any) {
                                 onPress={() => setShowPassword(!showPassword)}
                                 style={tw`p-1`}
                             >
-                                <Ionicons 
-                                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                                    size={20} 
-                                    color="#9CA3AF" 
+                                <Ionicons
+                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color="#9CA3AF"
                                 />
                             </TouchableOpacity>
                         </View>

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import io,{  Socket } from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { IChatSocketEvents } from '../interfaces/chat.interface';
+import { ENV } from '../config/env';
 
 interface SocketContextType {
     socket: typeof Socket | null;
@@ -31,51 +32,74 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
         try {
             const token = await getIdToken();
+            if (!token) {
+                console.log('⚠️ No token available, skipping socket connection');
+                return;
+            }
 
-            const newSocket = io(`${process.env.EXPO_PUBLIC_API_URL}/chat`, {
+            console.log('🔄 Attempting socket connection...');
+
+            const newSocket = io(`http://192.168.1.103:3000/chat`, {
                 query: {
                     userId: user.uid,
                     token: token
                 },
                 transports: ['websocket'],
-                timeout: 20000,
+                timeout: 10000, // Reduced timeout
                 reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
+                reconnectionAttempts: 3, // Reduced attempts
+                reconnectionDelay: 2000,
+                forceNew: true, // Force new connection
+                autoConnect: false // Don't auto connect
             });
 
+            // Connect manually with error handling
+            newSocket.connect();
+
             newSocket.on('connect', () => {
-                console.log('Socket connected:', newSocket.id);
+                console.log('✅ Socket connected:', newSocket.id);
                 setIsConnected(true);
                 setConnectionError(null);
             });
 
             newSocket.on('disconnect', (reason: any) => {
-                console.log('Socket disconnected:', reason);
+                console.log('🔌 Socket disconnected:', reason);
                 setIsConnected(false);
             });
 
             newSocket.on('connect_error', (error: any) => {
-                console.error('Socket connection error:', error);
-                setConnectionError(error.message);
+                console.error('❌ Socket connection error:', error.message);
+                setConnectionError(`Erro de conexão: ${error.message}`);
                 setIsConnected(false);
+
+                // Don't retry if it's a critical error
+                if (error.message.includes('websocket error') || error.message.includes('timeout')) {
+                    console.log('🚫 Critical socket error, not retrying');
+                    newSocket.disconnect();
+                }
             });
 
             newSocket.on('reconnect', (attemptNumber: any) => {
-                console.log('Socket reconnected after', attemptNumber, 'attempts');
+                console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
                 setIsConnected(true);
                 setConnectionError(null);
             });
 
             newSocket.on('reconnect_error', (error: { message: React.SetStateAction<string | null>; }) => {
-                console.error('Socket reconnection error:', error);
-                setConnectionError(error.message);
+                console.error('❌ Socket reconnection error:', error.message);
+                setConnectionError(`Erro de reconexão: ${error.message}`);
+            });
+
+            newSocket.on('reconnect_failed', () => {
+                console.error('❌ Socket reconnection failed completely');
+                setConnectionError('Falha na reconexão. Chat offline.');
+                setIsConnected(false);
             });
 
             setSocket(newSocket);
         } catch (error: any) {
-            console.error('Error connecting socket:', error);
-            setConnectionError(error.message);
+            console.error('❌ Error setting up socket:', error);
+            setConnectionError(`Erro ao configurar chat: ${error.message}`);
         }
     };
 
@@ -118,21 +142,34 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Connect when user is available
     useEffect(() => {
-        if (user) {
-            connect();
-        } else {
-            disconnect();
-        }
+        if (user && ENV.API_BASE_URL) {
+            // Add a longer delay to ensure auth is fully established
+            const timer = setTimeout(() => {
+                connect();
+            }, 2000); // Increased delay
 
-        return () => {
-            disconnect();
-        };
+            return () => {
+                clearTimeout(timer);
+                disconnect();
+            };
+        } else {
+            // Don't disconnect immediately, wait a bit
+            const timer = setTimeout(() => {
+                disconnect();
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
     }, [user]);
 
-    // Cleanup on unmount
+    // Add this to prevent hanging during initialization
     useEffect(() => {
+        // Cleanup on unmount to prevent memory leaks
         return () => {
-            disconnect();
+            if (socket) {
+                socket.removeAllListeners();
+                socket.disconnect();
+            }
         };
     }, []);
 

@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Enhanced error handler
     const handleError = useCallback((error: any, context: string) => {
         console.error(`❌ ${context}:`, error);
-        
+
         let errorMessage = 'Erro inesperado. Tente novamente.';
 
         if (error?.response?.status) {
@@ -134,38 +134,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
             try {
                 setFirebaseUser(fbUser);
-                
+            
                 if (fbUser) {
                     console.log("🔄 Firebase user detected, fetching profile...");
-                    
+                
                     // Get fresh token
                     const idToken = await fbUser.getIdToken(true);
                     await AsyncStorage.setItem('@token_id', idToken);
-                    
+                
                     // Fetch user profile from backend
                     try {
                         const response = await api.get('/auth/me');
                         console.log("✅ User profile loaded:", response.data);
                         setUser(response.data);
+                    
+                        // Only set initialization complete after user is fully loaded
+                        setTimeout(() => {
+                            setIsInitializing(false);
+                        }, 100);
                     } catch (profileError: any) {
                         console.error("❌ Failed to fetch user profile:", profileError);
-                        
-                        // If profile fetch fails, sign out Firebase user
+                    
                         if (profileError?.response?.status === 401) {
                             await signOut(auth);
                             await AsyncStorage.removeItem('@token_id');
                         }
                         setUser(null);
+                        setIsInitializing(false);
                     }
                 } else {
                     console.log("🔄 No Firebase user, clearing state...");
                     setUser(null);
                     await AsyncStorage.removeItem('@token_id');
+                    setIsInitializing(false);
                 }
             } catch (error) {
                 console.error("❌ Auth state change error:", error);
                 setUser(null);
-            } finally {
                 setIsInitializing(false);
             }
         });
@@ -201,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Navigate to main app
             router.replace('/(tabs)');
-            
+
             return true;
 
         } catch (error: any) {
@@ -259,10 +264,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Sign out from Firebase
             await signOut(auth);
-            
+
             // Clear local storage
             await AsyncStorage.multiRemove(['@token_id', '@user_data']);
-            
+
             // Clear state
             setUser(null);
             setFirebaseUser(null);
@@ -297,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             await api.post('/auth/forgot-password', { email: email.trim() });
-            
+
             console.log('✅ Password reset email sent');
             return true;
 
@@ -322,9 +327,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             await api.post('/auth/reset-password', { uid, newPassword });
-            
+
             console.log('✅ Password reset successful');
-            
+
             Alert.alert(
                 'Senha Redefinida!',
                 'Sua senha foi redefinida com sucesso. Faça login com sua nova senha.',
@@ -371,14 +376,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!firebaseUser) return;
 
             console.log('🔄 Refreshing authentication...');
-            
+
             // Get fresh token
             const idToken = await firebaseUser.getIdToken(true);
             await AsyncStorage.setItem('@token_id', idToken);
-            
+
             // Fetch fresh user data
             await fetchUser();
-            
+
             console.log('✅ Authentication refreshed');
 
         } catch (error: any) {

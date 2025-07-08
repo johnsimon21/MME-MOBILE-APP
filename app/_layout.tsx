@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -14,6 +14,7 @@ import { FloatingOptionsButton } from '@/src/presentation/components/ui/Floating
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { SocketProvider } from '@/src/context/SocketContext';
 import { ChatProvider } from '@/src/context/ChatContext';
+import { LoadingScreen } from '@/src/components/LoadingScreen';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -21,20 +22,21 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const pathname = usePathname();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isInitializing } = useAuth();
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
-    if (loaded && !isLoading) {
+    if (loaded && !isLoading && !isInitializing) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isLoading]);
+  }, [loaded, isLoading, isInitializing]);
 
-  if (!loaded || isLoading) {
-    return null;
+  // Show loading screen during initialization
+  if (!loaded || isInitializing) {
+    return <LoadingScreen />;
   }
 
   const hideSettingsOn = [
@@ -58,55 +60,102 @@ function RootLayoutContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <SupportProvider>
-          <FloatingButtonProvider>
-            <View style={{ flex: 1 }}> 
-              <Stack>
-                <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
-                <Stack.Screen name="auth/ForgotPasswordScreen" options={{ headerShown: false }} />
-                <Stack.Screen name="auth/ResetPasswordScreen" options={{ headerShown: false }} />
-                <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-                <Stack.Screen name="user" options={{ headerShown: false }} />
-                <Stack.Screen name="notifications" options={{ headerShown: false }} />
-                <Stack.Screen name="support" options={{ headerShown: false }} />
-                <Stack.Screen name="faq" options={{ headerShown: false }} />
-                <Stack.Screen name="chat-support" options={{ headerShown: false }} />
-                <Stack.Screen name="create-ticket" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="voice-call"
-                  options={{
-                    headerShown: false,
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom'
-                  }}
-                />
-                <Stack.Screen
-                  name="normal-ca
+      <View style={{ flex: 1 }}>
+        <Stack>
+          <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/ForgotPasswordScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/ResetPasswordScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+          <Stack.Screen name="user" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="support" options={{ headerShown: false }} />
+          <Stack.Screen name="faq" options={{ headerShown: false }} />
+          <Stack.Screen name="chat-support" options={{ headerShown: false }} />
+          <Stack.Screen name="create-ticket" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="voice-call"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom'
+            }}
+          />
+          <Stack.Screen
+            name="normal-ca
                   ll"
-                  options={{
-                    headerShown: false,
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom'
-                  }}
-                /> 
-              </Stack>
-              <StatusBar style="auto" />
-              {shouldShowSettings && <FloatingOptionsButton />}
-            </View>
-          </FloatingButtonProvider>
-        </SupportProvider>
-      </AuthProvider>
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom'
+            }}
+          />
+        </Stack>
+        <StatusBar style="auto" />
+        {shouldShowSettings && <FloatingOptionsButton />}
+      </View>
     </ThemeProvider>
   );
 }
 
+class SocketErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    console.error('Socket Error Boundary caught an error:', error);
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('Socket Error Boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Render children without socket functionality
+      return this.props.children;
+    }
+
+    return this.props.children;
+  }
+}
+
+const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user, isAuthenticated, isInitializing } = useAuth();
+
+  // Always provide SupportProvider, but conditionally provide Socket/Chat
+  return (
+    <SupportProvider>
+      {isAuthenticated && user && !isInitializing ? (
+        <SocketErrorBoundary>
+          <SocketProvider>
+            <ChatProvider>
+              {children}
+            </ChatProvider>
+          </SocketProvider>
+        </SocketErrorBoundary>
+      ) : (
+        children
+      )}
+    </SupportProvider>
+  );
+};
+
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutContent />
+      <ConditionalSocketProvider>
+        <FloatingButtonProvider>
+          <RootLayoutContent />
+        </FloatingButtonProvider>
+      </ConditionalSocketProvider>
     </AuthProvider>
   );
 }

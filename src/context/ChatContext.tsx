@@ -282,9 +282,13 @@ interface ChatProviderProps {
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const [state, dispatch] = useReducer(chatReducer, initialState);
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const { socket, isConnected, on, off, emit } = useSocket();
     const chatHook = useChat();
+
+    if (!socket && user) {
+        console.log('⚠️ Socket not available yet, rendering children without socket features');
+    }
 
     // Setup socket listeners
     useEffect(() => {
@@ -788,4 +792,13 @@ export const useChatContext = (): ChatContextType => {
         throw new Error('useChatContext must be used within a ChatProvider');
     }
     return context;
+};
+
+export const useChatSafe = () => {
+  try {
+    return useContext(ChatContext);
+  } catch (error) {
+    console.warn('ChatContext not available, returning null');
+    return null;
+  }
 };
