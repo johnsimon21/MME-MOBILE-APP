@@ -1,301 +1,292 @@
-import React, { useState, useRef } from "react";
-import { View, Text, TextInput, FlatList, Image, TouchableOpacity, Pressable, Platform, Animated, Modal, ScrollView, SafeAreaView } from "react-native";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
+import { useAuth } from '@/src/context/AuthContext';
+import { useEducationalResources } from '@/src/hooks/useEducationalResources';
+import type {
+    IEducationalResource,
+    IResourceFilters,
+    ResourceType
+} from '@/src/interfaces/educational-resources.interface';
+import { Ionicons } from "@expo/vector-icons";
+import { ResizeMode, Video } from 'expo-av';
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { Alert, Linking } from 'react-native';
-import tw from "twrnc";
-import * as VideoThumbnails from 'expo-video-thumbnails';
-import { Navbar } from "../components/ui/navbar";
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Sharing from 'expo-sharing';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Image, Modal, Platform, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { WebView } from 'react-native-webview';
-import { ResizeMode, Video } from 'expo-av';
-
-interface FileItem {
-    id: string;
-    uploader: string;
-    type: "pdf" | "video" | "image" | "docx";
-    name: string;
-    size: string;
-    date: string;
-    thumbnail?: string;
-    duration?: string;
-    pages?: number;
-}
-const pdfImageUrl = "../../assets/images/pdf_image.png"
-
-const generateRandomFiles = (): FileItem[] => {
-    // Existing code for generating random files
-    const subjects = ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia'];
-    const fileTypes = ['pdf', 'video', 'image', 'docx'] as const;
-    const uploaders = ['João Silva', 'Maria Santos', 'Pedro Alves', 'Ana Costa', 'Carlos Lima'];
-    const videoThumbnails = [
-        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b',
-        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f',
-        'https://images.unsplash.com/photo-1524178232363-1fb2b075b655'
-    ];
-
-    const pdfThumbnails = [
-        'https://images.unsplash.com/photo-1537434328607-ddb93edba548',
-        'https://images.unsplash.com/photo-1568667256549-094345857637',
-        'https://images.unsplash.com/photo-1586380951230-e6703d9f6833'
-    ];
-
-    const docxThumbnails = [
-        'https://images.unsplash.com/photo-1606636660801-c61b8e97a1dc',
-        'https://images.unsplash.com/photo-1586380951230-e6703d9f6833',
-        'https://images.unsplash.com/photo-1453728013993-6d66e9c9123a'
-    ];
-
-    const generateRandomFile = (id: string): FileItem => {
-        const type = fileTypes[Math.floor(Math.random() * fileTypes.length)];
-        const subject = subjects[Math.floor(Math.random() * subjects.length)];
-        const uploader = uploaders[Math.floor(Math.random() * uploaders.length)];
-        const thumbnail = videoThumbnails[Math.floor(Math.random() * videoThumbnails.length)];
-
-        const baseFile = {
-            id,
-            uploader,
-            type,
-            size: `${Math.floor(Math.random() * 20) + 1} MB`,
-            date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toLocaleDateString('pt-BR')
-        };
-
-        switch (type) {
-            case 'pdf':
-            case 'docx':
-                return {
-                    ...baseFile,
-                    name: type === 'pdf'
-                        ? `${subject} - Aula ${Math.floor(Math.random() * 10) + 1}.${type}`
-                        : `Resumo de ${subject}.${type}`,
-                    pages: Math.floor(Math.random() * 50) + 1,
-                    thumbnail: type === 'pdf'
-                        ? pdfThumbnails[Math.floor(Math.random() * pdfThumbnails.length)]
-                        : docxThumbnails[Math.floor(Math.random() * docxThumbnails.length)]
-                };
-            case 'video':
-                return {
-                    ...baseFile,
-                    name: `Vídeo Aula de ${subject}`,
-                    thumbnail,
-                    duration: `00:${Math.floor(Math.random() * 59) + 1}:${Math.floor(Math.random() * 59) + 1}`
-                };
-            case 'image':
-                return {
-                    ...baseFile,
-                    name: `Diagrama de ${subject}`,
-                    thumbnail
-                };
-        }
-    };
-
-    return Array.from({ length: 10 }, (_, i) => generateRandomFile(String(i + 1)));
-};
+import tw from "twrnc";
+import { Navbar } from "../components/ui/navbar";
 
 export function EducationalResourcesScreen() {
-    const [downloading, setDownloading] = useState<string | null>(null);
-    const [unpublishedFiles, setUnpublishedFiles] = useState<Set<string>>(new Set());
+    // API and auth hooks
+    const {
+        getResources,
+        uploadResource,
+        generateDownloadLink,
+        publishResource,
+        deleteResource,
+        isLoading,
+        error,
+        canUserUpload,
+        canUserManage,
+        getFileTypeIcon,
+        getFileTypeColor,
+        formatFileSize,
+        ResourceType,
+        AccessLevel
+    } = useEducationalResources();
+    const { user } = useAuth();
+
+    // State management
+    const [resources, setResources] = useState<IEducationalResource[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [files, setFiles] = useState<FileItem[]>(generateRandomFiles());
-    const [selectedCategory, setSelectedCategory] = useState<"all" | "pdf" | "video" | "image" | "docx">("all");
+    const [selectedCategory, setSelectedCategory] = useState<ResourceType | "all">("all");
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showUploadOptions, setShowUploadOptions] = useState(false);
     const [viewerVisible, setViewerVisible] = useState(false);
-    const [currentFile, setCurrentFile] = useState<FileItem | null>(null);
-    const videoRef = useRef<Video>(null);
+    const [currentResource, setCurrentResource] = useState<IEducationalResource | null>(null);
+    const [downloading, setDownloading] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [hasNextPage, setHasNextPage] = useState(false);
+
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const videoRef = useRef<Video>(null);
 
-    // Add a function to handle file preview
-    const handleFilePreview = (file: FileItem) => {
-        setCurrentFile(file);
+    // Load resources on mount and when filters change
+    useEffect(() => {
+        const loadResources = async () => {
+            const filters: IResourceFilters = {
+                search: searchQuery || undefined,
+                type: selectedCategory === "all" ? undefined : selectedCategory,
+                page: 1,
+                limit: 20,
+                sortBy: 'uploadDate',
+                sortOrder: 'desc'
+            };
+
+            const result = await getResources(filters);
+            if (result) {
+                setResources(result.resources);
+                setPage(result.page);
+                setTotalPages(result.totalPages);
+                setHasNextPage(result.hasNext);
+            }
+        };
+
+        loadResources();
+    }, [searchQuery, selectedCategory]);
+
+    // Load resources from API (for refresh and pagination)
+    const loadResources = useCallback(async (newPage = 1, append = false) => {
+        const filters: IResourceFilters = {
+            search: searchQuery || undefined,
+            type: selectedCategory === "all" ? undefined : selectedCategory,
+            page: newPage,
+            limit: 20,
+            sortBy: 'uploadDate',
+            sortOrder: 'desc'
+        };
+
+        const result = await getResources(filters);
+        if (result) {
+            if (append) {
+                setResources(prev => [...prev, ...result.resources]);
+            } else {
+                setResources(result.resources);
+            }
+            setPage(result.page);
+            setTotalPages(result.totalPages);
+            setHasNextPage(result.hasNext);
+        }
+    }, [searchQuery, selectedCategory, getResources]);
+
+    // Handle file preview
+    const handleFilePreview = (resource: IEducationalResource) => {
+        setCurrentResource(resource);
         setViewerVisible(true);
     };
 
-    // Add a function to close the viewer
+    // Close viewer
     const closeViewer = () => {
         setViewerVisible(false);
-        setCurrentFile(null);
+        setCurrentResource(null);
         if (videoRef.current) {
             videoRef.current.pauseAsync();
         }
     };
 
+    // Handle download
+    const handleDownload = async (resource: IEducationalResource) => {
+        if (!resource.canDownload) {
+            Alert.alert('Acesso Negado', 'Você não tem permissão para baixar este recurso.');
+            return;
+        }
 
-    // Filtered results
-    const filteredFiles = files.filter(file => {
-        const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === "all" || file.type === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
-
-    const handleDownload = async (file: FileItem) => {
-        setDownloading(file.id);
-
-        // Updated URLs that are CORS-friendly and publicly accessible
-        const mockDownloadUrls = {
-            pdf: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-            docx: 'https://calibre-ebook.com/downloads/demos/demo.docx',
-            video: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
-            image: file.thumbnail || 'https://picsum.photos/800/600'
-        };
+        setDownloading(resource.id);
 
         try {
-            const downloadUrl = mockDownloadUrls[file.type];
+            const downloadResponse = await generateDownloadLink(resource.id);
+            if (!downloadResponse) {
+                throw new Error('Falha ao gerar link de download');
+            }
 
             if (Platform.OS === 'web') {
-                const response = await fetch(downloadUrl, {
-                    method: 'GET',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/octet-stream'
-                    }
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok');
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.style.display = 'none';
-                link.href = url;
-                link.download = file.name;
-
-                document.body.appendChild(link);
-                link.click();
-
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(link);
+                // For web, open download URL in new tab
+                window.open(downloadResponse.downloadUrl, '_blank');
             } else {
-                // Native platform code remains the same
-                const filename = file.name.replace(/\s+/g, '_');
+                // For mobile, use Sharing
+                const filename = resource.name.replace(/\s+/g, '_');
                 const { uri } = await FileSystem.downloadAsync(
-                    downloadUrl,
+                    downloadResponse.downloadUrl,
                     FileSystem.documentDirectory + filename
                 );
 
                 if (uri) {
-                    await Sharing.shareAsync(uri);
+                    await Sharing.shareAsync(uri, {
+                        dialogTitle: `Compartilhar ${resource.name}`
+                    });
                 }
             }
 
-            // Show success message
-            Alert.alert('Download Concluído', `${file.name} foi baixado com sucesso.`);
+            Alert.alert('Download Concluído', `${resource.name} foi baixado com sucesso.`);
 
         } catch (error) {
-            console.log('Download error:', error);
+            console.error('Download error:', error);
             Alert.alert('Download Falhou', 'Não foi possível baixar o arquivo. Por favor, tente novamente.');
         } finally {
             setDownloading(null);
         }
     };
 
-    // Upload new file
+    // Handle upload
     const handleUpload = async () => {
-        let result = await DocumentPicker.getDocumentAsync({});
-        if (!result.canceled) {
-            const file = result.assets[0];
-            const newFileId = Math.random().toString();
+        if (!canUserUpload(user?.role)) {
+            Alert.alert('Acesso Negado', 'Você não tem permissão para fazer upload de recursos.');
+            return;
+        }
 
-            let thumbnail: string | undefined;
+        try {
+            let result = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true
+            });
 
-            if (file.name.endsWith('.pdf') || file.name.endsWith('.docx')) {
-                // Store the file URI directly as thumbnail for now
-                thumbnail = file.uri;
+            if (!result.canceled) {
+                const file = result.assets[0];
+                setShowUploadModal(true);
+                setUploadProgress(0);
+
+                const uploadData = {
+                    name: file.name,
+                    description: `Recurso educacional: ${file.name}`,
+                    tags: [],
+                    subject: '',
+                    educationLevel: undefined,
+                    accessLevel: AccessLevel.SCHOOL_ONLY,
+                    isPublished: false
+                };
+
+                // Simulate upload progress
+                const progressInterval = setInterval(() => {
+                    setUploadProgress(prev => {
+                        if (prev >= 90) {
+                            clearInterval(progressInterval);
+                            return prev;
+                        }
+                        return prev + 10;
+                    });
+                }, 500);
+
+                // Convert file for upload
+                const fileForUpload = {
+                    uri: file.uri,
+                    name: file.name,
+                    type: file.mimeType || 'application/octet-stream'
+                };
+
+                const uploadedResource = await uploadResource(fileForUpload, uploadData);
+
+                clearInterval(progressInterval);
+                setUploadProgress(100);
+
+                if (uploadedResource) {
+                    // Animation for new resource
+                    setTimeout(() => {
+                        Animated.parallel([
+                            Animated.timing(fadeAnim, {
+                                toValue: 1,
+                                duration: 500,
+                                useNativeDriver: true
+                            }),
+                            Animated.timing(scaleAnim, {
+                                toValue: 1,
+                                duration: 300,
+                                useNativeDriver: true
+                            })
+                        ]).start();
+                    }, 100);
+
+                    // Refresh the resources list
+                    loadResources(1, false);
+
+                    Alert.alert('Upload Concluído', 'Seu recurso foi carregado com sucesso!');
+                } else {
+                    Alert.alert('Erro no Upload', 'Não foi possível carregar o arquivo.');
+                }
+
+                setShowUploadModal(false);
+                setShowUploadOptions(false);
+                setUploadProgress(0);
             }
-            else if (file.name.endsWith('.mp4')) {
-                const { uri } = await VideoThumbnails.getThumbnailAsync(
-                    file.uri,
-                    {
-                        time: 0,
-                        quality: 0.8
-                    }
-                );
-                thumbnail = uri;
-            }
-
-            const newFile: FileItem = {
-                id: newFileId,
-                uploader: "Você",
-                type: file.name.endsWith(".pdf") ? "pdf" :
-                    file.name.endsWith(".docx") ? "docx" :
-                        file.name.endsWith(".mp4") ? "video" : "image",
-                name: file.name,
-                size: file.size ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Unknown",
-                date: new Date().toLocaleDateString(),
-                thumbnail: thumbnail
-            };
-
-            // Animation for new file
-            setTimeout(() => {
-                Animated.parallel([
-                    Animated.timing(fadeAnim, {
-                        toValue: 1,
-                        duration: 500,
-                        useNativeDriver: true
-                    }),
-                    Animated.timing(scaleAnim, {
-                        toValue: 1,
-                        duration: 300,
-                        useNativeDriver: true
-                    })
-                ]).start();
-            }, 100);
-
-            setFiles([newFile, ...files]);
-            setUnpublishedFiles(prev => new Set(prev).add(newFileId));
-            setShowUploadOptions(false);
+        } catch (error) {
+            console.error('Upload error:', error);
+            Alert.alert('Erro no Upload', 'Não foi possível carregar o arquivo.');
+            setShowUploadModal(false);
+            setUploadProgress(0);
         }
     };
 
-    // Add handlePublish function
-    const handlePublish = (fileId: string) => {
-        setUnpublishedFiles(prev => {
-            const updated = new Set(prev);
-            updated.delete(fileId);
-            return updated;
-        });
+    // Handle publish
+    const handlePublish = async (resourceId: string) => {
+        if (!canUserManage(user?.role)) {
+            Alert.alert('Acesso Negado', 'Você não tem permissão para publicar recursos.');
+            return;
+        }
 
-        // Show success message
-        Alert.alert('Arquivo Publicado', 'Seu arquivo foi publicado com sucesso e agora está disponível para todos os usuários.');
+        try {
+            const publishedResource = await publishResource(resourceId);
+            if (publishedResource) {
+                // Update the resource in the local state
+                setResources(prev => prev.map(resource =>
+                    resource.id === resourceId
+                        ? { ...resource, isPublished: true, publishedAt: new Date() }
+                        : resource
+                ));
+
+                Alert.alert('Recurso Publicado', 'Seu recurso foi publicado com sucesso e agora está disponível para todos os usuários.');
+            }
+        } catch (error) {
+            console.error('Publish error:', error);
+            Alert.alert('Erro ao Publicar', 'Não foi possível publicar o recurso.');
+        }
     };
 
-    // Simulate refresh
-    const handleRefresh = () => {
+    // Handle refresh
+    const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);
-        setTimeout(() => {
-            setFiles(generateRandomFiles());
-            setIsRefreshing(false);
-        }, 1500);
-    };
+        await loadResources(1, false);
+        setIsRefreshing(false);
+    }, [loadResources]);
 
-    // Get icon for file type
-    const getFileTypeIcon = (type: string) => {
-        switch (type) {
-            case 'pdf':
-                return <MaterialIcons name="picture-as-pdf" size={20} color="#FF5252" />;
-            case 'video':
-                return <MaterialIcons name="videocam" size={20} color="#4CAF50" />;
-            case 'image':
-                return <MaterialIcons name="image" size={20} color="#2196F3" />;
-            case 'docx':
-                return <MaterialIcons name="description" size={20} color="#673AB7" />;
-            default:
-                return <MaterialIcons name="insert-drive-file" size={20} color="#607D8B" />;
-        }
-    };
-
-    // Get color for file type
-    const getFileTypeColor = (type: string) => {
-        switch (type) {
-            case 'pdf': return 'bg-red-500';
-            case 'video': return 'bg-green-500';
-            case 'image': return 'bg-blue-500';
-            case 'docx': return 'bg-purple-500';
-            default: return 'bg-gray-500';
+    // Load more resources (pagination)
+    const loadMoreResources = () => {
+        if (!isLoading && hasNextPage) {
+            loadResources(page + 1, true);
         }
     };
 
@@ -307,7 +298,7 @@ export function EducationalResourcesScreen() {
             {/* Search and Filter Section */}
             <View style={tw`px-4 py-3 bg-[#F7F7F7] shadow-sm`}>
                 {/* Search Bar */}
-                <View style={tw`flex-row items-center bg-gray-100 px-4 py-2 rounded-full`}>
+                <View style={tw`flex-row items-center bg-gray-200 px-4 py-2 rounded-full`}>
                     <Ionicons name="search" size={20} color="gray" />
                     <TextInput
                         placeholder="Pesquisar materiais..."
@@ -340,94 +331,110 @@ export function EducationalResourcesScreen() {
                         <Text style={tw`${selectedCategory === "all" ? "text-white" : "text-gray-700"}`}>Todos</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === "pdf" ? "bg-red-500" : "bg-white"}`}
-                        onPress={() => setSelectedCategory("pdf")}
+                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === ResourceType.PDF ? "bg-red-500" : "bg-white"}`}
+                        onPress={() => setSelectedCategory(ResourceType.PDF)}
                     >
-                        <Text style={tw`${selectedCategory === "pdf" ? "text-white" : "text-gray-700"}`}>PDFs</Text>
+                        <Text style={tw`${selectedCategory === ResourceType.PDF ? "text-white" : "text-gray-700"}`}>PDFs</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === "video" ? "bg-green-500" : "bg-white"}`}
-                        onPress={() => setSelectedCategory("video")}
+                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === ResourceType.VIDEO ? "bg-green-500" : "bg-white"}`}
+                        onPress={() => setSelectedCategory(ResourceType.VIDEO)}
                     >
-                        <Text style={tw`${selectedCategory === "video" ? "text-white" : "text-gray-700"}`}>Vídeos</Text>
+                        <Text style={tw`${selectedCategory === ResourceType.VIDEO ? "text-white" : "text-gray-700"}`}>Vídeos</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === "image" ? "bg-blue-500" : "bg-white"}`}
-                        onPress={() => setSelectedCategory("image")}
+                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === ResourceType.IMAGE ? "bg-blue-500" : "bg-white"}`}
+                        onPress={() => setSelectedCategory(ResourceType.IMAGE)}
                     >
-                        <Text style={tw`${selectedCategory === "image" ? "text-white" : "text-gray-700"}`}>Imagens</Text>
+                        <Text style={tw`${selectedCategory === ResourceType.IMAGE ? "text-white" : "text-gray-700"}`}>Imagens</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === "docx" ? "bg-purple-500" : "bg-white"}`}
-                        onPress={() => setSelectedCategory("docx")}
+                        style={tw`px-4 py-2 rounded-full mr-2 ${selectedCategory === ResourceType.DOCX ? "bg-purple-500" : "bg-white"}`}
+                        onPress={() => setSelectedCategory(ResourceType.DOCX)}
                     >
-                        <Text style={tw`${selectedCategory === "docx" ? "text-white" : "text-gray-700"}`}>Documentos</Text>
+                        <Text style={tw`${selectedCategory === ResourceType.DOCX ? "text-white" : "text-gray-700"}`}>Documentos</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>
 
             {/* Upload Options Modal */}
             {showUploadOptions && (
-                <View style={tw`absolute top-24 right-4 bg-white rounded-xl shadow-xl z-10 w-60 overflow-hidden`}>
+                <>
+                    {/* Backdrop to close modal when clicking outside */}
                     <TouchableOpacity
-                        style={tw`flex-row items-center p-4 border-b border-gray-100`}
-                        onPress={handleUpload}
-                    >
-                        <Ionicons name="document-text" size={24} color="#4F46E5" />
-                        <Text style={tw`ml-3 text-gray-800`}>Carregar documento</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={tw`flex-row items-center p-4 border-b border-gray-100`}
-                        onPress={handleUpload}
-                    >
-                        <Ionicons name="videocam" size={24} color="#4F46E5" />
-                        <Text style={tw`ml-3 text-gray-800`}>Carregar vídeo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={tw`flex-row items-center p-4`}
-                        onPress={handleUpload}
-                    >
-                        <Ionicons name="image" size={24} color="#4F46E5" />
-                        <Text style={tw`ml-3 text-gray-800`}>Carregar imagem</Text>
-                    </TouchableOpacity>
-                </View>
+                        style={tw`absolute inset-0 z-5`}
+                        onPress={() => setShowUploadOptions(false)}
+                        activeOpacity={1}
+                    />
+                    <View style={tw`absolute top-30 right-4 bg-white rounded-xl shadow-xl z-10 w-60 overflow-hidden`}>
+                        <TouchableOpacity
+                            style={tw`flex-row items-center p-4 border-b border-gray-100`}
+                            onPress={handleUpload}
+                        >
+                            <Ionicons name="document-text" size={24} color="#4F46E5" />
+                            <Text style={tw`ml-3 text-gray-800`}>Carregar documento</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={tw`flex-row items-center p-4 border-b border-gray-100`}
+                            onPress={handleUpload}
+                        >
+                            <Ionicons name="videocam" size={24} color="#4F46E5" />
+                            <Text style={tw`ml-3 text-gray-800`}>Carregar vídeo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={tw`flex-row items-center p-4`}
+                            onPress={handleUpload}
+                        >
+                            <Ionicons name="image" size={24} color="#4F46E5" />
+                            <Text style={tw`ml-3 text-gray-800`}>Carregar imagem</Text>
+                        </TouchableOpacity>
+                    </View>
+                </>
             )}
 
-            {/* Files List */}
+            {/* Resources List */}
             <FlatList
-                data={filteredFiles}
+                data={resources}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={tw`p-4 pb-20`}
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        colors={['#4F46E5']}
+                        tintColor="#4F46E5"
+                    />
+                }
+                onEndReached={loadMoreResources}
+                onEndReachedThreshold={0.1}
                 renderItem={({ item, index }) => (
                     <Animated.View
                         style={[
                             tw`bg-white rounded-xl shadow-sm mb-4 overflow-hidden`,
-                            unpublishedFiles.has(item.id) && {
+                            !item.isPublished && {
                                 opacity: fadeAnim,
                                 transform: [{ scale: scaleAnim }]
                             }
                         ]}
                     >
-                        {/* File Preview */}
-                        {(item.type === "video" || item.type === "image") && (
+                        {/* Resource Preview */}
+                        {(item.type === ResourceType.VIDEO || item.type === ResourceType.IMAGE) && (
                             <TouchableOpacity
                                 style={tw`relative`}
                                 onPress={() => handleFilePreview(item)}
                             >
                                 <Image
-                                    source={{ uri: item.thumbnail }}
+                                    source={{ uri: item.thumbnail || 'https://via.placeholder.com/400x200?text=Preview' }}
                                     style={tw`w-full h-48 object-cover`}
                                 />
-                                {item.type === "video" && (
+                                {item.type === ResourceType.VIDEO && (
                                     <View style={tw`absolute inset-0 flex items-center justify-center`}>
                                         <View style={tw`bg-black bg-opacity-50 rounded-full p-3`}>
                                             <Ionicons name="play" size={30} color="white" />
                                         </View>
-                                        {item.duration && (
+                                        {item.durationFormatted && (
                                             <View style={tw`absolute bottom-2 right-2 bg-black bg-opacity-70 px-2 py-1 rounded`}>
-                                                <Text style={tw`text-white text-xs`}>{item.duration}</Text>
+                                                <Text style={tw`text-white text-xs`}>{item.durationFormatted}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -436,7 +443,8 @@ export function EducationalResourcesScreen() {
                                     colors={['transparent', 'rgba(0,0,0,0.7)']}
                                     style={tw`absolute bottom-0 left-0 right-0 h-16`}
                                 />
-                                <View style={tw`absolute top-2 left-2 px-2 py-1 rounded-full ${getFileTypeColor(item.type)}`}>
+                                <View style={[tw`absolute top-2 left-2 px-2 py-1 rounded-full`,
+                                { backgroundColor: getFileTypeColor(item.type) }]}>
                                     <Text style={tw`text-white text-xs font-medium`}>
                                         {item.type.toUpperCase()}
                                     </Text>
@@ -445,17 +453,17 @@ export function EducationalResourcesScreen() {
                         )}
 
                         {/* Document Preview */}
-                        {(item.type === "pdf" || item.type === "docx") && (
+                        {(item.type === ResourceType.PDF || item.type === ResourceType.DOCX) && (
                             <TouchableOpacity
                                 style={tw`relative bg-gray-100 h-24 flex-row items-center p-4`}
                                 onPress={() => handleFilePreview(item)}
                             >
                                 <View style={tw`w-16 h-16 rounded-lg bg-white shadow-sm items-center justify-center`}>
-                                    {item.type === "pdf" ? (
-                                        <Ionicons name="document-text" size={30} color="#FF5252" />
-                                    ) : (
-                                        <Ionicons name="document" size={30} color="#673AB7" />
-                                    )}
+                                    <Ionicons
+                                        name={getFileTypeIcon(item.type) as any}
+                                        size={30}
+                                        color={getFileTypeColor(item.type)}
+                                    />
                                 </View>
                                 <View style={tw`ml-4 flex-1`}>
                                     <Text style={tw`text-lg font-medium text-gray-800`} numberOfLines={1}>
@@ -467,7 +475,8 @@ export function EducationalResourcesScreen() {
                                         </Text>
                                     )}
                                 </View>
-                                <View style={tw`absolute top-2 right-2 px-2 py-1 rounded-full ${getFileTypeColor(item.type)}`}>
+                                <View style={[tw`absolute top-2 right-2 px-2 py-1 rounded-full`,
+                                { backgroundColor: getFileTypeColor(item.type) }]}>
                                     <Text style={tw`text-white text-xs font-medium`}>
                                         {item.type.toUpperCase()}
                                     </Text>
@@ -475,48 +484,77 @@ export function EducationalResourcesScreen() {
                             </TouchableOpacity>
                         )}
 
-                        {/* File Info */}
+                        {/* Resource Info */}
                         <View style={tw`p-4`}>
                             <View style={tw`flex-row justify-between items-center mb-2`}>
                                 <View style={tw`flex-row items-center`}>
                                     <View style={tw`w-8 h-8 rounded-full bg-indigo-100 items-center justify-center`}>
-                                        <Text style={tw`text-indigo-600 font-bold`}>{item.uploader.charAt(0)}</Text>
+                                        <Text style={tw`text-indigo-600 font-bold`}>{item.uploader.fullName.charAt(0)}</Text>
                                     </View>
-                                    <Text style={tw`ml-2 font-medium text-gray-800`}>{item.uploader}</Text>
+                                    <Text style={tw`ml-2 font-medium text-gray-800`}>{item.uploader.fullName}</Text>
                                 </View>
-                                <Text style={tw`text-xs text-gray-500`}>{item.date}</Text>
+                                <Text style={tw`text-xs text-gray-500`}>
+                                    {new Date(item.uploadDate).toLocaleDateString('pt-BR')}
+                                </Text>
                             </View>
 
                             <Text style={tw`text-gray-800 font-medium mb-2`} numberOfLines={2}>
                                 {item.name}
                             </Text>
 
-                            <View style={tw`flex-row justify-between items-center`}>
-                                <Text style={tw`text-xs text-gray-500`}>{item.size}</Text>
+                            {/* Tags */}
+                            {item.tags.length > 0 && (
+                                <View style={tw`flex-row flex-wrap mb-2`}>
+                                    {item.tags.slice(0, 3).map((tag, tagIndex) => (
+                                        <View key={tagIndex} style={tw`bg-gray-100 px-2 py-1 rounded-full mr-1 mb-1`}>
+                                            <Text style={tw`text-xs text-gray-600`}>{tag}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
 
-                                {/* Download/Publish Button */}
-                                <TouchableOpacity
-                                    style={tw`${downloading === item.id ? 'bg-gray-400' : unpublishedFiles.has(item.id) ? 'bg-green-500' : 'bg-indigo-600'} px-4 py-2 rounded-lg flex-row items-center`}
-                                    onPress={() => unpublishedFiles.has(item.id) ? handlePublish(item.id) : handleDownload(item)}
-                                    disabled={downloading === item.id}
-                                >
-                                    {downloading === item.id ? (
-                                        <>
-                                            <Ionicons name="cloud-download" size={18} color="white" />
-                                            <Text style={tw`ml-2 text-sm font-medium text-white`}>Baixando...</Text>
-                                        </>
-                                    ) : unpublishedFiles.has(item.id) ? (
-                                        <>
-                                            <Ionicons name="cloud-upload" size={18} color="white" />
-                                            <Text style={tw`ml-2 text-sm font-medium text-white`}>Publicar</Text>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Ionicons name="download" size={18} color="white" />
-                                            <Text style={tw`ml-2 text-sm font-medium text-white`}>Baixar</Text>
-                                        </>
+                            <View style={tw`flex-row justify-between items-center`}>
+                                <View style={tw`flex-row items-center`}>
+                                    <Text style={tw`text-xs text-gray-500 mr-3`}>{item.sizeFormatted}</Text>
+                                    {item.downloadCount > 0 && (
+                                        <Text style={tw`text-xs text-gray-500`}>
+                                            {item.downloadCount} downloads
+                                        </Text>
                                     )}
-                                </TouchableOpacity>
+                                </View>
+
+                                {/* Action Button */}
+                                <View style={tw`flex-row items-center`}>
+                                    {!item.isPublished && item.canPublish && (
+                                        <TouchableOpacity
+                                            style={tw`bg-green-500 px-3 py-2 rounded-lg flex-row items-center mr-2`}
+                                            onPress={() => handlePublish(item.id)}
+                                        >
+                                            <Ionicons name="cloud-upload" size={16} color="white" />
+                                            <Text style={tw`ml-1 text-xs font-medium text-white`}>Publicar</Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {item.canDownload && (
+                                        <TouchableOpacity
+                                            style={tw`${downloading === item.id ? 'bg-gray-400' : 'bg-indigo-600'} px-3 py-2 rounded-lg flex-row items-center`}
+                                            onPress={() => handleDownload(item)}
+                                            disabled={downloading === item.id}
+                                        >
+                                            {downloading === item.id ? (
+                                                <>
+                                                    <Ionicons name="hourglass" size={16} color="white" />
+                                                    <Text style={tw`ml-1 text-xs font-medium text-white`}>Baixando...</Text>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="download" size={16} color="white" />
+                                                    <Text style={tw`ml-1 text-xs font-medium text-white`}>Baixar</Text>
+                                                </>
+                                            )}
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             </View>
                         </View>
                     </Animated.View>
@@ -528,29 +566,33 @@ export function EducationalResourcesScreen() {
                         <Text style={tw`mt-2 text-gray-400 text-center px-10`}>
                             {searchQuery ?
                                 `Não encontramos resultados para "${searchQuery}"` :
-                                "Adicione novos recursos educacionais para compartilhar com seus alunos"}
+                                "Explore recursos educacionais ou adicione novos materiais"}
                         </Text>
-                        <TouchableOpacity
-                            style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full flex-row items-center`}
-                            onPress={handleUpload}
-                        >
-                            <Ionicons name="add-circle" size={20} color="white" />
-                            <Text style={tw`ml-2 text-white font-medium`}>Adicionar Recurso</Text>
-                        </TouchableOpacity>
+                        {canUserUpload(user?.role) && (
+                            <TouchableOpacity
+                                style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full flex-row items-center`}
+                                onPress={handleUpload}
+                            >
+                                <Ionicons name="add-circle" size={20} color="white" />
+                                <Text style={tw`ml-2 text-white font-medium`}>Adicionar Recurso</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
             />
 
-            {/* Floating Action Button */}
-            <TouchableOpacity
-                style={tw`absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg`}
-                onPress={handleUpload}
-            >
-                <Ionicons name="add" size={30} color="white" />
-            </TouchableOpacity>
+            {/* Floating Action Button - Only for users who can upload */}
+            {canUserUpload(user?.role) && (
+                <TouchableOpacity
+                    style={tw`absolute bottom-6 right-6 bg-indigo-600 w-14 h-14 rounded-full items-center justify-center shadow-lg`}
+                    onPress={handleUpload}
+                >
+                    <Ionicons name="add" size={30} color="white" />
+                </TouchableOpacity>
+            )}
 
 
-            {/* File Viewer Modal */}
+            {/* Resource Viewer Modal */}
             <Modal
                 visible={viewerVisible}
                 transparent={false}
@@ -564,33 +606,40 @@ export function EducationalResourcesScreen() {
                             <Ionicons name="close" size={28} color="white" />
                         </TouchableOpacity>
                         <Text style={tw`text-white font-medium text-lg`} numberOfLines={1}>
-                            {currentFile?.name}
+                            {currentResource?.name}
                         </Text>
-                        <TouchableOpacity onPress={() => currentFile && handleDownload(currentFile)}>
-                            <Ionicons name="download" size={24} color="white" />
+                        <TouchableOpacity
+                            onPress={() => currentResource && handleDownload(currentResource)}
+                            disabled={!currentResource?.canDownload}
+                        >
+                            <Ionicons
+                                name="download"
+                                size={24}
+                                color={currentResource?.canDownload ? "white" : "#666"}
+                            />
                         </TouchableOpacity>
                     </View>
 
                     {/* Content Viewer */}
                     <View style={tw`flex-1 justify-center items-center bg-black`}>
-                        {currentFile?.type === "image" && (
+                        {currentResource?.type === ResourceType.IMAGE && (
                             <ScrollView
                                 contentContainerStyle={tw`flex-1 justify-center items-center`}
                                 maximumZoomScale={3}
                                 minimumZoomScale={1}
                             >
                                 <Image
-                                    source={{ uri: currentFile.thumbnail }}
+                                    source={{ uri: currentResource.thumbnail || currentResource.downloadUrl }}
                                     style={tw`w-full h-full`}
                                     resizeMode="contain"
                                 />
                             </ScrollView>
                         )}
 
-                        {currentFile?.type === "video" && (
+                        {currentResource?.type === ResourceType.VIDEO && (
                             <Video
                                 ref={videoRef}
-                                source={{ uri: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4' }}
+                                source={{ uri: currentResource.downloadUrl }}
                                 style={tw`w-full h-64`}
                                 useNativeControls
                                 resizeMode={ResizeMode.CONTAIN}
@@ -599,30 +648,73 @@ export function EducationalResourcesScreen() {
                             />
                         )}
 
-                        {currentFile?.type === "pdf" && (
+                        {currentResource?.type === ResourceType.PDF && (
                             <WebView
-                                source={{ uri: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }}
+                                source={{ uri: currentResource.downloadUrl }}
                                 style={tw`w-full flex-1`}
                             />
                         )}
 
-                        {currentFile?.type === "docx" && (
-                            <View style={tw`flex-1 justify-center items-center p-6`}>
-                                <Ionicons name="document-text" size={80} color="#673AB7" />
-                                <Text style={tw`text-white text-lg mt-4 text-center`}>
-                                    Visualização de documentos DOCX não está disponível diretamente.
-                                </Text>
-                                <TouchableOpacity
-                                    style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full`}
-                                    onPress={() => currentFile && handleDownload(currentFile)}
-                                >
-                                    <Text style={tw`text-white font-medium`}>Baixar para visualizar</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
+                        {(currentResource?.type === ResourceType.DOCX ||
+                            currentResource?.type === ResourceType.PPTX ||
+                            currentResource?.type === ResourceType.XLSX) && (
+                                <View style={tw`flex-1 justify-center items-center p-6`}>
+                                    <Ionicons
+                                        name={getFileTypeIcon(currentResource.type) as any}
+                                        size={80}
+                                        color={getFileTypeColor(currentResource.type)}
+                                    />
+                                    <Text style={tw`text-white text-lg mt-4 text-center`}>
+                                        Visualização de documentos {currentResource.type.toUpperCase()} não está disponível diretamente.
+                                    </Text>
+                                    {currentResource.canDownload && (
+                                        <TouchableOpacity
+                                            style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full`}
+                                            onPress={() => handleDownload(currentResource)}
+                                        >
+                                            <Text style={tw`text-white font-medium`}>Baixar para visualizar</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
                     </View>
                 </SafeAreaView>
             </Modal>
+
+            {/* Upload Progress Modal */}
+            <Modal
+                visible={showUploadModal}
+                transparent={true}
+                animationType="fade"
+            >
+                <View style={tw`flex-1 bg-black bg-opacity-50 justify-center items-center`}>
+                    <View style={tw`bg-white rounded-xl p-6 w-80 mx-4`}>
+                        <Text style={tw`text-lg font-bold text-gray-800 mb-4 text-center`}>
+                            Carregando Recurso
+                        </Text>
+
+                        <View style={tw`bg-gray-200 rounded-full h-3 mb-4`}>
+                            <View
+                                style={[
+                                    tw`bg-indigo-600 h-3 rounded-full`,
+                                    { width: `${uploadProgress}%` }
+                                ]}
+                            />
+                        </View>
+
+                        <Text style={tw`text-center text-gray-600`}>
+                            {uploadProgress}% concluído
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Error Display */}
+            {error && (
+                <View style={tw`absolute top-20 left-4 right-4 bg-red-500 p-3 rounded-lg`}>
+                    <Text style={tw`text-white text-center font-medium`}>{error}</Text>
+                </View>
+            )}
         </View>
     );
 }

@@ -5,7 +5,6 @@ import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { UnfoldVerticalIcon } from '@/assets/images/svg';
 import { useFloatingButton } from '@/src/context/FloatingButtonContext';
-import { useNavigation } from '@react-navigation/native';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
@@ -13,7 +12,6 @@ export function FloatingOptionsButton() {
     const [unreadCountDeskHelp, setUnreadCountDeskHelp] = useState(3);
     const [unreadCountNotification, setUnreadCountNotification] = useState(2);
     const router = useRouter();
-    const navigation = useNavigation();
 
     const { position } = useFloatingButton();
 
@@ -67,8 +65,7 @@ export function FloatingOptionsButton() {
     };
 
     const handleNavigateToSettings = () => {
-        // @ts-ignore
-        navigation.navigate('Settings');
+        router.push('/settings');
         setUnfold(false);
     };
 

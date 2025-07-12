@@ -182,7 +182,7 @@ function UserTabNavigator() {
         tabBarIcon: ({ focused }) => {
           let iconName;
           let label;
-          let badge;
+          let badge;                              
 
           // if (route.name === "Tarefas") {
           //   iconName = "bar-chart";
@@ -284,7 +284,7 @@ function MainStack() {
         />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen as React.ComponentType<any>} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{headerShown: false}} />
         <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
       </Stack.Navigator>
     </AuthGuard>

@@ -1,37 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Share } from 'react-native';
+import { useReports } from '@/src/hooks/useReports';
+import type { IReportMetrics, ITrendData } from '@/src/interfaces/reports.interface';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from 'react-native';
 import tw from 'twrnc';
 import { Navbar } from '../components/ui/navbar';
-import { getSessions, Session } from '@/src/data/sessionService';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 
-interface ReportMetrics {
-    totalSessions: number;
-    completedSessions: number;
-    totalParticipants: number;
-    averageSessionDuration: number;
-    completionRate: number;
-    totalMentorHours: number;
-    activeMentors: number;
-    activeMentees: number;
-}
 
-interface MonthlyData {
-    month: string;
-    sessions: number;
-    participants: number;
-    hours: number;
-}
 
 export function AdminReportsScreen() {
     const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('month');
-    const [sessions, setSessions] = useState<Session[]>([]);
-    const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
-    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [metrics, setMetrics] = useState<IReportMetrics | null>(null);
+    const [trendData, setTrendData] = useState<ITrendData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const {
+        getDashboardAnalytics,
+        exportReport,
+        getPeriodLabel,
+        formatDate,
+        formatPercentage,
+        formatHours
+    } = useReports();
 
     useEffect(() => {
         loadData();
@@ -39,89 +32,36 @@ export function AdminReportsScreen() {
 
     const loadData = async () => {
         setIsLoading(true);
+        setError(null);
         try {
-            const allSessions = await getSessions();
-            setSessions(allSessions);
+            // Convert selectedPeriod to API format
+            const apiPeriod = selectedPeriod === 'week' ? 'last_7_days' :
+                selectedPeriod === 'month' ? 'last_30_days' : 'last_3_months';
 
-            const calculatedMetrics = calculateMetrics(allSessions);
-            setMetrics(calculatedMetrics);
+            const dashboardData = await getDashboardAnalytics(apiPeriod as any);
+            setMetrics(dashboardData.metrics);
 
-            const monthlyStats = calculateMonthlyData(allSessions);
-            setMonthlyData(monthlyStats);
+            // Create trend data from the dashboard analytics
+            const trend: ITrendData[] = [
+                {
+                    period: formatDate(new Date().toISOString()),
+                    sessions: dashboardData.metrics.totalSessions,
+                    completedSessions: dashboardData.metrics.completedSessions,
+                    uniqueUsers: dashboardData.metrics.uniqueParticipants,
+                    totalHours: dashboardData.metrics.totalMentoringHours,
+                    averageRating: dashboardData.metrics.averageRating
+                }
+            ];
+            setTrendData(trend);
         } catch (error) {
             console.error('Error loading data:', error);
+            setError('Erro ao carregar dados do relatório');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const calculateMetrics = (sessions: Session[]): ReportMetrics => {
-        const now = new Date();
-        const periodStart = getPeriodStart(now, selectedPeriod);
 
-        const periodSessions = sessions.filter(session => {
-            const sessionDate = new Date(session.scheduledDate);
-            return sessionDate >= periodStart;
-        });
-
-        const completedSessions = periodSessions.filter(s => s.status === 'Concluída');
-        const uniqueParticipants = new Set(periodSessions.map(s => s.participantId)).size;
-        const uniqueMentors = new Set(periodSessions.map(s => s.participantId)).size; // In real app, you'd have mentorId
-
-        const totalDuration = completedSessions.reduce((sum, session) => sum + (session.duration || 0), 0);
-        const averageDuration = completedSessions.length > 0 ? totalDuration / completedSessions.length : 0;
-        const completionRate = periodSessions.length > 0 ? (completedSessions.length / periodSessions.length) * 100 : 0;
-
-        return {
-            totalSessions: periodSessions.length,
-            completedSessions: completedSessions.length,
-            totalParticipants: uniqueParticipants,
-            averageSessionDuration: averageDuration,
-            completionRate,
-            totalMentorHours: totalDuration / 60, // Convert minutes to hours
-            activeMentors: Math.min(uniqueMentors, 5), // Mock data
-            activeMentees: uniqueParticipants
-        };
-    };
-
-    const calculateMonthlyData = (sessions: Session[]): MonthlyData[] => {
-        const monthlyStats: { [key: string]: MonthlyData } = {};
-
-        sessions.forEach(session => {
-            const date = new Date(session.scheduledDate);
-            const monthKey = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-
-            if (!monthlyStats[monthKey]) {
-                monthlyStats[monthKey] = {
-                    month: monthKey,
-                    sessions: 0,
-                    participants: 0,
-                    hours: 0
-                };
-            }
-
-            monthlyStats[monthKey].sessions++;
-            monthlyStats[monthKey].hours += (session.duration || 0) / 60;
-        });
-
-        return Object.values(monthlyStats).slice(-6); // Last 6 months
-    };
-
-    const getPeriodStart = (now: Date, period: string): Date => {
-        const start = new Date(now);
-        switch (period) {
-            case 'week':
-                start.setDate(now.getDate() - 7);
-                break;
-            case 'month':
-                start.setMonth(now.getMonth() - 1);
-                break;
-            case 'quarter':
-                start.setMonth(now.getMonth() - 3);
-                break;
-        }
-        return start;
-    };
 
     const generateReport = async () => {
         if (!metrics) return;
@@ -129,60 +69,30 @@ export function AdminReportsScreen() {
         setIsGeneratingReport(true);
 
         try {
-            const reportData = {
-                period: selectedPeriod,
-                generatedAt: new Date().toISOString(),
-                metrics,
-                monthlyData,
-                sessions: sessions.slice(0, 10) // Include recent sessions
-            };
+            // Convert selectedPeriod to API format
+            const apiPeriod = selectedPeriod === 'week' ? 'last_7_days' :
+                selectedPeriod === 'month' ? 'last_30_days' : 'last_3_months';
 
-            const reportContent = `
-RELATÓRIO DE MENTORIA - MME
-============================
+            const result = await exportReport({
+                type: 'mentorship_overview' as any,
+                period: apiPeriod as any,
+                format: 'pdf' as any,
+                includeBranding: true
+            });
 
-Período: ${selectedPeriod === 'week' ? 'Última Semana' : selectedPeriod === 'month' ? 'Último Mês' : 'Último Trimestre'}
-Gerado em: ${new Date().toLocaleDateString('pt-BR')}
-
-MÉTRICAS PRINCIPAIS
--------------------
-• Total de Sessões: ${metrics.totalSessions}
-• Sessões Concluídas: ${metrics.completedSessions}
-• Taxa de Conclusão: ${metrics.completionRate.toFixed(1)}%
-• Participantes Únicos: ${metrics.totalParticipants}
-• Mentores Ativos: ${metrics.activeMentors}
-• Mentees Ativos: ${metrics.activeMentees}
-• Duração Média por Sessão: ${metrics.averageSessionDuration.toFixed(0)} min
-• Total de Horas de Mentoria: ${metrics.totalMentorHours.toFixed(1)}h
-
-TENDÊNCIA MENSAL
-----------------
-${monthlyData.map(data =>
-                `${data.month}: ${data.sessions} sessões, ${data.hours.toFixed(1)}h`
-            ).join('\n')}
-
-SESSÕES RECENTES
-----------------
-${sessions.slice(0, 5).map(session =>
-                `• ${session.name} - ${session.status} - ${session.scheduledDate}`
-            ).join('\n')}
-
----
-Relatório gerado automaticamente pelo sistema MME
-            `.trim();
-
-            const fileName = `relatorio_mentoria_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.txt`;
-            const fileUri = FileSystem.documentDirectory + fileName;
-
-            await FileSystem.writeAsStringAsync(fileUri, reportContent);
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri, {
-                    mimeType: 'text/plain',
-                    dialogTitle: 'Compartilhar Relatório de Mentoria'
-                });
+            if (result?.downloadUrl) {
+                if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(result.downloadUrl, {
+                        mimeType: 'application/pdf',
+                        dialogTitle: 'Compartilhar Relatório de Mentoria'
+                    });
+                } else {
+                    Alert.alert('Sucesso', 'Relatório gerado com sucesso!', [
+                        { text: 'OK', onPress: () => { } }
+                    ]);
+                }
             } else {
-                Alert.alert('Sucesso', 'Relatório gerado com sucesso!');
+                throw new Error('Falha ao gerar relatório');
             }
 
         } catch (error) {
@@ -198,12 +108,12 @@ Relatório gerado automaticamente pelo sistema MME
 
         const shareText = `📊 Relatório de Mentoria MME
 
-📅 Período: ${selectedPeriod === 'week' ? 'Última Semana' : selectedPeriod === 'month' ? 'Último Mês' : 'Último Trimestre'}
+📅 Período: ${getPeriodLabel(selectedPeriod === 'week' ? 'last_7_days' : selectedPeriod === 'month' ? 'last_30_days' : 'last_3_months' as any)}
 
 ✅ ${metrics.completedSessions} sessões concluídas
-👥 ${metrics.totalParticipants} participantes
-⏱️ ${metrics.totalMentorHours.toFixed(1)}h de mentoria
-📈 ${metrics.completionRate.toFixed(1)}% taxa de conclusão
+👥 ${metrics.uniqueParticipants} participantes
+⏱️ ${formatHours(metrics.totalMentoringHours)} de mentoria
+📈 ${formatPercentage(metrics.completionRate)} taxa de conclusão
 
 #Mentoria #Educação #MME`;
 
@@ -222,6 +132,24 @@ Relatório gerado automaticamente pelo sistema MME
             <View style={tw`flex-1 bg-gray-50 items-center justify-center`}>
                 <View style={tw`w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4`} />
                 <Text style={tw`text-gray-600`}>Carregando dados...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={tw`flex-1 bg-gray-50`}>
+                <Navbar title="Relatórios de Mentoria" />
+                <View style={tw`flex-1 items-center justify-center px-4`}>
+                    <MaterialIcons name="error-outline" size={64} color="#EF4444" />
+                    <Text style={tw`text-red-600 text-lg font-semibold mt-4 text-center`}>{error}</Text>
+                    <TouchableOpacity
+                        onPress={loadData}
+                        style={tw`bg-blue-500 px-6 py-3 rounded-lg mt-4`}
+                    >
+                        <Text style={tw`text-white font-semibold`}>Tentar Novamente</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }
@@ -285,7 +213,7 @@ Relatório gerado automaticamente pelo sistema MME
                                 <View style={tw`bg-white rounded-xl p-4 shadow-sm`}>
                                     <View style={tw`flex-row items-center justify-between mb-2`}>
                                         <MaterialIcons name="people" size={24} color="#8B5CF6" />
-                                        <Text style={tw`text-2xl font-bold text-gray-800`}>{metrics.totalParticipants}</Text>
+                                        <Text style={tw`text-2xl font-bold text-gray-800`}>{metrics.uniqueParticipants}</Text>
                                     </View>
                                     <Text style={tw`text-gray-600 text-sm`}>Participantes</Text>
                                 </View>
@@ -295,7 +223,7 @@ Relatório gerado automaticamente pelo sistema MME
                                 <View style={tw`bg-white rounded-xl p-4 shadow-sm`}>
                                     <View style={tw`flex-row items-center justify-between mb-2`}>
                                         <MaterialIcons name="schedule" size={24} color="#F59E0B" />
-                                        <Text style={tw`text-2xl font-bold text-gray-800`}>{metrics.totalMentorHours.toFixed(0).toString()}h</Text>
+                                        <Text style={tw`text-2xl font-bold text-gray-800`}>{formatHours(metrics.totalMentoringHours)}</Text>
                                     </View>
                                     <Text style={tw`text-gray-600 text-sm`}>Horas de Mentoria</Text>
                                 </View>
@@ -332,21 +260,21 @@ Relatório gerado automaticamente pelo sistema MME
                     </View>
                 )}
 
-                {/* Monthly Trend */}
-                {monthlyData.length > 0 && (
+                {/* Trend Data */}
+                {trendData.length > 0 && (
                     <View style={tw`bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm`}>
-                        <Text style={tw`text-lg font-bold text-gray-800 mb-4`}>Tendência Mensal</Text>
+                        <Text style={tw`text-lg font-bold text-gray-800 mb-4`}>Tendência de Dados</Text>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View style={tw`flex-row`}>
-                                {monthlyData.map((data, index) => (
+                                {trendData.map((data, index) => (
                                     <View key={index} style={tw`mr-4 items-center`}>
                                         <View style={tw`bg-blue-50 rounded-lg p-3 w-20 items-center`}>
                                             <Text style={tw`text-blue-600 font-bold text-lg`}>{data.sessions}</Text>
                                             <Text style={tw`text-blue-500 text-xs`}>sessões</Text>
-                                            <Text style={tw`text-gray-500 text-xs mt-1`}>{data.hours.toFixed(0)}h</Text>
+                                            <Text style={tw`text-gray-500 text-xs mt-1`}>{formatHours(data.totalHours)}</Text>
                                         </View>
-                                        <Text style={tw`text-gray-600 text-xs mt-2 text-center`}>{data.month}</Text>
+                                        <Text style={tw`text-gray-600 text-xs mt-2 text-center`}>{data.period}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -354,44 +282,26 @@ Relatório gerado automaticamente pelo sistema MME
                     </View>
                 )}
 
-                {/* Recent Sessions */}
+                {/* Additional Metrics Summary */}
                 <View style={tw`bg-white mx-4 mt-4 rounded-xl p-4 shadow-sm`}>
-                    <Text style={tw`text-lg font-bold text-gray-800 mb-4`}>Sessões Recentes</Text>
+                    <Text style={tw`text-lg font-bold text-gray-800 mb-4`}>Resumo Adicional</Text>
 
-                    {sessions.slice(0, 5).map((session, index) => (
-                        <View key={session.id} style={tw`flex-row items-center justify-between py-3 ${index < 4 ? 'border-b border-gray-100' : ''
-                            }`}>
-                            <View style={tw`flex-1`}>
-                                <Text style={tw`font-medium text-gray-800`}>{session.name}</Text>
-                                <Text style={tw`text-gray-500 text-sm`}>{session.participantName}</Text>
-                                <Text style={tw`text-gray-400 text-xs`}>{session.scheduledDate}</Text>
-                            </View>
+                    <View style={tw`flex-row justify-between items-center py-3 border-b border-gray-100`}>
+                        <Text style={tw`text-gray-600`}>Avaliação Média</Text>
+                        <Text style={tw`font-semibold text-gray-800`}>{metrics?.averageRating?.toFixed(1) || '--'} ⭐</Text>
+                    </View>
 
-                            <View style={tw`items-end`}>
-                                <View style={tw`px-2 py-1 rounded-full ${session.status === 'Concluída'
-                                    ? 'bg-green-100'
-                                    : 'bg-blue-100'
-                                    }`}>
-                                    <Text style={tw`text-xs font-medium ${session.status === 'Concluída'
-                                        ? 'text-green-800'
-                                        : 'text-blue-800'
-                                        }`}>
-                                        {session.status}
-                                    </Text>
-                                </View>
-                                {session.duration && (
-                                    <Text style={tw`text-gray-500 text-xs mt-1`}>{session.duration} min</Text>
-                                )}
-                            </View>
-                        </View>
-                    ))}
+                    <View style={tw`flex-row justify-between items-center py-3 border-b border-gray-100`}>
+                        <Text style={tw`text-gray-600`}>Sessões Canceladas</Text>
+                        <Text style={tw`font-semibold text-gray-800`}>{metrics?.cancelledSessions || 0}</Text>
+                    </View>
 
-                    {sessions.length === 0 && (
-                        <View style={tw`items-center py-8`}>
-                            <MaterialIcons name="event-note" size={48} color="#9CA3AF" />
-                            <Text style={tw`text-gray-500 mt-2`}>Nenhuma sessão encontrada</Text>
-                        </View>
-                    )}
+                    <View style={tw`flex-row justify-between items-center py-3`}>
+                        <Text style={tw`text-gray-600`}>Período Selecionado</Text>
+                        <Text style={tw`font-semibold text-gray-800`}>
+                            {getPeriodLabel(selectedPeriod === 'week' ? 'last_7_days' : selectedPeriod === 'month' ? 'last_30_days' : 'last_3_months' as any)}
+                        </Text>
+                    </View>
                 </View>
 
                 {/* Action Buttons */}

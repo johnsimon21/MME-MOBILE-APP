@@ -7,6 +7,7 @@ export const useAuthState = (): AuthState & {
   isMentee: boolean;
   isCoordinator: boolean;
 } => {
+  
   const { user, isLoading, isAuthenticated } = useAuth();
   
   return {

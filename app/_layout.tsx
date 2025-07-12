@@ -14,6 +14,7 @@ import { FloatingOptionsButton } from '@/src/presentation/components/ui/Floating
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { SocketProvider } from '@/src/context/SocketContext';
 import { ChatProvider } from '@/src/context/ChatContext';
+import { SettingsProvider } from '@/src/context/SettingsContext';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -31,6 +32,7 @@ function RootLayoutContent() {
   useEffect(() => {
     if (loaded && !isLoading && !isInitializing) {
       SplashScreen.hideAsync();
+      console.log(`Java Simon`)
     }
   }, [loaded, isLoading, isInitializing]);
 
@@ -130,20 +132,22 @@ class SocketErrorBoundary extends React.Component<
 const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, isInitializing } = useAuth();
 
-  // Always provide SupportProvider, but conditionally provide Socket/Chat
+  // Always provide SupportProvider and SettingsProvider, but conditionally provide Socket/Chat
   return (
     <SupportProvider>
-      {isAuthenticated && user && !isInitializing ? (
-        <SocketErrorBoundary>
-          <SocketProvider>
-            <ChatProvider>
-              {children}
-            </ChatProvider>
-          </SocketProvider>
-        </SocketErrorBoundary>
-      ) : (
-        children
-      )}
+      <SettingsProvider>
+        {isAuthenticated && user && !isInitializing ? (
+          <SocketErrorBoundary>
+            <SocketProvider>
+              <ChatProvider>
+                {children}
+              </ChatProvider>
+            </SocketProvider>
+          </SocketErrorBoundary>
+        ) : (
+          children
+        )}
+      </SettingsProvider>
     </SupportProvider>
   );
 };
