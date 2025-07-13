@@ -16,6 +16,9 @@ import { SocketProvider } from '@/src/context/SocketContext';
 import { ChatProvider } from '@/src/context/ChatContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
+import { UserRole } from '@/src/interfaces/index.interface';
+import { DashboardProvider } from '@/src/context/DashboardContext';
+import { DashboardErrorBoundary } from '@/src/components/dashboard/DashboardErrorBoundary';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -132,7 +135,6 @@ class SocketErrorBoundary extends React.Component<
 const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthenticated, isInitializing } = useAuth();
 
-  // Always provide SupportProvider and SettingsProvider, but conditionally provide Socket/Chat
   return (
     <SupportProvider>
       <SettingsProvider>
@@ -140,7 +142,11 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
           <SocketErrorBoundary>
             <SocketProvider>
               <ChatProvider>
-                {children}
+                <DashboardErrorBoundary>
+                  <DashboardProvider>
+                    {children}
+                  </DashboardProvider>
+                </DashboardErrorBoundary>
               </ChatProvider>
             </SocketProvider>
           </SocketErrorBoundary>

@@ -21,10 +21,9 @@ import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useAuthState } from "@/src/hooks/useAuthState";
-import { useChatContext } from "@/src/context/ChatContext";
+import { useChatSafe } from "@/src/context/ChatContext"; // Use the safe version
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-
 
 // Create Stack & Tabs
 const Stack = createNativeStackNavigator();
@@ -68,7 +67,7 @@ const TabIcon = ({
         {label}
       </Text>
 
-      {/* Badge - same as before */}
+      {/* Badge */}
       {badge && badge > 0 && (
         <View style={tw`
           absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full 
@@ -136,7 +135,7 @@ function AdminTabNavigator() {
           elevation: 8,
           backgroundColor: '#FFFFFF',
           borderRadius: 20,
-          height: Platform.OS === 'ios' ? 95 : 75, // Increased height
+          height: Platform.OS === 'ios' ? 95 : 75,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10,
           paddingTop: 12,
           shadowColor: '#000',
@@ -156,7 +155,7 @@ function AdminTabNavigator() {
           justifyContent: 'center',
         },
         tabBarLabelStyle: {
-          display: 'none', // Hide default labels since we're using custom ones
+          display: 'none',
         },
         tabBarActiveTintColor: "#4F46E5",
         tabBarInactiveTintColor: "#9CA3AF",
@@ -173,7 +172,7 @@ function AdminTabNavigator() {
 // Regular User Tab Navigator
 function UserTabNavigator() {
   const { isMentor } = useAuthState();
-  // const { getUnreadCount } = useChatContext();
+  const chatContext = useChatSafe(); // Use safe version
 
   return (
     <Tab.Navigator
@@ -182,23 +181,20 @@ function UserTabNavigator() {
         tabBarIcon: ({ focused }) => {
           let iconName;
           let label;
-          let badge;                              
+          let badge;
 
-          // if (route.name === "Tarefas") {
-          //   iconName = "bar-chart";
-          //   label = "Analytics";
-          // } else 
           if (route.name === "Mensagens") {
             iconName = "chatbubble-ellipses";
             label = "Mensagens";
-            badge = 2 //getUnreadCount();
+            // Only get unread count if chat context is available
+            badge = chatContext?.getUnreadCount() || 0;
           } else if (route.name === "Emparelhamento") {
             iconName = "apps";
             label = "Home";
           } else if (route.name === "Gerenciamento de sessões" && isMentor) {
             iconName = "calendar";
             label = "Sessões";
-            badge = 2; // Example pending sessions
+            badge = 2;
           } else if (route.name === "Recursos educacionais") {
             iconName = "library";
             label = "Recursos";
@@ -241,13 +237,12 @@ function UserTabNavigator() {
           justifyContent: 'center',
         },
         tabBarLabelStyle: {
-          display: 'none', // Hide default labels since we're using custom ones
+          display: 'none',
         },
         tabBarActiveTintColor: "#4F46E5",
         tabBarInactiveTintColor: "#9CA3AF",
       })}
     >
-      {/* <Tab.Screen name="Tarefas" component={AnalyticsScreen} /> */}
       <Tab.Screen name="Emparelhamento" component={Home} />
       <Tab.Screen name="Mensagens" component={MessagesStack} />
       {isMentor && <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} options={{ tabBarShowLabel: isMentor }} />}
@@ -268,11 +263,11 @@ function MainStack() {
   }, [isAuthenticated, isLoading]);
 
   if (isLoading) {
-    return null; // Or loading screen
+    return null;
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect to login
+    return null;
   }
 
   return (
@@ -291,21 +286,30 @@ function MainStack() {
   );
 }
 
+// Component to handle chat loading safely
+function ChatLoader() {
+  const chatContext = useChatSafe();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (chatContext?.loadChats) {
+        const timer = setTimeout(() => {
+          chatContext.loadChats();
+        }, 1000);
+
+        return () => clearTimeout(timer);
+      }
+    }, [chatContext?.loadChats])
+  );
+
+  return null;
+}
 
 export default function TabLayout() {
-    const { loadChats } = useChatContext();
-
-    // Load chats only when the tab layout is focused
-    useFocusEffect(
-        useCallback(() => {
-            // Add a small delay to ensure everything is initialized
-            const timer = setTimeout(() => {
-                loadChats();
-            }, 1000);
-
-            return () => clearTimeout(timer);
-        }, [loadChats])
-    );
-
-    return <MainStack />;
+  return (
+    <>
+      <MainStack />
+      <ChatLoader />
+    </>
+  );
 }
