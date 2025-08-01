@@ -31,26 +31,29 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         if (!user || socket?.connected) return;
 
         try {
-            const token = await getIdToken();
-            if (!token) {
-                console.log('⚠️ No token available, skipping socket connection');
+            // Check if we have authentication
+            if (!user.uid) {
+                console.log('⚠️ No user ID available, skipping socket connection');
                 return;
             }
 
             console.log('🔄 Attempting socket connection...');
 
-            const newSocket = io(`http://192.168.1.103:3000/chat`, {
+            // Use ENV configuration for socket connection
+            const socketUrl = `${ENV.API_BASE_URL.replace('/api', '')}/chat`;
+            console.log('🔗 Connecting to socket URL:', socketUrl);
+            
+            const newSocket = io(socketUrl, {
                 query: {
-                    userId: user.uid,
-                    token: token
+                    userId: user.uid
                 },
                 transports: ['websocket'],
-                timeout: 10000, // Reduced timeout
+                timeout: 15000,
                 reconnection: true,
-                reconnectionAttempts: 3, // Reduced attempts
-                reconnectionDelay: 2000,
-                forceNew: true, // Force new connection
-                autoConnect: false // Don't auto connect
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                forceNew: true,
+                autoConnect: false
             });
 
             // Connect manually with error handling
@@ -76,6 +79,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
                 if (error.message.includes('websocket error') || error.message.includes('timeout')) {
                     console.log('🚫 Critical socket error, not retrying');
                     newSocket.disconnect();
+                    setSocket(null);
                 }
             });
 
@@ -142,25 +146,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Connect when user is available
     useEffect(() => {
-        if (user && ENV.API_BASE_URL) {
-            // Add a longer delay to ensure auth is fully established
+        if (user?.uid && !socket) {
+            // Reduced delay for better UX while maintaining stability
             const timer = setTimeout(() => {
+                console.log('🚀 Initializing socket connection for user:', user.uid);
                 connect();
-            }, 2000); // Increased delay
+            }, 1500); // Shorter delay for better responsiveness
 
             return () => {
                 clearTimeout(timer);
-                disconnect();
             };
-        } else {
-            // Don't disconnect immediately, wait a bit
-            const timer = setTimeout(() => {
-                disconnect();
-            }, 500);
-
-            return () => clearTimeout(timer);
+        } else if (!user?.uid) {
+            // Disconnect if no user
+            disconnect();
         }
-    }, [user]);
+    }, [user?.uid, socket]);
 
     // Add this to prevent hanging during initialization
     useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react';
 import { ISessionResponse, SessionStatus } from '../interfaces/sessions.interface';
 import { useSessions } from '../hooks/useSessions';
 import { useSessionSocket } from '../hooks/useSessionSocket';
@@ -116,6 +116,9 @@ interface SessionContextType extends SessionState {
   joinSession: (sessionId: string) => void;
   leaveSession: (sessionId: string) => void;
   setCurrentSession: (session: ISessionResponse | null) => void;
+  // FIXED: Add missing methods
+  refreshSessions: () => Promise<void>;
+  clearError: () => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -144,34 +147,33 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
 
     // Session updated
-    on('session-updated', (data) => {
+    on('session-updated', (data: { sessionId: string; session: ISessionResponse; action?: string; performedBy: string; timestamp: string }) => {
       dispatch({ type: 'UPDATE_SESSION', payload: data.session });
-    });
-
-    // Session started
-    on('session-started', (data) => {
-      dispatch({ type: 'UPDATE_SESSION', payload: data.session });
-      // Move from upcoming to active
-      loadActiveSessions();
-      loadUpcomingSessions();
-    });
-
-    // Session ended
-    on('session-ended', (data) => {
-      dispatch({ type: 'UPDATE_SESSION', payload: data.session });
-      // Remove from active sessions
-      loadActiveSessions();
+      
+      // Handle specific actions that affect session state
+      if (data.action === 'start') {
+        // Move from upcoming to active
+        loadActiveSessions();
+        loadUpcomingSessions();
+      } else if (data.action === 'end') {
+        // Remove from active sessions
+        loadActiveSessions();
+      } else if (data.action === 'cancel') {
+        loadActiveSessions();
+        loadUpcomingSessions();
+      }
     });
 
     // Session cancelled
-    on('session-cancelled', (data) => {
-      dispatch({ type: 'UPDATE_SESSION', payload: data.session });
+    on('session-cancelled', (data: { sessionId: string; reason?: string; timestamp: string }) => {
+      // Reload session data to reflect cancellation
       loadActiveSessions();
       loadUpcomingSessions();
+      loadSessions();
     });
 
     // Participant joined
-    on('participant-joined', (data) => {
+    on('participant-joined', (data: { sessionId: string; userId: string; timestamp: string }) => {
       // Refresh session data
       if (state.currentSession?.id === data.sessionId) {
         refreshCurrentSession();
@@ -179,7 +181,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
 
     // Participant left
-    on('participant-left', (data) => {
+    on('participant-left', (data: { sessionId: string; userId: string; timestamp: string }) => {
       // Refresh session data
       if (state.currentSession?.id === data.sessionId) {
         refreshCurrentSession();
@@ -187,7 +189,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
 
     // Session reminder
-    on('session-reminder', (data) => {
+    on('session-reminder', (data: { sessionId: string; minutesBefore: number; timestamp: string }) => {
       // Handle session reminder notification
       console.log('Session reminder:', data);
     });
@@ -195,8 +197,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => {
       off('session-created');
       off('session-updated');
-      off('session-started');
-      off('session-ended');
       off('session-cancelled');
       off('participant-joined');
       off('participant-left');
@@ -205,7 +205,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [state.currentSession?.id]);
 
   // Actions
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const response = await sessionsHook.getSessions();
@@ -213,36 +213,36 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
     }
-  };
+  }, [sessionsHook]);
 
-  const loadActiveSessions = async () => {
+  const loadActiveSessions = useCallback(async () => {
     try {
       const response = await sessionsHook.getActiveSessions();
       dispatch({ type: 'SET_ACTIVE_SESSIONS', payload: response.sessions });
     } catch (error: any) {
       console.error('Error loading active sessions:', error);
     }
-  };
+  }, [sessionsHook]);
 
-  const loadUpcomingSessions = async () => {
+  const loadUpcomingSessions = useCallback(async () => {
     try {
       const response = await sessionsHook.getUpcomingSessions();
       dispatch({ type: 'SET_UPCOMING_SESSIONS', payload: response.sessions });
     } catch (error: any) {
       console.error('Error loading upcoming sessions:', error);
     }
-  };
+  }, [sessionsHook]);
 
-  const loadSessionStats = async () => {
+  const loadSessionStats = useCallback(async () => {
     try {
       const stats = await sessionsHook.getSessionStats();
       dispatch({ type: 'SET_STATS', payload: stats });
     } catch (error: any) {
       console.error('Error loading session stats:', error);
     }
-  };
+  }, [sessionsHook]);
 
-  const createSession = async (sessionData: any): Promise<ISessionResponse> => {
+  const createSession = useCallback(async (sessionData: any): Promise<ISessionResponse> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const session = await sessionsHook.createSession(sessionData);
@@ -252,9 +252,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook]);
 
-  const updateSession = async (sessionId: string, updateData: any): Promise<ISessionResponse> => {
+  const updateSession = useCallback(async (sessionId: string, updateData: any): Promise<ISessionResponse> => {
     try {
       const session = await sessionsHook.updateSession(sessionId, updateData);
       dispatch({ type: 'UPDATE_SESSION', payload: session });
@@ -263,9 +263,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook]);
 
-  const deleteSession = async (sessionId: string): Promise<void> => {
+  const deleteSession = useCallback(async (sessionId: string): Promise<void> => {
     try {
       await sessionsHook.deleteSession(sessionId);
       dispatch({ type: 'REMOVE_SESSION', payload: sessionId });
@@ -273,10 +273,11 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook]);
 
-  const startSession = async (sessionId: string): Promise<ISessionResponse> => {
+  const startSession = useCallback(async (sessionId: string): Promise<ISessionResponse> => {
     try {
+      dispatch({ type: 'SET_LOADING', payload: true });
       const session = await sessionsHook.startSession(sessionId);
       dispatch({ type: 'UPDATE_SESSION', payload: session });
       loadActiveSessions();
@@ -286,9 +287,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook, loadActiveSessions, loadUpcomingSessions]);
 
-  const endSession = async (sessionId: string): Promise<ISessionResponse> => {
+  const endSession = useCallback(async (sessionId: string): Promise<ISessionResponse> => {
     try {
       const session = await sessionsHook.endSession(sessionId);
       dispatch({ type: 'UPDATE_SESSION', payload: session });
@@ -298,9 +299,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook, loadActiveSessions]);
 
-  const cancelSession = async (sessionId: string, reason?: string): Promise<ISessionResponse> => {
+  const cancelSession = useCallback(async (sessionId: string, reason?: string): Promise<ISessionResponse> => {
     try {
       const session = await sessionsHook.cancelSession(sessionId, reason);
       dispatch({ type: 'UPDATE_SESSION', payload: session });
@@ -311,21 +312,21 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  };
+  }, [sessionsHook, loadActiveSessions, loadUpcomingSessions]);
 
-  const joinSession = (sessionId: string) => {
+  const joinSession = useCallback((sessionId: string) => {
     socketJoinSession(sessionId);
-  };
+  }, [socketJoinSession]);
 
-  const leaveSession = (sessionId: string) => {
+  const leaveSession = useCallback((sessionId: string) => {
     socketLeaveSession(sessionId);
-  };
+  }, [socketLeaveSession]);
 
-  const setCurrentSession = (session: ISessionResponse | null) => {
+  const setCurrentSession = useCallback((session: ISessionResponse | null) => {
     dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
-  };
+  }, []);
 
-  const refreshCurrentSession = async () => {
+  const refreshCurrentSession = useCallback(async () => {
     if (state.currentSession?.id) {
       try {
         const session = await sessionsHook.getSessionById(state.currentSession.id);
@@ -334,7 +335,22 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         console.error('Error refreshing current session:', error);
       }
     }
-  };
+  }, [state.currentSession?.id, sessionsHook]);
+
+  // FIXED: Add refreshSessions method
+  const refreshSessions = useCallback(async () => {
+    await Promise.all([
+      loadSessions(),
+      loadActiveSessions(),
+      loadUpcomingSessions(),
+      loadSessionStats()
+    ]);
+  }, [loadSessions, loadActiveSessions, loadUpcomingSessions, loadSessionStats]);
+
+  // FIXED: Add clearError method
+  const clearError = useCallback(() => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+  }, []);
 
   const value: SessionContextType = {
     ...state,
@@ -351,6 +367,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     joinSession,
     leaveSession,
     setCurrentSession,
+    // FIXED: Add to context value
+    refreshSessions,
+    clearError,
   };
 
   return (

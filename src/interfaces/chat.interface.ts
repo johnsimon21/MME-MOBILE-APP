@@ -5,14 +5,14 @@ export interface IChatParticipant {
   role: string;
   image?: string;
   isOnline?: boolean;
-  lastSeen?: Date;
+  lastSeen?: string;
 }
 
 export interface ILastMessage {
   content: string;
   senderId: string;
   senderName: string;
-  timestamp: Date;
+  timestamp: string;
   type: MessageType;
 }
 
@@ -21,9 +21,9 @@ export interface IChatResponse {
   participants: IChatParticipant[];
   type: ChatType;
   sessionId?: string;
-  createdAt: Date;
+  createdAt: string;
   lastMessage?: ILastMessage;
-  lastActivity: Date;
+  lastActivity: string;
   unreadCount: number;
   title?: string;
 }
@@ -37,7 +37,7 @@ export interface IMessageSender {
 export interface IMessageReadBy {
   userId: string;
   userName: string;
-  readAt: Date;
+  readAt: string;
 }
 
 export interface IReplyToInfo {
@@ -55,10 +55,10 @@ export interface IMessageResponse {
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
-  timestamp: Date;
+  timestamp: string;
   readBy: IMessageReadBy[];
   edited?: boolean;
-  editedAt?: Date;
+  editedAt?: string;
   replyTo?: IReplyToInfo;
 }
 

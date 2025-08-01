@@ -86,7 +86,6 @@ function MessagesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Messages" component={MessagesScreen} />
-      <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
     </Stack.Navigator>
   );
 }
@@ -173,6 +172,9 @@ function AdminTabNavigator() {
 function UserTabNavigator() {
   const { isMentor } = useAuthState();
   const chatContext = useChatSafe(); // Use safe version
+  
+  // Force re-render when unread count changes
+  const unreadCount = chatContext?.getUnreadCount() || 0;
 
   return (
     <Tab.Navigator
@@ -186,8 +188,8 @@ function UserTabNavigator() {
           if (route.name === "Mensagens") {
             iconName = "chatbubble-ellipses";
             label = "Mensagens";
-            // Only get unread count if chat context is available
-            badge = chatContext?.getUnreadCount() || 0;
+            // Use the unreadCount variable to ensure re-renders
+            badge = unreadCount;
           } else if (route.name === "Emparelhamento") {
             iconName = "apps";
             label = "Home";
@@ -280,7 +282,22 @@ function MainStack() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen as React.ComponentType<any>} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{headerShown: false}} />
-        <Stack.Screen name="ChatScreen" component={ChatScreen as React.ComponentType<any>} />
+        <Stack.Screen 
+          name="ChatScreen" 
+          component={ChatScreen as React.ComponentType<any>} 
+          options={{ 
+            headerShown: false,
+            presentation: 'card'
+          }} 
+        />
+        <Stack.Screen 
+          name="Chat" 
+          component={ChatScreen as React.ComponentType<any>} 
+          options={{ 
+            headerShown: false,
+            presentation: 'card'
+          }} 
+        />
       </Stack.Navigator>
     </AuthGuard>
   );

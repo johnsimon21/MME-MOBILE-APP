@@ -15,6 +15,7 @@ export const connectionStatusLabel = {
 export const sessionStatusLabel = {
     'scheduled': 'Agendado',
     'active': 'Ativo',
+    'in_progress': 'Em Andamento',
     'paused': 'Pausado',
     'completed': 'Concluído',
     'cancelled': 'Cancelado',

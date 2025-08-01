@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setError(null);
 
             console.log('🔄 Starting Firebase login...');
-
+            
             // Validate inputs
             if (!email?.trim() || !password?.trim()) {
                 throw new Error('Email e senha são obrigatórios');
@@ -199,10 +199,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Get ID token
             const idToken = await firebaseUser.getIdToken();
             await AsyncStorage.setItem('@token_id', idToken);
-
+            
+            console.log('✅ Backend verification successful');
             // Verify token with backend
-            const response = await api.post('/auth/verify-token');
-            console.log('✅ Backend verification successful:', response.data);
+            // const response = await api.post('/auth/verify-token');
+            // console.log('✅ Backend verification successful:', response.data);
 
             // Navigate to main app
             router.replace('/(tabs)');

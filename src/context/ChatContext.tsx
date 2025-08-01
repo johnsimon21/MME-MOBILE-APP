@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
 import { useChat } from '../hooks/useChat';
@@ -286,13 +286,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const { socket, isConnected, on, off, emit } = useSocket();
     const chatHook = useChat();
 
+    // Don't log warning constantly - this is normal during initialization
     if (!socket && user) {
         console.log('⚠️ Socket not available yet, rendering children without socket features');
     }
 
     // Setup socket listeners
     useEffect(() => {
-        if (!isConnected || !socket) return;
+        if (!socket) return;
+        
+        console.log('🔗 Setting up socket listeners, connected:', isConnected);
 
         // Connection events
         on('connected', (data: any) => {
@@ -310,6 +313,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
         // Message events
         on('new-message', (data: any) => {
+            console.log('📩 New message received:', data);
             dispatch({ type: 'ADD_MESSAGE', payload: data.message });
             dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { chatId: data.chatId, message: data.message } });
 
@@ -443,7 +447,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     };
 
     // Load chats
-    const loadChats = async (params?: IChatQueryParams) => {
+    const loadChats = useCallback(async (params?: IChatQueryParams) => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
             dispatch({ type: 'SET_ERROR', payload: null });
@@ -455,7 +459,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    };
+    }, []); // Remove chatHook dependency to prevent recreations
 
     // Create chat
     const createChat = async (chatData: ICreateChatRequest): Promise<IChatResponse> => {
@@ -725,21 +729,21 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     };
 
     // Refresh chats
-    const refreshChats = async () => {
+    const refreshChats = useCallback(async () => {
         await loadChats();
-    };
+    }, [loadChats]);
 
     // Clear error
-    const clearError = () => {
+    const clearError = useCallback(() => {
         dispatch({ type: 'SET_ERROR', payload: null });
-    };
+    }, []);
 
     // Load chats on mount
     useEffect(() => {
-        if (user) {
+        if (user?.uid) {
             loadChats();
         }
-    }, [user]);
+    }, [user?.uid, loadChats]);
 
     const contextValue: ChatContextType = {
         // State

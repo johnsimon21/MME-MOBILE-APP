@@ -14,6 +14,7 @@ import { FloatingOptionsButton } from '@/src/presentation/components/ui/Floating
 import { AuthProvider, useAuth } from '@/src/context/AuthContext';
 import { SocketProvider } from '@/src/context/SocketContext';
 import { ChatProvider } from '@/src/context/ChatContext';
+import { SessionProvider } from '@/src/context/SessionContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 import { UserRole } from '@/src/interfaces/index.interface';
@@ -142,11 +143,13 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
           <SocketErrorBoundary>
             <SocketProvider>
               <ChatProvider>
-                <DashboardErrorBoundary>
-                  <DashboardProvider>
-                    {children}
-                  </DashboardProvider>
-                </DashboardErrorBoundary>
+                <SessionProvider>
+                  <DashboardErrorBoundary>
+                    <DashboardProvider>
+                      {children}
+                    </DashboardProvider>
+                  </DashboardErrorBoundary>
+                </SessionProvider>
               </ChatProvider>
             </SocketProvider>
           </SocketErrorBoundary>

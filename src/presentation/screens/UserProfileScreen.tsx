@@ -175,7 +175,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
             if (existingChat) {
                 // Navigate to existing chat
                 // @ts-ignore
-                navigation.navigate('Chat', { chatId: existingChat.id });
+                navigation.navigate('ChatScreen', { 
+                    chat: existingChat
+                });
             } else {
                 // Create new chat
                 const newChat = await createChat({
@@ -184,7 +186,9 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                 });
 
                 // @ts-ignore
-                navigation.navigate('Chat', { chatId: newChat.id });
+                navigation.navigate('ChatScreen', { 
+                    chat: newChat
+                });
             }
 
         } catch (error: any) {
@@ -540,7 +544,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                         </View>
 
                         {/* Tab Content for Overview and Sessions */}
-                        {activeTab !== 'connections' && (
+                            {activeTab !== 'connections' && (
                             <View style={tw`px-4 mt-6`}>
                                 {activeTab === 'overview' && (
                                     <View>
@@ -564,7 +568,10 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                                                 <View style={tw`flex-row items-center`}>
                                                     <Feather name="calendar" size={16} color="#6B7280" />
                                                     <Text style={tw`ml-3 text-gray-600`}>
-                                                        {new Date(userData.birth).toLocaleDateString('pt-BR')}
+                                                        {userData.birth && (typeof userData.birth === 'string' ? userData.birth !== '' : true)
+                                                            ? new Date(userData.birth).toLocaleDateString('pt-BR')
+                                                            : 'Data não informada'
+                                                        }
                                                     </Text>
                                                 </View>
 
