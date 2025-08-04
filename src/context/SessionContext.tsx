@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react';
-import { ISessionResponse, SessionStatus } from '../interfaces/sessions.interface';
+import { 
+  ISessionResponse, 
+  ISessionStatsResponse,
+  ISessionQueryParams,
+  ICreateSessionRequest,
+  SessionStatus 
+} from '../interfaces/sessions.interface';
 import { useSessions } from '../hooks/useSessions';
 import { useSessionSocket } from '../hooks/useSessionSocket';
 import { useAuth } from './AuthContext';
@@ -10,21 +16,28 @@ interface SessionState {
   upcomingSessions: ISessionResponse[];
   currentSession: ISessionResponse | null;
   isLoading: boolean;
+  isLoadingStats: boolean;
   error: string | null;
-  stats: any;
+  stats: ISessionStatsResponse | null;
+  totalSessions: number;
+  currentPage: number;
+  hasMoreSessions: boolean;
 }
 
 type SessionAction =
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LOADING_STATS'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_SESSIONS'; payload: ISessionResponse[] }
+  | { type: 'SET_SESSIONS'; payload: { sessions: ISessionResponse[]; total: number; page: number; hasMore: boolean } }
   | { type: 'SET_ACTIVE_SESSIONS'; payload: ISessionResponse[] }
   | { type: 'SET_UPCOMING_SESSIONS'; payload: ISessionResponse[] }
   | { type: 'SET_CURRENT_SESSION'; payload: ISessionResponse | null }
   | { type: 'UPDATE_SESSION'; payload: ISessionResponse }
   | { type: 'ADD_SESSION'; payload: ISessionResponse }
   | { type: 'REMOVE_SESSION'; payload: string }
-  | { type: 'SET_STATS'; payload: any };
+  | { type: 'SET_STATS'; payload: ISessionStatsResponse }
+  | { type: 'APPEND_SESSIONS'; payload: ISessionResponse[] }
+  | { type: 'RESET_SESSIONS'; payload: null };
 
 const initialState: SessionState = {
   sessions: [],
@@ -32,8 +45,12 @@ const initialState: SessionState = {
   upcomingSessions: [],
   currentSession: null,
   isLoading: false,
+  isLoadingStats: false,
   error: null,
   stats: null,
+  totalSessions: 0,
+  currentPage: 1,
+  hasMoreSessions: false,
 };
 
 const sessionReducer = (state: SessionState, action: SessionAction): SessionState => {
@@ -41,11 +58,37 @@ const sessionReducer = (state: SessionState, action: SessionAction): SessionStat
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     
+    case 'SET_LOADING_STATS':
+      return { ...state, isLoadingStats: action.payload };
+    
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false };
     
     case 'SET_SESSIONS':
-      return { ...state, sessions: action.payload, isLoading: false };
+      return { 
+        ...state, 
+        sessions: action.payload.sessions, 
+        totalSessions: action.payload.total,
+        currentPage: action.payload.page,
+        hasMoreSessions: action.payload.hasMore,
+        isLoading: false 
+      };
+    
+    case 'APPEND_SESSIONS':
+      return { 
+        ...state, 
+        sessions: [...state.sessions, ...action.payload],
+        isLoading: false 
+      };
+    
+    case 'RESET_SESSIONS':
+      return { 
+        ...state, 
+        sessions: [],
+        totalSessions: 0,
+        currentPage: 1,
+        hasMoreSessions: false 
+      };
     
     case 'SET_ACTIVE_SESSIONS':
       return { ...state, activeSessions: action.payload };
@@ -77,6 +120,7 @@ const sessionReducer = (state: SessionState, action: SessionAction): SessionStat
       return {
         ...state,
         sessions: [action.payload, ...state.sessions],
+        totalSessions: state.totalSessions + 1,
         upcomingSessions: action.payload.status === SessionStatus.SCHEDULED
           ? [action.payload, ...state.upcomingSessions]
           : state.upcomingSessions,
@@ -86,6 +130,7 @@ const sessionReducer = (state: SessionState, action: SessionAction): SessionStat
       return {
         ...state,
         sessions: state.sessions.filter(s => s.id !== action.payload),
+        totalSessions: Math.max(0, state.totalSessions - 1),
         activeSessions: state.activeSessions.filter(s => s.id !== action.payload),
         upcomingSessions: state.upcomingSessions.filter(s => s.id !== action.payload),
         currentSession: state.currentSession?.id === action.payload 
@@ -94,7 +139,7 @@ const sessionReducer = (state: SessionState, action: SessionAction): SessionStat
       };
     
     case 'SET_STATS':
-      return { ...state, stats: action.payload };
+      return { ...state, stats: action.payload, isLoadingStats: false };
     
     default:
       return state;
@@ -103,22 +148,24 @@ const sessionReducer = (state: SessionState, action: SessionAction): SessionStat
 
 interface SessionContextType extends SessionState {
   // Actions
-  loadSessions: () => Promise<void>;
+  loadSessions: (params?: ISessionQueryParams) => Promise<void>;
+  loadMoreSessions: () => Promise<void>;
   loadActiveSessions: () => Promise<void>;
   loadUpcomingSessions: () => Promise<void>;
-  loadSessionStats: () => Promise<void>;
-  createSession: (sessionData: any) => Promise<ISessionResponse>;
+  loadSessionStats: (params?: any) => Promise<void>;
+  createSession: (sessionData: ICreateSessionRequest) => Promise<ISessionResponse>;
   updateSession: (sessionId: string, updateData: any) => Promise<ISessionResponse>;
   deleteSession: (sessionId: string) => Promise<void>;
   startSession: (sessionId: string) => Promise<ISessionResponse>;
   endSession: (sessionId: string) => Promise<ISessionResponse>;
   cancelSession: (sessionId: string, reason?: string) => Promise<ISessionResponse>;
+  searchSessions: (params: ISessionQueryParams) => Promise<void>;
   joinSession: (sessionId: string) => void;
   leaveSession: (sessionId: string) => void;
   setCurrentSession: (session: ISessionResponse | null) => void;
-  // FIXED: Add missing methods
   refreshSessions: () => Promise<void>;
   clearError: () => void;
+  resetSessions: () => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -205,15 +252,48 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [state.currentSession?.id]);
 
   // Actions
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (params?: ISessionQueryParams) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await sessionsHook.getSessions();
-      dispatch({ type: 'SET_SESSIONS', payload: response.sessions });
+      const response = await sessionsHook.getSessions(params);
+      dispatch({ 
+        type: 'SET_SESSIONS', 
+        payload: {
+          sessions: response.sessions,
+          total: response.total,
+          page: response.page,
+          hasMore: response.page < response.totalPages
+        }
+      });
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
     }
   }, [sessionsHook]);
+
+  const loadMoreSessions = useCallback(async () => {
+    if (!state.hasMoreSessions || state.isLoading) return;
+    
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const response = await sessionsHook.getSessions({
+        page: state.currentPage + 1,
+        limit: 20
+      });
+      
+      dispatch({ type: 'APPEND_SESSIONS', payload: response.sessions });
+      dispatch({ 
+        type: 'SET_SESSIONS', 
+        payload: {
+          sessions: [...state.sessions, ...response.sessions],
+          total: response.total,
+          page: response.page,
+          hasMore: response.page < response.totalPages
+        }
+      });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    }
+  }, [sessionsHook, state.hasMoreSessions, state.isLoading, state.currentPage, state.sessions]);
 
   const loadActiveSessions = useCallback(async () => {
     try {
@@ -233,16 +313,45 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, [sessionsHook]);
 
-  const loadSessionStats = useCallback(async () => {
+  const loadSessionStats = useCallback(async (params?: any) => {
     try {
-      const stats = await sessionsHook.getSessionStats();
+      dispatch({ type: 'SET_LOADING_STATS', payload: true });
+      const stats = await sessionsHook.getSessionStats(params);
       dispatch({ type: 'SET_STATS', payload: stats });
     } catch (error: any) {
       console.error('Error loading session stats:', error);
+      dispatch({ type: 'SET_LOADING_STATS', payload: false });
     }
   }, [sessionsHook]);
 
-  const createSession = useCallback(async (sessionData: any): Promise<ISessionResponse> => {
+  const searchSessions = useCallback(async (params: ISessionQueryParams) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const searchParams = {
+        ...params,
+        status: params.status as any,
+        type: params.type as any
+      };
+      const response = await sessionsHook.searchSessions(searchParams);
+      dispatch({ 
+        type: 'SET_SESSIONS', 
+        payload: {
+          sessions: response.sessions,
+          total: response.total,
+          page: response.page,
+          hasMore: response.page < response.totalPages
+        }
+      });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+    }
+  }, [sessionsHook]);
+
+  const resetSessions = useCallback(() => {
+    dispatch({ type: 'RESET_SESSIONS', payload: null });
+  }, []);
+
+  const createSession = useCallback(async (sessionData: ICreateSessionRequest): Promise<ISessionResponse> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const session = await sessionsHook.createSession(sessionData);
@@ -355,6 +464,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const value: SessionContextType = {
     ...state,
     loadSessions,
+    loadMoreSessions,
     loadActiveSessions,
     loadUpcomingSessions,
     loadSessionStats,
@@ -364,12 +474,13 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     startSession,
     endSession,
     cancelSession,
+    searchSessions,
     joinSession,
     leaveSession,
     setCurrentSession,
-    // FIXED: Add to context value
     refreshSessions,
     clearError,
+    resetSessions,
   };
 
   return (

@@ -20,3 +20,9 @@ export const sessionStatusLabel = {
     'completed': 'Concluído',
     'cancelled': 'Cancelado',
 }
+
+export const roleOptions = {
+    "coordinator": "COORDINATOR",
+    "mentor": "MENTOR",
+    "mentee": "MENTEE",
+}

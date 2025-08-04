@@ -16,6 +16,7 @@ import { Alert, Animated, FlatList, Image, Modal, Platform, RefreshControl, Safe
 import { WebView } from 'react-native-webview';
 import tw from "twrnc";
 import { Navbar } from "../components/ui/navbar";
+import { roleOptions } from '@/src/utils';
 
 export function EducationalResourcesScreen() {
     // API and auth hooks
@@ -165,7 +166,8 @@ export function EducationalResourcesScreen() {
 
     // Handle upload
     const handleUpload = async () => {
-        if (!canUserUpload(user?.role)) {
+        console.log('Upload button pressed ', user?.role);
+        if (!canUserUpload(roleOptions[user?.role as keyof typeof roleOptions])) {
             Alert.alert('Acesso Negado', 'Você não tem permissão para fazer upload de recursos.');
             return;
         }

@@ -2,52 +2,43 @@ export interface ISessionResponse {
   id: string;
   title: string;
   description?: string;
-  type: SessionType;
-  status: SessionStatus;
   mentor: {
     uid: string;
     fullName: string;
     email: string;
     image?: string;
-    role: string;
   };
   participants: Array<{
     uid: string;
     fullName: string;
     email: string;
-    image?: string;
     role: string;
-    joinedAt: string;
-    status: 'invited' | 'confirmed' | 'declined' | 'attended' | 'missed';
+    image?: string;
+    status: 'invited' | 'confirmed' | 'joined' | 'left' | 'no_show';
+    joinedAt?: Date;
+    leftAt?: Date;
   }>;
-  scheduledAt?: string;
-  startedAt?: string;
-  endedAt?: string;
-  pausedAt?: string;
-  resumedAt?: string;
-  cancelledAt?: string;
-  duration: number; // in minutes
-  actualDuration?: number; // in minutes
-  subject?: string;
-  materials?: string[];
-  maxParticipants?: number;
-  isRecurring?: boolean;
-  recurringPattern?: {
-    frequency: 'daily' | 'weekly' | 'monthly';
-    interval: number;
-    endDate?: string;
-    daysOfWeek?: number[];
-  };
+  status: SessionStatus;
+  type: SessionType;
+  scheduledAt: Date;
+  startedAt?: Date;
+  endedAt?: Date;
+  duration: number;
+  actualDuration?: number;
   chatId?: string;
-  notes?: string;
-  feedback?: Array<{
-    participantId: string;
-    rating: number;
-    comment?: string;
-    createdAt: string;
-  }>;
-  createdAt: string;
-  updatedAt: string;
+  metadata: {
+    subject?: string;
+    materials?: string[];
+    maxParticipants?: number;
+    isRecurring?: boolean;
+  };
+  stats?: {
+    participantCount: number;
+    joinedCount: number;
+    completionRate: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ISessionsListResponse {
@@ -149,9 +140,9 @@ export enum SessionType {
 
 export enum SessionStatus {
   SCHEDULED = 'scheduled',
-  ACTIVE = 'active',
+  ACTIVE = 'active', 
   PAUSED = 'paused',
-  IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
+  NO_SHOW = 'no_show'
 }
