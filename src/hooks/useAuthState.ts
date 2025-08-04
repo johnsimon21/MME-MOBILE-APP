@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { AuthState } from "../interfaces/auth.interface";
 import { UserRole } from "../interfaces/index.interface";
@@ -8,7 +9,13 @@ export const useAuthState = (): AuthState & {
   isCoordinator: boolean;
 } => {
   
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const {fetchUserAuth , user, isLoading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!user && isAuthenticated) {
+      fetchUserAuth();
+    }
+  }, [user, isAuthenticated, fetchUserAuth]);
   
   return {
     user,

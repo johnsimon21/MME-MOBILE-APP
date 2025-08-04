@@ -5,12 +5,14 @@ import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { UnfoldVerticalIcon } from '@/assets/images/svg';
 import { useFloatingButton } from '@/src/context/FloatingButtonContext';
+import { useNotificationContextSafe } from '@/src/context/NotificationContext';
 
 export function FloatingOptionsButton() {
     const [unfold, setUnfold] = React.useState(false);
     const [onTop, setOnTop] = React.useState(false);
     const [unreadCountDeskHelp, setUnreadCountDeskHelp] = useState(3);
-    const [unreadCountNotification, setUnreadCountNotification] = useState(2);
+    const [unreadCountNotification, setUnreadCountNotification] = useState(0);
+     const notificationContext = useNotificationContextSafe();
     const router = useRouter();
 
     const { position } = useFloatingButton();
@@ -21,9 +23,13 @@ export function FloatingOptionsButton() {
     const rotateAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const badgeScaleAnim = useRef(new Animated.Value(1)).current;
+   
+    // Get notification count from context
+  const notificationCount = notificationContext?.unreadCount || 0;
 
     // Animate badge when count changes
     useEffect(() => {
+        setUnreadCountNotification(notificationCount);
         if (unreadCountNotification > 0) {
             Animated.sequence([
                 Animated.timing(badgeScaleAnim, {
@@ -38,7 +44,7 @@ export function FloatingOptionsButton() {
                 }),
             ]).start();
         }
-    }, [unreadCountNotification]);
+    }, [notificationCount]);
 
     useEffect(() => {
         if (position.includes('right-top') || position.includes('left-top')) {
@@ -70,7 +76,6 @@ export function FloatingOptionsButton() {
     };
 
     const handleNavigateToNotifications = () => {
-        setUnreadCountNotification(0);
         router.push('/notifications');
         setUnfold(false);
     };

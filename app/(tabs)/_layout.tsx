@@ -22,6 +22,7 @@ import { AuthGuard } from "@/src/components/auth/AuthGuard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useAuthState } from "@/src/hooks/useAuthState";
 import { useChatSafe } from "@/src/context/ChatContext"; // Use the safe version
+import { useNotificationContextSafe } from "@/src/context/NotificationContext";
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
@@ -260,6 +261,7 @@ function MainStack() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      console.log('&&&&&&&&&&&&& User not authenticated &&&&&&&&&&&&&');
       router.replace('/auth/LoginScreen');
     }
   }, [isAuthenticated, isLoading]);

@@ -1,210 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { formatMessageTime } from '@/src/utils/dateFormatter';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
 import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-
-interface Notification {
-    id: string;
-    type: 'session' | 'message' | 'call' | 'system' | 'reminder';
-    title: string;
-    message: string;
-    timestamp: string;
-    isRead: boolean;
-    priority: 'low' | 'medium' | 'high';
-    actionData?: {
-        userId?: number;
-        userName?: string;
-        sessionId?: string;
-        chatId?: string;
-        userPhoto?: string | null;
-    };
-}
+import { useNotificationContext } from '@/src/context/NotificationContext';
+import { 
+    INotification, 
+    NotificationType, 
+    NotificationCategory, 
+    NotificationPriority 
+} from '@/src/interfaces/notification.interface';
 
 export default function NotificationScreen() {
     const router = useRouter();
     const navigation = useNavigation();
+    
+    // Use notification context
+    const {
+        notifications,
+        isLoading,
+        isRefreshing,
+        error,
+        unreadCount,
+        hasMore,
+        isSocketConnected,
+        loadNotifications,
+        loadMore,
+        refresh,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        handleNotificationAction,
+        getFilteredNotifications,
+    } = useNotificationContext();
 
+    const [filter, setFilter] = useState<'all' | 'unread' | NotificationCategory>('all');
 
-    const [notifications, setNotifications] = useState<Notification[]>([
-        {
-            id: '1',
-            type: 'session',
-            title: 'Nova Sessão Iniciada',
-            message: 'Sessão com Lukombo Afonso foi iniciada',
-            timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            isRead: false,
-            priority: 'high',
-            actionData: {
-                userId: 1,
-                userName: 'Lukombo Afonso',
-                sessionId: 'session_1',
-                userPhoto: null
-            }
-        },
-        {
-            id: '2',
-            type: 'message',
-            title: 'Nova Mensagem',
-            message: 'Cardoso Manuel enviou uma mensagem',
-            timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-            isRead: false,
-            priority: 'medium',
-            actionData: {
-                userId: 2,
-                userName: 'Cardoso Manuel',
-                chatId: 'chat_2',
-                userPhoto: null
-            }
-        },
-        {
-            id: '3',
-            type: 'call',
-            title: 'Chamada Perdida',
-            message: 'Você perdeu uma chamada de Lucy Script',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            isRead: true,
-            priority: 'high',
-            actionData: {
-                userId: 3,
-                userName: 'Lucy Script',
-                userPhoto: null
-            }
-        },
-        {
-            id: '4',
-            type: 'session',
-            title: 'Sessão Finalizada',
-            message: 'Sessão com Java Simon foi concluída (45 min)',
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            isRead: true,
-            priority: 'medium',
-            actionData: {
-                userId: 4,
-                userName: 'Java Simon',
-                sessionId: 'session_4',
-                userPhoto: null
-            }
-        },
-        {
-            id: '5',
-            type: 'reminder',
-            title: 'Lembrete de Sessão',
-            message: 'Você tem uma sessão agendada em 30 minutos',
-            timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-            isRead: false,
-            priority: 'medium'
-        },
-        {
-            id: '6',
-            type: 'system',
-            title: 'Backup Concluído',
-            message: 'Backup automático dos seus dados foi realizado com sucesso',
-            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            isRead: true,
-            priority: 'low'
-        },
-        {
-            id: '7',
-            type: 'message',
-            title: 'Arquivo Recebido',
-            message: 'Lukombo Afonso enviou um documento',
-            timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
-            isRead: true,
-            priority: 'medium',
-            actionData: {
-                userId: 1,
-                userName: 'Lukombo Afonso',
-                chatId: 'chat_1',
-                userPhoto: null
-            }
-        }
-    ]);
-
-    const [filter, setFilter] = useState<'all' | 'unread' | 'session' | 'message' | 'call'>('all');
-
-    // Filter notifications
-    const filteredNotifications = notifications.filter(notification => {
-        if (filter === 'all') return true;
-        if (filter === 'unread') return !notification.isRead;
-        return notification.type === filter;
-    });
-
-    // Get unread count
-    const unreadCount = notifications.filter(n => !n.isRead).length;
-
-    // Mark notification as read
-    const markAsRead = (id: string) => {
-        setNotifications(prev =>
-            prev.map(notification =>
-                notification.id === id ? { ...notification, isRead: true } : notification
-            )
-        );
-    };
-
-    // Mark all as read
-    const markAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notification => ({ ...notification, isRead: true }))
-        );
-    };
-
-    // Delete notification
-    const deleteNotification = (id: string) => {
-        Alert.alert(
-            "Excluir Notificação",
-            "Tem certeza que deseja excluir esta notificação?",
-            [
-                { text: "Cancelar", style: "cancel" },
-                {
-                    text: "Excluir",
-                    style: "destructive",
-                    onPress: () => {
-                        setNotifications(prev => prev.filter(n => n.id !== id));
-                    }
-                }
-            ]
-        );
-    };
+    // Get filtered notifications based on current filter
+    const filteredNotifications = React.useMemo(() => {
+        if (filter === 'all') return notifications;
+        if (filter === 'unread') return notifications.filter(n => !n.isRead);
+        return notifications.filter(n => n.category === filter);
+    }, [notifications, filter]);
 
     // Enhanced navigation handler
-    const handleNotificationAction = (notification: Notification) => {
-        markAsRead(notification.id);
+    const handleNotificationTap = useCallback((notification: INotification) => {
+        // Mark as read first
+        if (!notification.isRead) {
+            markAsRead(notification.id);
+        }
 
+        // Handle navigation based on notification type and data
         switch (notification.type) {
-            case 'message':
-                router.push('/(tabs)/messages');
+            case NotificationType.MESSAGE_RECEIVED:
+                if (notification.data?.chatId) {
+                    router.push(`/(tabs)/messages`);
+                } else {
+                    router.push('/(tabs)/messages');
+                }
                 break;
 
-            case 'call':
-                if (notification.actionData?.userId && notification.actionData?.userName) {
+            case NotificationType.CALL_INCOMING:
+            case NotificationType.CALL_MISSED:
+                if (notification.data?.userId && notification.data?.userName) {
                     router.push({
                         pathname: '/normal-call',
                         params: {
-                            userId: notification.actionData.userId.toString(),
-                            userName: notification.actionData.userName,
-                            userPhoto: notification.actionData.userPhoto || ''
+                            userId: notification.data.userId.toString(),
+                            userName: notification.data.userName,
+                            userPhoto: notification.data.userPhoto || ''
                         }
                     });
                 }
                 break;
 
-            case 'session':
+            case NotificationType.SESSION_STARTED:
+            case NotificationType.SESSION_COMPLETED:
+            case NotificationType.SESSION_CANCELLED:
+            case NotificationType.SESSION_REMINDER:
                 router.push('/(tabs)/session');
                 break;
 
-            case 'reminder':
-                if (notification.message.includes('sessão agendada')) {
-                    router.push('/(tabs)/session');
-                } else {
-                    Alert.alert("Lembrete", notification.message, [{ text: "OK" }]);
-                }
-                break;
-
-            case 'system':
+            case NotificationType.SYSTEM_UPDATE:
+            case NotificationType.ANNOUNCEMENT:
                 // @ts-ignore
                 navigation.navigate('Settings');
                 break;
@@ -213,28 +94,75 @@ export default function NotificationScreen() {
                 console.log('Unknown notification type:', notification.type);
                 break;
         }
-    };
+    }, [markAsRead, router, navigation]);
 
+    // Delete notification with confirmation
+    const handleDeleteNotification = useCallback((notificationId: string) => {
+        Alert.alert(
+            "Excluir Notificação",
+            "Tem certeza que deseja excluir esta notificação?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Excluir",
+                    style: "destructive",
+                    onPress: () => deleteNotification(notificationId)
+                }
+            ]
+        );
+    }, [deleteNotification]);
 
-    // Get notification icon
-    const getNotificationIcon = (type: string, priority: string) => {
-        const iconColor = priority === 'high' ? '#EF4444' : priority === 'medium' ? '#F59E0B' : '#6B7280';
+    // Get notification icon based on type and priority
+    const getNotificationIcon = useCallback((notification: INotification) => {
+        const iconColor = notification.priority === NotificationPriority.HIGH || notification.priority === NotificationPriority.URGENT 
+            ? '#EF4444' 
+            : notification.priority === NotificationPriority.MEDIUM 
+            ? '#F59E0B' 
+            : '#6B7280';
 
-        switch (type) {
-            case 'session':
+        switch (notification.type) {
+            case NotificationType.SESSION_STARTED:
+            case NotificationType.SESSION_COMPLETED:
+            case NotificationType.SESSION_CANCELLED:
+            case NotificationType.SESSION_REMINDER:
                 return <MaterialIcons name="group" size={24} color={iconColor} />;
-            case 'message':
+            
+            case NotificationType.MESSAGE_RECEIVED:
+            case NotificationType.FILE_SHARED:
                 return <Feather name="message-circle" size={24} color={iconColor} />;
-            case 'call':
+            
+            case NotificationType.CALL_INCOMING:
+            case NotificationType.CALL_MISSED:
                 return <Feather name="phone" size={24} color={iconColor} />;
-            case 'reminder':
+            
+            case NotificationType.REMINDER:
                 return <Feather name="clock" size={24} color={iconColor} />;
-            case 'system':
+            
+            case NotificationType.SYSTEM_UPDATE:
+            case NotificationType.ANNOUNCEMENT:
                 return <Feather name="settings" size={24} color={iconColor} />;
+            
+            case NotificationType.ACHIEVEMENT_UNLOCKED:
+                return <Feather name="award" size={24} color={iconColor} />;
+            
             default:
                 return <Feather name="bell" size={24} color={iconColor} />;
         }
-    };
+    }, []);
+
+    // Get localized category name
+    const getCategoryLabel = useCallback((category: NotificationCategory): string => {
+        switch (category) {
+            case NotificationCategory.SESSION: return 'Sessões';
+            case NotificationCategory.MESSAGE: return 'Mensagens';
+            case NotificationCategory.CALL: return 'Chamadas';
+            case NotificationCategory.SYSTEM: return 'Sistema';
+            case NotificationCategory.SOCIAL: return 'Social';
+            case NotificationCategory.EDUCATIONAL: return 'Educacional';
+            case NotificationCategory.ADMINISTRATIVE: return 'Administrativo';
+            default: return 'Outros';
+        }
+    }, []);
 
     // Filter button component
     const FilterButton = ({
@@ -247,26 +175,28 @@ export default function NotificationScreen() {
         count?: number
     }) => (
         <TouchableOpacity
-            style={tw`flex justify-center items-center px-4 py-2 rounded-full mr-2 ${filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
-                }`}
+            style={tw`flex justify-center items-center px-4 py-2 rounded-full mr-2 ${
+                filter === filterType ? 'bg-[#4F46E5]' : 'bg-gray-200'
+            }`}
             onPress={() => setFilter(filterType)}
         >
-            <Text style={tw`text-xs ${filter === filterType ? 'text-white' : 'text-gray-700'
-                } font-medium`}>
+            <Text style={tw`text-xs ${
+                filter === filterType ? 'text-white' : 'text-gray-700'
+            } font-medium`}>
                 {label} {count !== undefined && count > 0 && `(${count})`}
             </Text>
         </TouchableOpacity>
     );
 
     // Notification item component
-    const NotificationItem = ({ item }: { item: Notification }) => (
+    const NotificationItem = ({ item }: { item: INotification }) => (
         <TouchableOpacity
             style={tw`bg-white p-4 mb-2 rounded-xl ${!item.isRead ? 'border-l-4 border-[#4F46E5]' : ''}`}
-            onPress={() => handleNotificationAction(item)}
+            onPress={() => handleNotificationTap(item)}
         >
             <View style={tw`flex-row items-start`}>
                 <View style={tw`w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-3`}>
-                    {getNotificationIcon(item.type, item.priority)}
+                    {getNotificationIcon(item)}
                 </View>
 
                 <View style={tw`flex-1`}>
@@ -275,7 +205,7 @@ export default function NotificationScreen() {
                             {item.title}
                         </Text>
                         <Text style={tw`text-xs text-gray-500 ml-2`}>
-                            {formatMessageTime(item.timestamp)}
+                            {formatMessageTime(item.timestamp.toString())}
                         </Text>
                     </View>
 
@@ -289,15 +219,11 @@ export default function NotificationScreen() {
                                 <View style={tw`w-2 h-2 bg-[#4F46E5] rounded-full mr-2`} />
                             )}
                             <Text style={tw`text-xs text-gray-500 capitalize`}>
-                                {item.type === 'session' ? 'Sessão' :
-                                    item.type === 'message' ? 'Mensagem' :
-                                        item.type === 'call' ? 'Chamada' :
-                                            item.type === 'reminder' ? 'Lembrete' : 'Sistema'}
+                                {getCategoryLabel(item.category)}
                             </Text>
-                            {/* Show target user name if available */}
-                            {item.actionData?.userName && (
+                            {item.data?.userName && (
                                 <Text style={tw`text-xs text-gray-400 ml-1`}>
-                                    • {item.actionData.userName}
+                                    • {item.data.userName}
                                 </Text>
                             )}
                         </View>
@@ -305,8 +231,8 @@ export default function NotificationScreen() {
                         <TouchableOpacity
                             style={tw`p-1`}
                             onPress={(e) => {
-                                e.stopPropagation(); // Prevent navigation when deleting
-                                deleteNotification(item.id);
+                                e.stopPropagation();
+                                handleDeleteNotification(item.id);
                             }}
                         >
                             <Feather name="x" size={16} color="#9CA3AF" />
@@ -317,9 +243,42 @@ export default function NotificationScreen() {
         </TouchableOpacity>
     );
 
+    // Connection status indicator
+    const ConnectionStatus = () => (
+        <View style={tw`flex-row items-center px-4 py-2 ${isSocketConnected ? 'bg-green-50' : 'bg-yellow-50'}`}>
+            <View style={tw`w-2 h-2 rounded-full mr-2 ${isSocketConnected ? 'bg-green-500' : 'bg-yellow-500'}`} />
+            <Text style={tw`text-xs ${isSocketConnected ? 'text-green-600' : 'text-yellow-600'}`}>
+                {isSocketConnected ? 'Conectado - Tempo real' : 'Offline - Dados em cache'}
+            </Text>
+        </View>
+    );
+
+    // Error display
+    if (error) {
+        return (
+            <View style={tw`flex-1 bg-[#F7F7F7]`}>
+                <Navbar title="Notificações" showBackButton={true} />
+                <View style={tw`flex-1 items-center justify-center p-4`}>
+                    <Feather name="alert-circle" size={48} color="#EF4444" />
+                    <Text style={tw`text-red-600 text-lg mt-4 text-center`}>Erro ao carregar notificações</Text>
+                    <Text style={tw`text-gray-500 text-sm mt-2 text-center`}>{error}</Text>
+                    <TouchableOpacity
+                        style={tw`mt-4 px-6 py-3 bg-[#4F46E5] rounded-lg`}
+                        onPress={() => refresh()}
+                    >
+                        <Text style={tw`text-white font-medium`}>Tentar novamente</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={tw`flex-1 bg-[#F7F7F7]`}>
             <Navbar title="Notificações" showBackButton={true} />
+
+            {/* Connection Status */}
+            <ConnectionStatus />
 
             {/* Header Actions */}
             <View style={tw`flex-row justify-between items-center px-4 py-3 bg-white mb-2`}>
@@ -352,19 +311,24 @@ export default function NotificationScreen() {
                         count={unreadCount}
                     />
                     <FilterButton
-                        filterType="session"
+                        filterType={NotificationCategory.SESSION}
                         label="Sessões"
-                        count={notifications.filter(n => n.type === 'session').length}
+                        count={notifications.filter(n => n.category === NotificationCategory.SESSION).length}
                     />
                     <FilterButton
-                        filterType="message"
+                        filterType={NotificationCategory.MESSAGE}
                         label="Mensagens"
-                        count={notifications.filter(n => n.type === 'message').length}
+                        count={notifications.filter(n => n.category === NotificationCategory.MESSAGE).length}
                     />
                     <FilterButton
-                        filterType="call"
+                        filterType={NotificationCategory.CALL}
                         label="Chamadas"
-                        count={notifications.filter(n => n.type === 'call').length}
+                        count={notifications.filter(n => n.category === NotificationCategory.CALL).length}
+                    />
+                    <FilterButton
+                        filterType={NotificationCategory.SYSTEM}
+                        label="Sistema"
+                        count={notifications.filter(n => n.category === NotificationCategory.SYSTEM).length}
                     />
                 </ScrollView>
             </View>
@@ -376,17 +340,45 @@ export default function NotificationScreen() {
                 renderItem={({ item }) => <NotificationItem item={item} />}
                 contentContainerStyle={tw`px-4 pb-6`}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={refresh}
+                        colors={['#4F46E5']}
+                        tintColor="#4F46E5"
+                    />
+                }
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={() => {
+                    if (hasMore && isLoading) {
+                        return (
+                            <View style={tw`py-4 items-center`}>
+                                <ActivityIndicator size="small" color="#4F46E5" />
+                            </View>
+                        );
+                    }
+                    return null;
+                }}
                 ListEmptyComponent={() => (
                     <View style={tw`items-center justify-center py-12`}>
-                        <Feather name="bell-off" size={48} color="#9CA3AF" />
-                        <Text style={tw`text-gray-500 text-lg mt-4`}>Nenhuma notificação</Text>
-                        <Text style={tw`text-gray-400 text-sm mt-1`}>
-                            {filter === 'unread' ? 'Todas as notificações foram lidas' : 'Você está em dia!'}
-                        </Text>
+                        {isLoading ? (
+                            <>
+                                <ActivityIndicator size="large" color="#4F46E5" />
+                                <Text style={tw`text-gray-500 text-lg mt-4`}>Carregando notificações...</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Feather name="bell-off" size={48} color="#9CA3AF" />
+                                <Text style={tw`text-gray-500 text-lg mt-4`}>Nenhuma notificação</Text>
+                                <Text style={tw`text-gray-400 text-sm mt-1`}>
+                                    {filter === 'unread' ? 'Todas as notificações foram lidas' : 'Você está em dia!'}
+                                </Text>
+                            </>
+                        )}
                     </View>
                 )}
             />
         </View>
     );
 }
-

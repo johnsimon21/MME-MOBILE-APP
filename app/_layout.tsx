@@ -1,9 +1,9 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { use, useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -16,10 +16,12 @@ import { SocketProvider } from '@/src/context/SocketContext';
 import { ChatProvider } from '@/src/context/ChatContext';
 import { SessionProvider } from '@/src/context/SessionContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
+import { NotificationProvider } from '@/src/context/NotificationContext';
 import { LoadingScreen } from '@/src/components/LoadingScreen';
 import { UserRole } from '@/src/interfaces/index.interface';
 import { DashboardProvider } from '@/src/context/DashboardContext';
 import { DashboardErrorBoundary } from '@/src/components/dashboard/DashboardErrorBoundary';
+import { useAuthState } from '@/src/hooks/useAuthState';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -27,6 +29,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const pathname = usePathname();
+
   const { user, isLoading, isInitializing } = useAuth();
 
   const [loaded] = useFonts({
@@ -142,15 +145,17 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
         {isAuthenticated && user && !isInitializing ? (
           <SocketErrorBoundary>
             <SocketProvider>
-              <ChatProvider>
-                <SessionProvider>
-                  <DashboardErrorBoundary>
-                    <DashboardProvider>
-                      {children}
-                    </DashboardProvider>
-                  </DashboardErrorBoundary>
-                </SessionProvider>
-              </ChatProvider>
+              <NotificationProvider>
+                <ChatProvider>
+                  <SessionProvider>
+                    <DashboardErrorBoundary>
+                      <DashboardProvider>
+                        {children}
+                      </DashboardProvider>
+                    </DashboardErrorBoundary>
+                  </SessionProvider>
+                </ChatProvider>
+              </NotificationProvider>
             </SocketProvider>
           </SocketErrorBoundary>
         ) : (
@@ -162,6 +167,28 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
 };
 
 export default function RootLayout() {
+  const router = useRouter();
+  const { isLoading, user, isAuthenticated } = useAuthState();
+
+  useEffect(() => {
+    const loadUserAuth = async () => {
+      try {
+        console.log('+++++++++++++Fetching user auth');
+        if (isAuthenticated && user) {
+          console.log(`=========User authenticated: ${user.email}`);
+          router.replace('/(tabs)');
+        }else{
+          console.log(`=========User not authenticated or user data not available`);
+        }
+      } catch (error) {
+        console.log('------User not authenticated or user data not available ', error);
+      }
+    }
+
+    loadUserAuth();
+
+  }, [isLoading, isAuthenticated, user]);
+
   return (
     <AuthProvider>
       <ConditionalSocketProvider>

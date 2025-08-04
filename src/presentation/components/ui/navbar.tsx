@@ -6,6 +6,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNotificationContextSafe } from "@/src/context/NotificationContext";
 
 interface NavbarProps {
   title: string;
@@ -14,7 +15,6 @@ interface NavbarProps {
   onBackPress?: () => void;
   theme?: 'light' | 'dark' | 'gradient';
   showNotifications?: boolean;
-  notificationCount?: number;
   subtitle?: string;
   rightActions?: Array<{
     icon: string;
@@ -29,17 +29,19 @@ export function Navbar({
   showBackButton = false,
   onBackPress,
   theme = 'light',
-  showNotifications = false,
-  notificationCount = 0,
+  showNotifications = true, // Default to true
   subtitle,
   rightActions = []
 }: NavbarProps) {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const notificationContext = useNotificationContextSafe();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  console.log("Name: ", user);
 
   useEffect(() => {
     if (showProfileMenu) {
@@ -114,9 +116,11 @@ export function Navbar({
   };
 
   const navigateToNotifications = () => {
-    // @ts-ignore
-    navigation.navigate('/notifications');
+    router.push('/notifications');
   };
+
+  // Get notification count from context
+  const notificationCount = notificationContext?.unreadCount || 0;
 
   const getNavbarContent = () => {
     const baseContent = (
@@ -292,12 +296,12 @@ export function Navbar({
               <View style={tw`flex-row items-center`}>
                 <View style={tw`w-10 h-10 bg-indigo-100 rounded-full items-center justify-center mr-2`}>
                   <Text style={tw`text-indigo-600 font-bold`}>
-                    {user?.fullName?.charAt(0) || 'U'}
+                    {user?.firebaseClaims.name?.charAt(0) || 'U'}
                   </Text>
                 </View>
                 <View style={tw`flex-1`}>
                   <Text style={tw`font-semibold text-gray-800 text-sm`} numberOfLines={1}>
-                    {user?.fullName || 'Usuário'}
+                    {user?.firebaseClaims.name || 'Usuário'}
                   </Text>
                   <Text style={tw`text-sm text-gray-500`} numberOfLines={1}>
                     {user?.email || 'email@exemplo.com'}

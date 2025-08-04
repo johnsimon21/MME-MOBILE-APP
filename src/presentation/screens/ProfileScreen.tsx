@@ -8,13 +8,13 @@ import tw from "twrnc";
 import { Navbar } from "../components/ui/navbar";
 
 import { useConnections } from "@/src/hooks/useConnections";
-import { IUser } from "@/src/interfaces/user.interface";
 import * as ImagePicker from "expo-image-picker";
 import { NameEditor } from "../components/NameEditor";
 import { IConnectionResponse, IFriends } from "@/src/interfaces/connections.interface";
 import { UserRole } from "@/src/interfaces/index.interface";
 import { useUsers } from "@/src/hooks/useUsers";
 import { ProfileSkeleton } from "../components/ui/ProfileSkeleton";
+import { IUser } from "@/src/interfaces/user.interface";
 
 interface UserData {
     fullName: string;
@@ -41,7 +41,7 @@ interface Connection {
 
 
 export const ProfileScreen = () => {
-    const { fetchUser, user, isLoading: loadingUser } = useAuth();
+    const { fetchUserProfile, profile, isLoading: loadingUser } = useAuth();
     const { getAcceptedConnections } = useConnections();
     const { updateUser, updateUserImage } = useUsers();
     const navigation = useNavigation();
@@ -52,7 +52,7 @@ export const ProfileScreen = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Initialize with user data from context
+    // Initialize with profile data from context
     const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
     const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
@@ -75,12 +75,12 @@ export const ProfileScreen = () => {
     const [selectedPrograms, setSelectedPrograms] = useState<string[]>(["Programação", "Plano de Carreira"]);
     const [photoViewerVisible, setPhotoViewerVisible] = useState(false);
 
-    // Fetch user and connections from backend
+    // Fetch profile and connections from backend
     useEffect(() => {
         const loadData = async () => {
             setIsLoading(true);
             try {
-                await fetchUser();
+                await fetchUserProfile();
                 const friendsRes = await getAcceptedConnections();
                 const friends = friendsRes.connections.map((conn: IConnectionResponse) => ({
                     ...conn.connectedUser,
@@ -101,19 +101,19 @@ export const ProfileScreen = () => {
         loadData();
     }, []); // ✅ Only run once on mount
 
-    // Separate effect for user data updates
+    // Separate effect for profile data updates
     useEffect(() => {
-        if (user) {
-            console.log('👤 User data received:', user);
-            setUserData(user);
-            setEditedData(user);
+        if (profile) {
+            console.log('👤 profile data received:', profile);
+            setUserData(profile);
+            setEditedData(profile);
 
             // Initialize form data
-            setSelectedDifficulties(user.difficulties || []);
-            setSelectedSkills(user.skills || []);
-            setSelectedEmotions(user.emotions || []);
+            setSelectedDifficulties(profile.difficulties || []);
+            setSelectedSkills(profile.skills || []);
+            setSelectedEmotions(profile.emotions || []);
         }
-    }, [user]);
+    }, [profile]);
 
     // Filter logic
     const applyFilter = (filter: "Todos" | "Mentor" | "Mentorado") => {
@@ -127,13 +127,13 @@ export const ProfileScreen = () => {
     };
 
     const handleViewProfile = (userId: string) => {
-        console.log("Viewing profile for user ID:", userId);
+        console.log("Viewing profile for profile ID:", userId);
         // @ts-ignore
         navigation.navigate('UserProfile', { userId });
     };
 
     const toggleEditMode = async () => {
-        if (isEditing && user && editedData) {
+        if (isEditing && profile && editedData) {
             try {
                 setIsLoading(true);
 
@@ -150,25 +150,25 @@ export const ProfileScreen = () => {
                     programs: editedData.programs || []
                 };
 
-                console.log('🔄 Updating user with data:', updateData);
+                console.log('🔄 Updating profile with data:', updateData);
 
                 // Update via API first
-                const updatedUser = await updateUser(user.uid, updateData);
+                const updatedUser = await updateUser(profile.uid, updateData);
 
-                console.log('✅ User updated successfully:', updatedUser);
+                console.log('✅ profile updated successfully:', updatedUser);
 
                 // Update local storage with the response from API
-                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                await AsyncStorage.setItem('profile', JSON.stringify(updatedUser));
 
                 // Update local state
                 setUserData(updatedUser);
                 setEditedData(updatedUser);
                 setIsEditing(false);
-                await fetchUser();
+                await fetchUserProfile();
 
                 Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
             } catch (error: any) {
-                console.error("❌ Error updating user:", error);
+                console.error("❌ Error updating profile:", error);
 
                 // Better error handling
                 let errorMessage = "Falha ao atualizar o perfil";
@@ -190,12 +190,12 @@ export const ProfileScreen = () => {
     const handleSaveChanges = async () => {
         try {
             setIsLoading(true);
-            await AsyncStorage.setItem('user', JSON.stringify(editedData));
+            await AsyncStorage.setItem('profile', JSON.stringify(editedData));
             setUserData(editedData);
             setIsEditing(false);
             Alert.alert("Success", "Profile updated successfully");
         } catch (error) {
-            console.error("Error saving user data:", error);
+            console.error("Error saving profile data:", error);
             Alert.alert("Error", "Failed to save profile data");
         } finally {
             setIsLoading(false);
@@ -225,7 +225,7 @@ export const ProfileScreen = () => {
                     <MaterialIcons name="close" size={24} color="white" />
                 </TouchableOpacity>
 
-                {/* User info overlay */}
+                {/* profile info overlay */}
                 <View style={tw`absolute top-12 left-4 z-10`}>
                     <Text style={tw`text-white text-xl font-bold`}>{userData?.fullName}</Text>
                     <Text style={tw`text-gray-300 text-sm`}>{userData?.role || "Mentorado"}</Text>
@@ -348,19 +348,19 @@ export const ProfileScreen = () => {
         try {
             setIsLoading(true);
 
-            if (!user?.uid) {
+            if (!profile?.uid) {
                 throw new Error('Usuário não autenticado');
             }
 
-            console.log('🔄 Updating profile image for user:', user.uid);
+            console.log('🔄 Updating profile image for profile:', profile.uid);
 
             // ✅ Use the dedicated image upload endpoint
-            const updatedUser = await updateUserImage(user.uid, imageUri);
+            const updatedUser = await updateUserImage(profile.uid, imageUri);
             
             console.log('✅ Profile image updated successfully');
 
             // Update local storage
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+            await AsyncStorage.setItem('profile', JSON.stringify(updatedUser));
             
             // Update local state
             setUserData(updatedUser);
@@ -403,7 +403,7 @@ export const ProfileScreen = () => {
                 fullName: tempName.trim()
             } as IUser;
 
-            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+            await AsyncStorage.setItem('profile', JSON.stringify(updatedUserData));
             setUserData(updatedUserData);
             setEditedData(updatedUserData);
             setNameEditVisible(false);
@@ -912,7 +912,7 @@ export const ProfileScreen = () => {
                         try {
                             setIsLoading(true);
                             const updatedUserData = { ...userData, fullName: newName };
-                            await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
+                            await AsyncStorage.setItem('profile', JSON.stringify(updatedUserData));
                             setUserData(updatedUserData);
                             setEditedData(updatedUserData);
                             setNameEditVisible(false);

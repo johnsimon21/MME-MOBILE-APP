@@ -135,7 +135,7 @@ export enum MessageType {
   CALL = 'call'
 }
 
-// Call interfaces
+// Call interfaces - matching backend DTOs
 export interface ICallOffer {
   callId: string;
   chatId: string;
@@ -163,6 +163,49 @@ export interface IIceCandidate {
   candidate: any;
 }
 
+// Backend response interfaces
+export interface IIncomingCall {
+  callId: string;
+  chatId: string;
+  callerId: string;
+  callerName: string;
+  offer: any;
+  timestamp: Date;
+}
+
+export interface ICallAnswered {
+  callId: string;
+  answerId: string;
+  answerName: string;
+  answer: any;
+  timestamp: Date;
+}
+
+export interface ICallRejected {
+  callId: string;
+  rejectedBy: string;
+  reason: string;
+  timestamp: Date;
+}
+
+export interface ICallEnded {
+  callId: string;
+  endedBy: string;
+  timestamp: Date;
+}
+
+export interface ICallOfferSent {
+  callId: string;
+  targetUserId: string;
+  timestamp: Date;
+}
+
+export interface ICallFailed {
+  callId: string;
+  reason: string;
+  timestamp: Date;
+}
+
 // Socket event types
 export interface IChatSocketEvents {
   'connected': (data: { userId: string; message: string; timestamp: Date }) => void;
@@ -180,10 +223,12 @@ export interface IChatSocketEvents {
   'user:online': (data: { userId: string; timestamp: Date }) => void;
   'user:offline': (data: { userId: string; timestamp: Date }) => void;
   'session-changed': (data: { chatId: string; changeType: string; data: any; timestamp: Date }) => void;
-  'incoming-call': (data: { callId: string; chatId: string; callerId: string; callerName: string; offer: any; timestamp: Date }) => void;
-  'call-answered': (data: { callId: string; answerId: string; answerName: string; answer: any; timestamp: Date }) => void;
-  'call-rejected': (data: { callId: string; rejectedBy: string; reason: string; timestamp: Date }) => void;
-  'call-ended': (data: { callId: string; endedBy: string; timestamp: Date }) => void;
+  'incoming-call': (data: IIncomingCall) => void;
+  'call-answered': (data: ICallAnswered) => void;
+  'call-rejected': (data: ICallRejected) => void;
+  'call-ended': (data: ICallEnded) => void;
+  'call-offer-sent': (data: ICallOfferSent) => void;
+  'call-failed': (data: ICallFailed) => void;
   'ice-candidate': (data: { callId: string; fromUserId: string; candidate: any }) => void;
   'error': (data: { message: string }) => void;
 }

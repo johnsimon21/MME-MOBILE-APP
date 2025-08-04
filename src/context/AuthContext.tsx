@@ -1,19 +1,16 @@
-import axios from "axios";
-import { User as FirebaseUser, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { ENV } from "../config/env";
-import { auth, db } from "../config/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { AuthState, UserRegisterData } from "../interfaces/auth.interface";
-import { useRouter } from "expo-router";
-import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { User as FirebaseUser, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native";
+import { auth } from "../config/firebase";
 import api from "../infrastructure/api";
-import { IUser } from "../interfaces/user.interface";
-import { UserRole } from "../interfaces/index.interface";
+import { UserRegisterData } from "../interfaces/auth.interface";
+import { IUser, IUserAuth } from "../interfaces/user.interface";
 
 interface AuthContextProps {
-    user: IUser | null;
+    user: IUserAuth | null;
+    profile: IUser | null;
     firebaseUser: FirebaseUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -26,7 +23,8 @@ interface AuthContextProps {
     getIdToken: () => Promise<string | null>;
     forgotPassword: (email: string) => Promise<boolean>;
     resetPassword: (uid: string, newPassword: string) => Promise<boolean>;
-    fetchUser: () => Promise<void>;
+    fetchUserProfile: () => Promise<void>;
+    fetchUserAuth: () => Promise<void>;
     refreshAuth: () => Promise<void>;
 }
 
@@ -41,7 +39,8 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<IUser | null>(null);
+    const [user, setUser] = useState<IUserAuth | null>(null);
+    const [profile, setProfile] = useState<IUser | null>(null);
     const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
@@ -134,43 +133,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
             try {
                 setFirebaseUser(fbUser);
-            
+
                 if (fbUser) {
-                    console.log("🔄 Firebase user detected, fetching profile...");
-                
+                    console.log("🔄 Firebase user detected, fetching profile...", fbUser);
+
                     // Get fresh token
                     const idToken = await fbUser.getIdToken(true);
                     await AsyncStorage.setItem('@token_id', idToken);
-                
+                    console.log("✅✅✅✅ Firebase user token fetched:", idToken);
                     // Fetch user profile from backend
                     try {
                         const response = await api.get('/auth/me');
-                        console.log("✅ User profile loaded:", response.data);
-                        setUser(response.data);
-                    
+                        const user = response.data;
+                        
+                        console.log("✅ User profile loaded:", user);
+                        setUser(user);
                         // Only set initialization complete after user is fully loaded
                         setTimeout(() => {
                             setIsInitializing(false);
                         }, 100);
                     } catch (profileError: any) {
                         console.error("❌ Failed to fetch user profile:", profileError);
-                    
+
                         if (profileError?.response?.status === 401) {
                             await signOut(auth);
                             await AsyncStorage.removeItem('@token_id');
                         }
                         setUser(null);
+                        setProfile(null);
                         setIsInitializing(false);
                     }
                 } else {
                     console.log("🔄 No Firebase user, clearing state...");
                     setUser(null);
+                    setProfile(null);
                     await AsyncStorage.removeItem('@token_id');
                     setIsInitializing(false);
                 }
             } catch (error) {
                 console.error("❌ Auth state change error:", error);
                 setUser(null);
+                setProfile(null);
                 setIsInitializing(false);
             }
         });
@@ -185,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setError(null);
 
             console.log('🔄 Starting Firebase login...');
-            
+
             // Validate inputs
             if (!email?.trim() || !password?.trim()) {
                 throw new Error('Email e senha são obrigatórios');
@@ -199,8 +202,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Get ID token
             const idToken = await firebaseUser.getIdToken();
             await AsyncStorage.setItem('@token_id', idToken);
-            
-            console.log('✅ Backend verification successful');
+
+            console.log('✅ Backend Simulation verification successful');
             // Verify token with backend
             // const response = await api.post('/auth/verify-token');
             // console.log('✅ Backend verification successful:', response.data);
@@ -271,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Clear state
             setUser(null);
+            setProfile(null);
             setFirebaseUser(null);
             setError(null);
 
@@ -283,6 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('❌ Logout error:', error);
             // Force clear state even if logout fails
             setUser(null);
+            setProfile(null);
             setFirebaseUser(null);
             router.replace('/auth/LoginScreen');
         } finally {
@@ -353,7 +358,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [router, handleError]);
 
     // Enhanced fetch user function
-    const fetchUser = useCallback(async (): Promise<void> => {
+    const fetchUserAuth = useCallback(async (): Promise<void> => {
         try {
             if (!firebaseUser) {
                 console.log('⚠️ No Firebase user to fetch profile for');
@@ -363,6 +368,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('🔄 Fetching user profile...');
             const response = await api.get('/auth/me');
             setUser(response.data);
+            console.log('✅ User auth updated');
+
+        } catch (error: any) {
+            console.error('❌ Failed to fetch user:', error);
+            handleError(error, 'Fetch user failed');
+        }
+    }, [firebaseUser, handleError]);
+
+    // Enhanced fetch user function
+    const fetchUserProfile = useCallback(async (): Promise<void> => {
+        try {
+            if (!firebaseUser) {
+                console.log('⚠️ No Firebase user to fetch profile for');
+                return;
+            }
+
+            console.log('🔄 Fetching user profile...');
+            const response = await api.get(`/profile/${firebaseUser.uid}`);
+            setProfile(response.data);
             console.log('✅ User profile updated');
 
         } catch (error: any) {
@@ -383,7 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await AsyncStorage.setItem('@token_id', idToken);
 
             // Fetch fresh user data
-            await fetchUser();
+            await fetchUserAuth();
 
             console.log('✅ Authentication refreshed');
 
@@ -391,7 +415,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('❌ Failed to refresh auth:', error);
             handleError(error, 'Refresh auth failed');
         }
-    }, [firebaseUser, fetchUser, handleError]);
+    }, [firebaseUser, fetchUserAuth, handleError]);
 
     // Get ID token function
     const getIdToken = useCallback(async (): Promise<string | null> => {
@@ -406,6 +430,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const contextValue: AuthContextProps = {
         user,
+        profile,
         firebaseUser,
         isAuthenticated: !!user && !!firebaseUser,
         isLoading,
@@ -418,7 +443,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getIdToken,
         forgotPassword,
         resetPassword,
-        fetchUser,
+        fetchUserProfile,
+        fetchUserAuth,
         refreshAuth,
     };
 

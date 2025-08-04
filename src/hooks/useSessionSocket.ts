@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { ISessionResponse } from '../interfaces/sessions.interface';
+import { ENV } from '../config/env';
 
 interface SessionSocketEvents {
   'connected': (data: { userId: string; message: string; timestamp: string }) => void;
@@ -20,18 +21,24 @@ interface SessionSocketEvents {
 }
 
 export const useSessionSocket = () => {
-  const { user, getIdToken } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [socket, setSocket] = useState<typeof Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const eventListeners = useRef<Map<string, Function[]>>(new Map());
 
+  // Get WebSocket URL
+  const getSocketUrl = useCallback(() => {
+    const baseUrl = ENV.API_BASE_URL.replace('/api', '');
+    return `${baseUrl}/sessions`;
+  }, []);
+
   const connect = useCallback(async () => {
-    if (!user?.uid || socket?.connected) return;
+    if (!user?.uid || socket?.connected || !isAuthenticated) return;
 
     try {
       console.log('🔄 Connecting to session socket...');
-      
-      const newSocket = io(`http://192.168.1.103:3000/sessions`, {
+
+      const newSocket = io(getSocketUrl(), {
         query: { userId: user.uid },
         transports: ['websocket'],
         timeout: 10000,
@@ -85,7 +92,7 @@ export const useSessionSocket = () => {
           connect();
         }
       }, 2000);
-      
+
       return () => {
         clearTimeout(timer);
       };
@@ -117,7 +124,7 @@ export const useSessionSocket = () => {
 
     if (callback) {
       socket.off(event, callback);
-      
+
       // Remove from stored listeners
       const listeners = eventListeners.current.get(event) || [];
       const index = listeners.indexOf(callback);
@@ -136,7 +143,7 @@ export const useSessionSocket = () => {
       console.warn('Socket not connected, cannot emit event:', event);
       return;
     }
-    
+
     socket.emit(event, data);
   };
 

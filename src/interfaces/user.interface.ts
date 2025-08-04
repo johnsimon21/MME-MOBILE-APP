@@ -11,6 +11,28 @@ export interface IUser extends UserRegisterData {
   programs?: string[];
 }
 
+export interface IUserAuth {
+  uid: string;
+  email: string;
+  image?: string;
+  emailVerified: boolean;
+  firebaseClaims: {
+    name: string;
+    role: UserRole;
+    uid: string;
+    email: string;
+    email_verified: boolean;
+    school?: School;
+    iat: number; 
+    exp: number;
+    aud: string;
+    iss: string;
+    sub: string;
+  };
+  role?: UserRole;
+  school?: School;
+}
+
 export interface IUserFilters {
   role?: UserRole;
   school?: School;

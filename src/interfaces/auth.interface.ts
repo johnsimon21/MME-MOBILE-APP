@@ -17,6 +17,7 @@ export type FormData1 = {
   birth: Date;
   cellphone: string;
   email: string;
+  image?: string;
 };
 
 export type FormData2 = {
