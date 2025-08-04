@@ -16,18 +16,8 @@ export const useRealTimeDashboard = (refreshInterval: number = 30000) => {
   const listenersSetup = useRef(false);
 
   // Auto-refresh data periodically
-  useEffect(() => {
-    if (!isConnected || !Socket || listenersSetup.current) return;
-
-    const interval = setInterval(() => {
-      refreshDashboardStats();
-      refreshUserAnalytics();
-      refreshSessionAnalytics();
-      setLastUpdate(new Date());
-    }, refreshInterval);
-
-    return () => clearInterval(interval);
-  }, [isConnected, refreshInterval, refreshDashboardStats, refreshUserAnalytics, refreshSessionAnalytics]);
+  // Real-time updates are handled via WebSocket events only
+  // No polling needed - dashboard stats update through socket events
 
   // Update last update time when real-time stats change
   useEffect(() => {

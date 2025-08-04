@@ -6,6 +6,7 @@ import { formatMessageTime } from '@/src/utils/dateFormatter';
 import { Navbar } from '@/src/presentation/components/ui/navbar';
 import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+import { useChatSafe } from '@/src/context/ChatContext';
 import { useNotificationContext } from '@/src/context/NotificationContext';
 import { 
     INotification, 
@@ -17,6 +18,7 @@ import {
 export default function NotificationScreen() {
     const router = useRouter();
     const navigation = useNavigation();
+    const chatContext = useChatSafe();
     
     // Use notification context
     const {
@@ -33,7 +35,6 @@ export default function NotificationScreen() {
         markAsRead,
         markAllAsRead,
         deleteNotification,
-        handleNotificationAction,
         getFilteredNotifications,
     } = useNotificationContext();
 
@@ -46,55 +47,81 @@ export default function NotificationScreen() {
         return notifications.filter(n => n.category === filter);
     }, [notifications, filter]);
 
-    // Enhanced navigation handler
-    const handleNotificationTap = useCallback((notification: INotification) => {
-        // Mark as read first
-        if (!notification.isRead) {
-            markAsRead(notification.id);
-        }
+    // Enhanced navigation handler like MessagesScreen handleChatOpen
+    const handleNotificationTap = useCallback(async (notification: INotification) => {
+        try {
+            // Mark as read first
+            if (!notification.isRead) {
+                await markAsRead(notification.id);
+            }
 
-        // Handle navigation based on notification type and data
-        switch (notification.type) {
-            case NotificationType.MESSAGE_RECEIVED:
-                if (notification.data?.chatId) {
-                    router.push(`/(tabs)/messages`);
-                } else {
-                    router.push('/(tabs)/messages');
-                }
-                break;
+            // Handle navigation based on notification type and data
+            switch (notification.type) {
+                case NotificationType.MESSAGE_RECEIVED:
+                case NotificationType.FILE_SHARED:
+                    if (notification.data?.chatId && chatContext) {
+                        // Find the chat by ID like in MessagesScreen
+                        const chats = chatContext.chats || [];
+                        const targetChat = chats.find(chat => chat.id === notification.data?.chatId);
+                        
+                        if (targetChat) {
+                            // Select the chat and navigate like handleChatOpen
+                            chatContext.selectChat(targetChat);
+                            
+                            // Mark chat messages as read if there are unread messages
+                            if (targetChat.unreadCount > 0 && chatContext.markAsRead) {
+                                await chatContext.markAsRead(targetChat.id);
+                            }
 
-            case NotificationType.CALL_INCOMING:
-            case NotificationType.CALL_MISSED:
-                if (notification.data?.userId && notification.data?.userName) {
-                    router.push({
-                        pathname: '/normal-call',
-                        params: {
-                            userId: notification.data.userId.toString(),
-                            userName: notification.data.userName,
-                            userPhoto: notification.data.userPhoto || ''
+                            // Navigate to ChatScreen with the chat data
+                            // @ts-ignore
+                            navigation.navigate('/(tabs)/ChatScreen', { chat: targetChat });
+                        } else {
+                            // If chat not found, go to messages list
+                            router.push('/(tabs)/messages');
                         }
-                    });
-                }
-                break;
+                    } else {
+                        // No chat ID, go to messages list
+                        router.push('/(tabs)/messages');
+                    }
+                    break;
 
-            case NotificationType.SESSION_STARTED:
-            case NotificationType.SESSION_COMPLETED:
-            case NotificationType.SESSION_CANCELLED:
-            case NotificationType.SESSION_REMINDER:
-                router.push('/(tabs)/session');
-                break;
+                case NotificationType.CALL_INCOMING:
+                case NotificationType.CALL_MISSED:
+                    if (notification.data?.userId && notification.data?.userName) {
+                        router.push({
+                            pathname: '/normal-call',
+                            params: {
+                                userId: notification.data.userId.toString(),
+                                userName: notification.data.userName,
+                                userPhoto: notification.data.userPhoto || ''
+                            }
+                        });
+                    }
+                    break;
 
-            case NotificationType.SYSTEM_UPDATE:
-            case NotificationType.ANNOUNCEMENT:
-                // @ts-ignore
-                navigation.navigate('Settings');
-                break;
+                case NotificationType.SESSION_STARTED:
+                case NotificationType.SESSION_COMPLETED:
+                case NotificationType.SESSION_CANCELLED:
+                case NotificationType.SESSION_REMINDER:
+                    router.push('/(tabs)/session');
+                    break;
 
-            default:
-                console.log('Unknown notification type:', notification.type);
-                break;
+                case NotificationType.SYSTEM_UPDATE:
+                case NotificationType.ANNOUNCEMENT:
+                    // @ts-ignore
+                    navigation.navigate('Settings');
+                    break;
+
+                default:
+                    console.log('Unknown notification type:', notification.type);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error handling notification tap:', error);
+            Alert.alert('Erro', 'Não foi possível abrir a notificação');
         }
-    }, [markAsRead, router, navigation]);
+    }, [markAsRead, router, navigation, chatContext]);
 
     // Delete notification with confirmation
     const handleDeleteNotification = useCallback((notificationId: string) => {

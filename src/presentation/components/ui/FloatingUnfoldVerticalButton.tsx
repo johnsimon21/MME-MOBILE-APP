@@ -135,7 +135,7 @@ export function FloatingOptionsButton() {
     const NotificationBadge = ({ count }: { count: number }) => {
         if (count === 0) return null;
 
-        const displayCount = count > 99 ? '99+' : count.toString();
+        const displayCount = count > 9 ? '9+' : count.toString();
 
         return (
             <Animated.View

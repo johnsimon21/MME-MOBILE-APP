@@ -64,6 +64,7 @@ export const useNotifications = () => {
   // WebSocket callbacks
   const socketCallbacks = {
     onNewNotification: (notification: INotification) => {
+      console.log('🔔 New notification received in hook:', notification);
       setState(prev => ({
         ...prev,
         notifications: [notification, ...prev.notifications],
@@ -71,21 +72,7 @@ export const useNotifications = () => {
         total: prev.total + 1,
       }));
 
-      // Show notification alert if app is active
-      Alert.alert(
-        notification.title,
-        notification.message,
-        [
-          { text: 'Fechar', style: 'cancel' },
-          { 
-            text: 'Ver', 
-            onPress: () => {
-              // Handle navigation based on notification type
-              handleNotificationAction(notification);
-            }
-          }
-        ]
-      );
+      // UI will update automatically via state change
     },
 
     onNotificationsList: (data: NotificationsListResponse) => {
@@ -401,20 +388,10 @@ export const useNotifications = () => {
     }
 
     // Handle navigation based on notification type and data
-    // This should integrate with your router
     console.log('📱 Handling notification action:', notification);
     
-    // Add your navigation logic here based on notification.type and notification.data
-    // Example:
-    // switch (notification.type) {
-    //   case NotificationType.MESSAGE_RECEIVED:
-    //     router.push(`/chat/${notification.data?.chatId}`);
-    //     break;
-    //   case NotificationType.SESSION_STARTED:
-    //     router.push(`/session/${notification.data?.sessionId}`);
-    //     break;
-    //   // ... other cases
-    // }
+    // We need access to navigation, so this will be overridden in the screen components
+    // This is just a fallback
   }, []);
 
   // Filter notifications

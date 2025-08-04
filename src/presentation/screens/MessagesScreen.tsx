@@ -33,7 +33,8 @@ export function MessagesScreen() {
     selectChat,
     markAsRead,
     onlineUsers,
-    clearError
+    clearError,
+    refreshChats
   } = useChatContext();
 
   // Load chats when component mounts (removed - ChatContext handles this)
@@ -115,13 +116,21 @@ export function MessagesScreen() {
     }
   }, [loadChats]);
 
-  // Auto-refresh when screen comes into focus
+  // Auto-refresh when screen comes into focus (throttled to prevent excessive calls)
+  const lastFocusTime = useRef<number>(0);
   useFocusEffect(
     useCallback(() => {
-      console.log('MessagesScreen focused, refreshing chats');
-      handleRefresh();
+      const now = Date.now();
+      if (now - lastFocusTime.current > 1000) { // Throttle to once per second
+        console.log('MessagesScreen focused, refreshing chats');
+        handleRefresh();
+        lastFocusTime.current = now;
+      }
     }, [handleRefresh])
   );
+
+  // Real-time updates are handled via WebSocket in ChatContext
+  // No polling needed - all updates come through socket events
 
   if (isLoading && chats.length === 0) {
     return (

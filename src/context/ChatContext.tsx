@@ -327,6 +327,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     });
                 }
             }
+
+            // CRITICAL: Refresh chats list to update Messages screen
+            setTimeout(() => {
+                loadChats(); // Refresh chats list for Messages screen
+            }, 100);
         });
 
         on('message-sent', (data: any) => {

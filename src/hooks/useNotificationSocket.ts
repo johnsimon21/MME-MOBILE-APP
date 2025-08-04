@@ -117,6 +117,17 @@ export const useNotificationSocket = (callbacks: NotificationSocketCallbacks = {
       socket.on('connected', (data: { userId: string; message: string; unreadCount: number; timestamp: Date }) => {
         console.log('📱 Notification service connected:', data);
         setState(prev => ({ ...prev, unreadCount: data.unreadCount }));
+        
+        // Notify that connection is established
+        callbacks.onNotificationsList?.({
+          notifications: [],
+          total: 0,
+          unreadCount: data.unreadCount,
+          page: 1,
+          limit: 20,
+          totalPages: 0,
+          hasMore: false
+        });
       });
 
       socket.on('error', (data: { message: string }) => {

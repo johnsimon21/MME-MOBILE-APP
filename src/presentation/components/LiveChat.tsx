@@ -31,15 +31,9 @@ export function LiveChat({ isAdmin = false }: LiveChatProps) {
     useEffect(() => {
         if (!isAdmin) {
             // Check if admin is available (mock)
-            const checkAdminAvailability = () => {
-                const isAvailable = Math.random() > 0.3; // 70% chance admin is available
-                setIsOnline(isAvailable);
-            };
-
-            checkAdminAvailability();
-            const interval = setInterval(checkAdminAvailability, 30000); // Check every 30s
-
-            return () => clearInterval(interval);
+            // Admin availability will be determined via WebSocket presence events
+            // For now, assume admin is available (this should be replaced with real presence data)
+            setIsOnline(true);
         }
     }, [isAdmin]);
 
