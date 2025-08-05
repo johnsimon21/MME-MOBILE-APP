@@ -12,12 +12,15 @@ import {
     FlatList,
     Platform,
     SafeAreaView,
-    Dimensions
+    Dimensions,
+    Animated,
+    StatusBar
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import tw from "twrnc";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useSessionContext } from "@/src/context/SessionContext";
 import { useChatContext } from "@/src/context/ChatContext";
 import { useAuth } from "@/src/context/AuthContext";
@@ -336,29 +339,29 @@ export function SessionManagementScreen() {
         const scheduledDate = session.scheduledAt ? new Date(session.scheduledAt) : null;
 
         return (
-            <TouchableOpacity
-                style={tw`bg-white mx-4 mb-3 rounded-xl shadow-sm border border-gray-100 ${isSelected ? 'border-indigo-300 bg-indigo-50' : ''
-                    }`}
-                onPress={() => {
-                    if (selectedSessions.length > 0) {
-                        // Selection mode
-                        if (isSelected) {
-                            setSelectedSessions(prev => prev.filter(id => id !== session.id));
+            <View style={tw`mx-4 mb-4`}>
+                <TouchableOpacity
+                    style={tw`bg-white rounded-2xl shadow-lg ${isSelected ? 'border-2 border-purple-400' : 'border border-gray-100'} overflow-hidden`}
+                    onPress={() => {
+                        if (selectedSessions.length > 0) {
+                            // Selection mode
+                            if (isSelected) {
+                                setSelectedSessions(prev => prev.filter(id => id !== session.id));
+                            } else {
+                                setSelectedSessions(prev => [...prev, session.id]);
+                            }
                         } else {
-                            setSelectedSessions(prev => [...prev, session.id]);
+                            // Normal navigation
+                            handleJoinSessionChat(session);
                         }
-                    } else {
-                        // Normal navigation
-                        handleJoinSessionChat(session);
-                    }
-                }}
-                onLongPress={() => {
-                    if (!isSelected) {
-                        setSelectedSessions([session.id]);
-                    }
-                }}
-                activeOpacity={0.7}
-            >
+                    }}
+                    onLongPress={() => {
+                        if (!isSelected) {
+                            setSelectedSessions([session.id]);
+                        }
+                    }}
+                    activeOpacity={0.8}
+                >
                 <View style={tw`p-4`}>
                     {/* Header */}
                     <View style={tw`flex-row items-start justify-between mb-3`}>
@@ -473,8 +476,9 @@ export function SessionManagementScreen() {
                         </View>
                     </View>
                 </View>
-            </TouchableOpacity>
-        );
+                </TouchableOpacity>
+                </View>
+                );
     };
 
     // Stats component
@@ -485,40 +489,48 @@ export function SessionManagementScreen() {
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={tw`mb-4`}
-                contentContainerStyle={tw`px-4`}
+                style={tw`mb-2 max-h-20`}
+                contentContainerStyle={tw`px-2 justify-center items-center w-full`}
             >
-                <View style={tw`flex-row`}>
+                <View style={tw`flex-row justify-center items-center max-h-fit`}>
                     <LinearGradient
-                        colors={['#4F46E5', '#7C3AED']}
-                        style={tw`w-32 h-20 rounded-xl p-3 mr-3 justify-between`}
+                        colors={['rgba(79,70,229,1)', 'rgba(124,58,237,0.5)']}
+                        style={tw`w-21 h-15 rounded-xl p-3 mr-2 justify-between border border-white border-opacity-20`}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <Text style={tw`text-white text-sm font-medium`}>Total</Text>
-                        <Text style={tw`text-white text-2xl font-bold`}>{stats.totalSessions}</Text>
+                        <Text style={tw`text-white text-xs opacity-90`}>Total</Text>
+                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.totalSessions}</Text>
                     </LinearGradient>
 
                     <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        style={tw`w-32 h-20 rounded-xl p-3 mr-3 justify-between`}
+                        colors={['rgba(16,185,129,1)', 'rgba(5,150,105,0.5)']}
+                        style={tw`w-21 h-15 rounded-xl p-3 mr-2 justify-between border border-white border-opacity-20`}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <Text style={tw`text-white text-sm font-medium`}>Ativas</Text>
-                        <Text style={tw`text-white text-2xl font-bold`}>{stats.activeSessions || 0}</Text>
+                        <Text style={tw`text-white text-xs opacity-90`}>Ativas</Text>
+                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.activeSessions || 0}</Text>
                     </LinearGradient>
 
                     <LinearGradient
-                        colors={['#F59E0B', '#D97706']}
-                        style={tw`w-32 h-20 rounded-xl p-3 mr-3 justify-between`}
+                        colors={['rgba(245,158,11,1)', 'rgba(217,119,6,0.5)']}
+                        style={tw`w-21 h-15 rounded-xl p-3 mr-2 justify-between border border-white border-opacity-20`}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <Text style={tw`text-white text-sm font-medium`}>Concluídas</Text>
-                        <Text style={tw`text-white text-2xl font-bold`}>{stats.completedSessions}</Text>
+                        <Text style={tw`text-white text-xs opacity-90`}>Concluídas</Text>
+                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.completedSessions}</Text>
                     </LinearGradient>
 
                     <LinearGradient
-                        colors={['#EF4444', '#DC2626']}
-                        style={tw`w-32 h-20 rounded-xl p-3 mr-3 justify-between`}
+                        colors={['rgba(239,68,68,1)', 'rgba(220,38,38,0.5)']}
+                        style={tw`w-21 h-15 rounded-xl p-3 justify-between border border-white border-opacity-20`}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <Text style={tw`text-white text-sm font-medium`}>Taxa (%)</Text>
-                        <Text style={tw`text-white text-2xl font-bold`}>{stats.completionRate || 0}%</Text>
+                        <Text style={tw`text-white text-xs opacity-90`}>Taxa (%)</Text>
+                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.completionRate || 0}%</Text>
                     </LinearGradient>
                 </View>
             </ScrollView>
@@ -1021,65 +1033,77 @@ export function SessionManagementScreen() {
 
     return (
         <SafeAreaView style={tw`flex-1 bg-gray-50`}>
+            <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
             <Navbar title="Sesões" />
 
-            {/* Header */}
-            <View style={tw`bg-white px-4 py-3 border-b border-gray-200`}>
-                <View style={tw`flex-row items-center justify-between mb-4`}>
-                    <Text style={tw`text-xl font-bold text-gray-800`}>
-                        Gerenciar Sessões
-                    </Text>
+            {/* Enhanced Header with Gradient */}
+            <LinearGradient
+                colors={['#667eea', '#764ba2']}
+                style={tw`px-4 py-6`}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+                <View style={tw`flex-row items-center justify-between mb-6`}>
+                    <View style={tw`flex-1`}>
+                        <Text style={tw`text-2xl font-bold text-white mb-1`}>
+                            Gerenciar Sessões
+                        </Text>
+                        <Text style={tw`text-indigo-100 text-sm`}>
+                            {filteredSessions.length} sessão(ões) encontrada(s)
+                        </Text>
+                    </View>
 
                     <View style={tw`flex-row items-center`}>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             onPress={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-                            style={tw`mr-3 p-2`}
+                            style={tw`mr-3 p-3 bg-white bg-opacity-20 rounded-xl`}
                         >
                             <Ionicons
                                 name={viewMode === 'list' ? 'grid' : 'list'}
                                 size={20}
-                                color="#4F46E5"
+                                color="white"
                             />
-                        </TouchableOpacity>
-
+                        </TouchableOpacity> */}
+ 
                         <TouchableOpacity
                             onPress={() => setShowCreateModal(true)}
-                            style={tw`bg-indigo-500 px-4 py-2 rounded-lg flex-row items-center`}
+                            style={tw`bg-white px-3 py-3 rounded-xl flex-row items-center shadow-lg`}
                         >
-                            <Ionicons name="add" size={20} color="white" />
-                            <Text style={tw`text-white font-medium ml-1`}>Nova</Text>
+                            <Ionicons name="add" size={20} color="#667eea" />
+                            <Text style={tw`text-purple-600 font-semibold ml-2`}>Nova</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Search Bar */}
-                <View style={tw`flex-row items-center mb-3`}>
-                    <View style={tw`flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mr-3`}>
-                        <Ionicons name="search" size={20} color="#6B7280" />
+                {/* Enhanced Search Bar */}
+                <View style={tw`flex-row items-center`}>
+                    <View style={tw`flex-1 flex-row items-center bg-white bg-opacity-30 rounded-2xl px-4 py-3 mr-3 border border-white border-opacity-20`}>
+                        <Ionicons name="search" size={20} color="white" />
                         <TextInput
-                            style={tw`flex-1 ml-2 text-gray-700`}
+                            style={tw`flex-1 ml-3 text-white text-base`}
                             placeholder="Buscar sessões..."
                             value={filters.search}
                             onChangeText={(text) => setFilters(prev => ({ ...prev, search: text }))}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor="rgba(255,255,255,0.7)"
                         />
                         {filters.search.length > 0 && (
                             <TouchableOpacity
                                 onPress={() => setFilters(prev => ({ ...prev, search: '' }))}
+                                style={tw`p-1`}
                             >
-                                <Ionicons name="close-circle" size={20} color="#6B7280" />
+                                <Ionicons name="close-circle" size={20} color="white" />
                             </TouchableOpacity>
                         )}
                     </View>
 
                     <TouchableOpacity
                         onPress={() => setShowFilterModal(true)}
-                        style={tw`bg-gray-100 p-2 rounded-lg`}
+                        style={tw`bg-white bg-opacity-20 p-3 rounded-xl border border-white border-opacity-20`}
                     >
-                        <Ionicons name="options" size={20} color="#4F46E5" />
+                        <Ionicons name="options" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </View>
+            </LinearGradient>
 
             {/* Current session indicator */}
             {currentSession && (
