@@ -1,255 +1,350 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { SupportTicket, FAQ, ChatMessage } from '@/src/types/support.types';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useTickets } from '../hooks/useTickets';
+import { useSupportChat } from '../hooks/useSupportChat';
+import { useFAQs } from '../hooks/useFAQs';
+import { useSupportAdmin } from '../hooks/useSupportAdmin';
+import {
+  // Ticket types
+  ITicket,
+  ITicketDetails,
+  ICreateTicketRequest,
+  IUpdateTicketRequest,
+  IUpdateTicketStatusRequest,
+  IAddTicketMessageRequest,
+  TicketFilters,
+  
+  // Support Chat types
+  ISupportChatSession,
+  ISupportChatMessage,
+  IStartChatSessionRequest,
+  ISendChatMessageRequest,
+  ICloseChatSessionRequest,
+  SupportChatFilters,
+  
+  // FAQ types
+  IFAQ,
+  ICreateFAQRequest,
+  IUpdateFAQRequest,
+  FAQFilters,
+  
+  // Admin types
+  ISupportStats,
+  IAdminUsersResponse,
+} from '../interfaces/support.interface';
 
 interface SupportContextType {
-    // Tickets
-    tickets: SupportTicket[];
-    createTicket: (ticketData: Partial<SupportTicket>) => Promise<void>;
-    updateTicket: (ticket: SupportTicket) => void;
-    getFilteredTickets: (searchQuery: string, status?: string) => SupportTicket[];
-    
-    // FAQs
-    faqs: FAQ[];
-    updateFAQHelpful: (faqId: string, helpful: number) => void;
-    getFilteredFAQs: (searchQuery: string, category: string) => FAQ[];
-    addFAQ: (faq: Partial<FAQ>) => void;
-    updateFAQ: (faqId: string, faq: Partial<FAQ>) => void;
-    deleteFAQ: (faqId: string) => void;
-    
-    // Chat
-    chatMessages: ChatMessage[];
-    sendChatMessage: (message: string) => void;
+  // ========================================
+  // TICKETS
+  // ========================================
+  tickets: {
+    // State
+    tickets: ITicket[];
+    currentTicket: ITicketDetails | null;
+    isLoading: boolean;
+    isRefreshing: boolean;
+    isCreating: boolean;
+    isUpdating: boolean;
+    error: string | null;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasMore: boolean;
+    stats: {
+      open: number;
+      inProgress: number;
+      resolved: number;
+      closed: number;
+    } | null;
+    isSocketConnected: boolean;
+
+    // Actions
+    loadTickets: (filters?: TicketFilters, page?: number, refresh?: boolean) => Promise<void>;
+    loadMore: () => void;
+    refresh: () => void;
+    createTicket: (ticketData: ICreateTicketRequest, files?: File[]) => Promise<ITicket>;
+    getTicketDetails: (ticketId: string) => Promise<ITicketDetails>;
+    updateTicket: (ticketId: string, updateData: IUpdateTicketRequest) => Promise<ITicket>;
+    updateTicketStatus: (ticketId: string, statusData: IUpdateTicketStatusRequest) => Promise<ITicket>;
+    addTicketMessage: (ticketId: string, messageData: IAddTicketMessageRequest, files?: File[]) => Promise<{ message: string }>;
+    assignTicket: (ticketId: string, assigneeId: string) => Promise<ITicket>;
+    leaveCurrentTicket: () => void;
+    getFilteredTickets: (filters: TicketFilters) => ITicket[];
+    connectSocket: () => void;
+    disconnectSocket: () => void;
+  };
+
+  // ========================================
+  // SUPPORT CHAT
+  // ========================================
+  chat: {
+    // State
+    sessions: ISupportChatSession[];
+    currentSession: ISupportChatSession | null;
+    messages: ISupportChatMessage[];
+    isLoading: boolean;
+    isRefreshing: boolean;
+    isSendingMessage: boolean;
+    isStartingSession: boolean;
+    error: string | null;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasMore: boolean;
+    stats: {
+      waiting: number;
+      active: number;
+      closed: number;
+      averageWaitTime: number;
+      averageResponseTime: number;
+    } | null;
+    typingUsers: Map<string, { isTyping: boolean; timestamp: Date }>;
+    isSocketConnected: boolean;
+
+    // Actions
+    loadSessions: (page?: number, limit?: number, status?: string, refresh?: boolean) => Promise<void>;
+    loadMore: () => void;
+    refresh: () => void;
+    startChatSession: (sessionData: IStartChatSessionRequest) => Promise<ISupportChatSession>;
+    joinSession: (sessionId: string) => Promise<ISupportChatSession>;
+    sendMessage: (sessionId: string, message: string) => Promise<void>;
+    startTyping: (sessionId: string) => void;
+    stopTyping: (sessionId: string) => void;
+    closeChatSession: (sessionId: string, closeData: ICloseChatSessionRequest) => Promise<ISupportChatSession>;
+    leaveCurrentSession: () => void;
+    getFilteredSessions: (filters: SupportChatFilters) => ISupportChatSession[];
+    getTypingUsers: () => string[];
+    connectSocket: () => void;
+    disconnectSocket: () => void;
+  };
+
+  // ========================================
+  // FAQS
+  // ========================================
+  faqs: {
+    // State
+    faqs: IFAQ[];
+    currentFAQ: IFAQ | null;
+    isLoading: boolean;
+    isRefreshing: boolean;
+    isCreating: boolean;
+    isUpdating: boolean;
+    isVoting: boolean;
+    error: string | null;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasMore: boolean;
+    categories: Array<{
+      category: string;
+      count: number;
+    }>;
+
+    // Actions
+    loadFAQs: (filters?: FAQFilters, page?: number, refresh?: boolean) => Promise<void>;
+    loadMore: () => void;
+    refresh: () => void;
+    createFAQ: (faqData: ICreateFAQRequest) => Promise<IFAQ>;
+    getFAQDetails: (faqId: string) => Promise<IFAQ>;
+    updateFAQ: (faqId: string, updateData: IUpdateFAQRequest) => Promise<IFAQ>;
+    deleteFAQ: (faqId: string) => Promise<void>;
+    voteFAQ: (faqId: string, isHelpful: boolean) => Promise<void>;
+    clearCurrentFAQ: () => void;
+    getFilteredFAQs: (filters: FAQFilters) => IFAQ[];
+    getFAQCategories: () => Array<{ category: string; count: number }>;
+    getPopularFAQs: (limit?: number) => IFAQ[];
+    getRecentFAQs: (limit?: number) => IFAQ[];
+  };
+
+  // ========================================
+  // ADMIN
+  // ========================================
+  admin: {
+    // State
+    stats: ISupportStats | null;
+    adminUsers: IAdminUsersResponse | null;
+    waitingSessions: ISupportChatSession[];
+    isLoadingStats: boolean;
+    isLoadingUsers: boolean;
+    isLoadingSessions: boolean;
+    isRefreshing: boolean;
+    error: string | null;
+    isSocketConnected: boolean;
+    onlineAdmins: string[];
+    isAdmin: boolean;
+
+    // Actions
+    loadStats: (period?: 'day' | 'week' | 'month' | 'year', refresh?: boolean) => Promise<void>;
+    loadAdminUsers: (page?: number, limit?: number, search?: string, refresh?: boolean) => Promise<void>;
+    loadWaitingSessions: () => void;
+    assignSession: (sessionId: string) => Promise<void>;
+    refreshAll: () => Promise<void>;
+    getStatsSummary: () => any;
+    getTicketsByCategory: () => Array<{ category: string; count: number; percentage: number }>;
+    getTicketsByPriority: () => Array<{ priority: string; count: number; percentage: number }>;
+    connectSocket: () => void;
+    disconnectSocket: () => void;
+  };
 }
 
-const SupportContext = createContext<SupportContextType | undefined>(undefined);
+const SupportContext = createContext<SupportContextType | null>(null);
 
-export function SupportProvider({ children }: { children: ReactNode }) {
-    // Sample data
-    const [tickets, setTickets] = useState<SupportTicket[]>([
-        {
-            id: '1',
-            title: 'Problema de Login',
-            description: 'Não consigo fazer login na minha conta',
-            status: 'open',
-            priority: 'high',
-            category: 'Conta',
-            userId: '1',
-            userName: 'João Silva',
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-            messages: [
-                {
-                    id: '1',
-                    message: 'Não consigo fazer login na minha conta. Aparece erro de senha incorreta.',
-                    sender: 'user',
-                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-                }
-            ]
-        },
-        {
-            id: '2',
-            title: 'Erro na Sessão',
-            description: 'A sessão não está carregando corretamente',
-            status: 'in-progress',
-            priority: 'medium',
-            category: 'Sessões',
-            userId: '2',
-            userName: 'Maria Santos',
-            createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            messages: [
-                {
-                    id: '2',
-                    message: 'A sessão não está carregando. Fica na tela de loading.',
-                    sender: 'user',
-                    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: '3',
-                    message: 'Vou verificar o problema. Pode tentar limpar o cache do app?',
-                    sender: 'admin',
-                    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-                }
-            ]
-        }
-    ]);
-
-    const [faqs, setFaqs] = useState<FAQ[]>([
-        {
-            id: '1',
-            question: 'Como redefinir minha senha?',
-            answer: 'Para redefinir sua senha, vá em Configurações > Conta > Alterar Senha. Você receberá um email com instruções.',
-            category: 'Conta',
-            helpful: 15
-        },
-        {
-            id: '2',
-            question: 'Como agendar uma sessão?',
-            answer: 'Para agendar uma sessão, acesse a aba "Gerenciamento de Sessões" e clique em "Nova Sessão". Escolha o participante e a data desejada.',
-            category: 'Sessões',
-            helpful: 23
-        },
-        {
-            id: '3',
-            question: 'O app não está funcionando. O que fazer?',
-            answer: 'Primeiro, tente fechar e abrir o app novamente. Se o problema persistir, verifique sua conexão com a internet e reinicie o dispositivo.',
-            category: 'Técnico',
-            helpful: 8
-        }
-    ]);
-
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-        {
-            id: '1',
-            message: 'Olá! Preciso de ajuda com minha conta.',
-            sender: 'user',
-            senderName: 'João Silva',
-            timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString()
-        },
-        {
-            id: '2',
-            message: 'Olá João! Claro, posso ajudá-lo. Qual é o problema específico?',
-            sender: 'admin',
-            senderName: 'Suporte',
-            timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString()
-        }
-    ]);
-
-    // Ticket functions
-    const createTicket = async (ticketData: Partial<SupportTicket>) => {
-        const newTicket: SupportTicket = {
-            id: Date.now().toString(),
-            title: ticketData.title || '',
-            description: ticketData.description || '',
-            status: 'open',
-            priority: ticketData.priority || 'medium',
-            category: ticketData.category || 'Geral',
-            userId: ticketData.userId || '1',
-            userName: ticketData.userName || 'Usuário',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            messages: [
-                {
-                    id: Date.now().toString(),
-                    message: ticketData.description || '',
-                    sender: 'user',
-                    timestamp: new Date().toISOString()
-                }
-            ]
-        };
-
-        setTickets(prev => [newTicket, ...prev]);
-    };
-
-    const updateTicket = (updatedTicket: SupportTicket) => {
-        setTickets(prev => prev.map(ticket => 
-            ticket.id === updatedTicket.id ? updatedTicket : ticket
-        ));
-    };
-
-    const getFilteredTickets = (searchQuery: string, status?: string) => {
-        return tickets.filter(ticket => {
-            const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesStatus = !status || status === 'all' || ticket.status === status;
-            return matchesSearch && matchesStatus;
-        });
-    };
-
-    // FAQ functions
-    const addFAQ = (faqData: Partial<FAQ>) => {
-        const newFAQ: FAQ = {
-            id: Date.now().toString(),
-            question: faqData.question || '',
-            answer: faqData.answer || '',
-            category: faqData.category || 'Geral',
-            helpful: 0
-        };
-
-        setFaqs(prev => [newFAQ, ...prev]);
-    };
-
-    const updateFAQ = (faqId: string, faqData: Partial<FAQ>) => {
-        setFaqs(prev => prev.map(faq => 
-            faq.id === faqId ? { ...faq, ...faqData } : faq
-        ));
-    };
-
-    const deleteFAQ = (faqId: string) => {
-        setFaqs(prev => prev.filter(faq => faq.id !== faqId));
-    };
-
-    const updateFAQHelpful = (faqId: string, helpful: number) => {
-        setFaqs(prev => prev.map(faq => 
-            faq.id === faqId ? { ...faq, helpful } : faq
-        ));
-    };
-
-        const getFilteredFAQs = (searchQuery: string, category: string) => {
-        return faqs.filter(faq => {
-            const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = category === 'all' || faq.category === category;
-            return matchesSearch && matchesCategory;
-        });
-    };
-
-    // Chat functions
-    const sendChatMessage = (message: string) => {
-        const newMessage: ChatMessage = {
-            id: Date.now().toString(),
-            message,
-            sender: 'user', // This would be determined by user role
-            senderName: 'Usuário', // This would come from auth context
-            timestamp: new Date().toISOString()
-        };
-
-        setChatMessages(prev => [...prev, newMessage]);
-
-        // Simulate admin response (for demo purposes)
-        setTimeout(() => {
-            const adminResponse: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                message: 'Obrigado pela sua mensagem. Vou analisar e responder em breve.',
-                sender: 'admin',
-                senderName: 'Suporte',
-                timestamp: new Date().toISOString()
-            };
-            setChatMessages(prev => [...prev, adminResponse]);
-        }, 2000);
-    };
-
-    const value: SupportContextType = {
-        // Tickets
-        tickets,
-        createTicket,
-        updateTicket,
-        getFilteredTickets,
-        
-        // FAQs
-        faqs,
-        updateFAQHelpful,
-        getFilteredFAQs,
-        addFAQ,
-        updateFAQ,
-        deleteFAQ,
-        
-        // Chat
-        chatMessages,
-        sendChatMessage
-    };
-
-    return (
-        <SupportContext.Provider value={value}>
-            {children}
-        </SupportContext.Provider>
-    );
+interface SupportProviderProps {
+  children: ReactNode;
 }
 
-export function useSupportContext() {
-    const context = useContext(SupportContext);
-    if (context === undefined) {
-        throw new Error('useSupportContext must be used within a SupportProvider');
-    }
-    return context;
+export function SupportProvider({ children }: SupportProviderProps) {
+  const ticketsHook = useTickets();
+  const chatHook = useSupportChat();
+  const faqsHook = useFAQs();
+  const adminHook = useSupportAdmin();
+
+  const contextValue: SupportContextType = {
+    tickets: {
+      // State
+      tickets: ticketsHook.tickets,
+      currentTicket: ticketsHook.currentTicket,
+      isLoading: ticketsHook.isLoading,
+      isRefreshing: ticketsHook.isRefreshing,
+      isCreating: ticketsHook.isCreating,
+      isUpdating: ticketsHook.isUpdating,
+      error: ticketsHook.error,
+      total: ticketsHook.total,
+      page: ticketsHook.page,
+      limit: ticketsHook.limit,
+      totalPages: ticketsHook.totalPages,
+      hasMore: ticketsHook.hasMore,
+      stats: ticketsHook.stats,
+      isSocketConnected: ticketsHook.isSocketConnected,
+
+      // Actions
+      loadTickets: ticketsHook.loadTickets,
+      loadMore: ticketsHook.loadMore,
+      refresh: ticketsHook.refresh,
+      createTicket: ticketsHook.createTicket,
+      getTicketDetails: ticketsHook.getTicketDetails,
+      updateTicket: ticketsHook.updateTicket,
+      updateTicketStatus: ticketsHook.updateTicketStatus,
+      addTicketMessage: ticketsHook.addTicketMessage,
+      assignTicket: ticketsHook.assignTicket,
+      leaveCurrentTicket: ticketsHook.leaveCurrentTicket,
+      getFilteredTickets: ticketsHook.getFilteredTickets,
+      connectSocket: ticketsHook.connectSocket,
+      disconnectSocket: ticketsHook.disconnectSocket,
+    },
+
+    chat: {
+      // State
+      sessions: chatHook.sessions,
+      currentSession: chatHook.currentSession,
+      messages: chatHook.messages,
+      isLoading: chatHook.isLoading,
+      isRefreshing: chatHook.isRefreshing,
+      isSendingMessage: chatHook.isSendingMessage,
+      isStartingSession: chatHook.isStartingSession,
+      error: chatHook.error,
+      total: chatHook.total,
+      page: chatHook.page,
+      limit: chatHook.limit,
+      totalPages: chatHook.totalPages,
+      hasMore: chatHook.hasMore,
+      stats: chatHook.stats,
+      typingUsers: chatHook.typingUsers,
+      isSocketConnected: chatHook.isSocketConnected,
+
+      // Actions
+      loadSessions: chatHook.loadSessions,
+      loadMore: chatHook.loadMore,
+      refresh: chatHook.refresh,
+      startChatSession: chatHook.startChatSession,
+      joinSession: chatHook.joinSession,
+      sendMessage: chatHook.sendMessage,
+      startTyping: chatHook.startTyping,
+      stopTyping: chatHook.stopTyping,
+      closeChatSession: chatHook.closeChatSession,
+      leaveCurrentSession: chatHook.leaveCurrentSession,
+      getFilteredSessions: chatHook.getFilteredSessions,
+      getTypingUsers: chatHook.getTypingUsers,
+      connectSocket: chatHook.connectSocket,
+      disconnectSocket: chatHook.disconnectSocket,
+    },
+
+    faqs: {
+      // State
+      faqs: faqsHook.faqs,
+      currentFAQ: faqsHook.currentFAQ,
+      isLoading: faqsHook.isLoading,
+      isRefreshing: faqsHook.isRefreshing,
+      isCreating: faqsHook.isCreating,
+      isUpdating: faqsHook.isUpdating,
+      isVoting: faqsHook.isVoting,
+      error: faqsHook.error,
+      total: faqsHook.total,
+      page: faqsHook.page,
+      limit: faqsHook.limit,
+      totalPages: faqsHook.totalPages,
+      hasMore: faqsHook.hasMore,
+      categories: faqsHook.categories,
+
+      // Actions
+      loadFAQs: faqsHook.loadFAQs,
+      loadMore: faqsHook.loadMore,
+      refresh: faqsHook.refresh,
+      createFAQ: faqsHook.createFAQ,
+      getFAQDetails: faqsHook.getFAQDetails,
+      updateFAQ: faqsHook.updateFAQ,
+      deleteFAQ: faqsHook.deleteFAQ,
+      voteFAQ: faqsHook.voteFAQ,
+      clearCurrentFAQ: faqsHook.clearCurrentFAQ,
+      getFilteredFAQs: faqsHook.getFilteredFAQs,
+      getFAQCategories: faqsHook.getFAQCategories,
+      getPopularFAQs: faqsHook.getPopularFAQs,
+      getRecentFAQs: faqsHook.getRecentFAQs,
+    },
+
+    admin: {
+      // State
+      stats: adminHook.stats,
+      adminUsers: adminHook.adminUsers,
+      waitingSessions: adminHook.waitingSessions,
+      isLoadingStats: adminHook.isLoadingStats,
+      isLoadingUsers: adminHook.isLoadingUsers,
+      isLoadingSessions: adminHook.isLoadingSessions,
+      isRefreshing: adminHook.isRefreshing,
+      error: adminHook.error,
+      isSocketConnected: adminHook.isSocketConnected,
+      onlineAdmins: adminHook.onlineAdmins,
+      isAdmin: adminHook.isAdmin,
+
+      // Actions
+      loadStats: adminHook.loadStats,
+      loadAdminUsers: adminHook.loadAdminUsers,
+      loadWaitingSessions: adminHook.loadWaitingSessions,
+      assignSession: adminHook.assignSession,
+      refreshAll: adminHook.refreshAll,
+      getStatsSummary: adminHook.getStatsSummary,
+      getTicketsByCategory: adminHook.getTicketsByCategory,
+      getTicketsByPriority: adminHook.getTicketsByPriority,
+      connectSocket: adminHook.connectSocket,
+      disconnectSocket: adminHook.disconnectSocket,
+    },
+  };
+
+  return (
+    <SupportContext.Provider value={contextValue}>
+      {children}
+    </SupportContext.Provider>
+  );
 }
+
+export function useSupport() {
+  const context = useContext(SupportContext);
+  if (!context) {
+    throw new Error('useSupport must be used within a SupportProvider');
+  }
+  return context;
+}
+
+export default SupportContext;

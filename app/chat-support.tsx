@@ -4,99 +4,47 @@ import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-
-interface ChatMessage {
-    id: string;
-    message: string;
-    sender: 'user' | 'support';
-    senderName: string;
-    timestamp: string;
-    type?: 'text' | 'system';
-}
+import { useSupport } from '../src/context/SupportContext';
+import { ISupportChatMessage } from '../src/interfaces/support.interface';
 
 export default function ChatSupportScreen() {
     const router = useRouter();
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            id: '1',
-            message: 'Olá! Bem-vindo ao suporte da MME. Como posso ajudá-lo hoje?',
-            sender: 'support',
-            senderName: 'Ana - Suporte',
-            timestamp: new Date().toISOString(),
-            type: 'text'
-        }
-    ]);
     const [newMessage, setNewMessage] = useState('');
-    const [isOnline, setIsOnline] = useState(true);
-    const [isTyping, setIsTyping] = useState(false);
-    const [supportAgent] = useState('Ana - Suporte');
     const flatListRef = useRef<FlatList>(null);
+    const { chat } = useSupport();
     
     // Header animation
     const headerHeight = useRef(new Animated.Value(1)).current;
     const lastScrollY = useRef(0);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
-        // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        if (messages.length > 0) {
+        if (chat.messages.length > 0) {
             flatListRef.current?.scrollToEnd({ animated: true });
         }
-    }, [messages]);
+    }, [chat.messages]);
 
-    // Simulate support agent typing
+    // Initialize chat session if needed
     useEffect(() => {
-        if (messages.length > 1) {
-            const timer = setTimeout(() => {
-                setIsTyping(true);
-                setTimeout(() => {
-                    setIsTyping(false);
-                    // Add automated response
-                    const responses = [
-                        'Entendi sua questão. Deixe-me verificar isso para você.',
-                        'Posso ajudá-lo com mais detalhes sobre isso.',
-                        'Essa é uma ótima pergunta! Vou explicar passo a passo.',
-                        'Obrigada por aguardar. Aqui está a informação que você precisa.'
-                    ];
-                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                    
-                    setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        message: randomResponse,
-                        sender: 'support',
-                        senderName: supportAgent,
-                        timestamp: new Date().toISOString(),
-                        type: 'text'
-                    }]);
-                }, 2000);
-            }, 3000);
-
-            return () => clearTimeout(timer);
+        if (!chat.currentSession) {
+            // Start a chat session for the user
+            chat.startChatSession({
+                subject: 'Suporte ao usuário',
+                priority: 'normal' as any
+            }).catch(console.error);
         }
-    }, [messages.length]);
+    }, []);
 
-    const handleSendMessage = () => {
-        if (!newMessage.trim()) return;
+    const handleSendMessage = async () => {
+        if (!newMessage.trim() || !chat.currentSession) return;
 
-        if (!isOnline) {
-            Alert.alert(
-                'Suporte Offline', 
-                'O suporte não está disponível no momento. Tente novamente mais tarde.'
-            );
-            return;
+        try {
+            await chat.sendMessage(chat.currentSession.id, newMessage);
+            setNewMessage('');
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível enviar a mensagem. Tente novamente.');
         }
-
-        const userMessage: ChatMessage = {
-            id: Date.now().toString(),
-            message: newMessage,
-            sender: 'user',
-            senderName: 'Você',
-            timestamp: new Date().toISOString(),
-            type: 'text'
-        };
-
-        setMessages(prev => [...prev, userMessage]);
-        setNewMessage('');
     };
 
     // Handle scroll for header animation
@@ -125,15 +73,15 @@ export default function ChatSupportScreen() {
         lastScrollY.current = currentScrollY;
     };
 
-    const formatTime = (timestamp: string) => {
+    const formatTime = (timestamp: Date) => {
         return new Date(timestamp).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit'
         });
     };
 
-    const MessageItem = ({ message }: { message: ChatMessage }) => {
-        const isUser = message.sender === 'user';
+    const MessageItem = ({ message }: { message: ISupportChatMessage }) => {
+        const isUser = message.sender.senderType === 'user';
         
         return (
             <View style={tw`mb-4 ${isUser ? 'items-end' : 'items-start'}`}>
@@ -148,15 +96,18 @@ export default function ChatSupportScreen() {
                 </View>
                 <View style={tw`flex-row items-center mt-1 ${isUser ? 'flex-row-reverse' : ''}`}>
                     <Text style={tw`text-xs text-gray-500`}>
-                        {message.senderName} • {formatTime(message.timestamp)}
+                        {message.sender.fullName} • {formatTime(message.timestamp)}
                     </Text>
                 </View>
             </View>
         );
     };
 
-    const TypingIndicator = () => (
-        isTyping && (
+    const TypingIndicator = () => {
+        const typingUsers = chat.getTypingUsers();
+        const isTyping = typingUsers.length > 0;
+        
+        return isTyping ? (
             <View style={tw`items-start mb-4`}>
                 <View style={tw`bg-white rounded-tl-xl rounded-tr-xl rounded-br-xl border border-gray-200 p-4 shadow-sm`}>
                     <View style={tw`flex-row items-center`}>
@@ -173,12 +124,12 @@ export default function ChatSupportScreen() {
                                 />
                             ))}
                         </View>
-                        <Text style={tw`text-gray-500 text-sm ml-2`}>{supportAgent} está digitando...</Text>
+                        <Text style={tw`text-gray-500 text-sm ml-2`}>Suporte está digitando...</Text>
                     </View>
                 </View>
             </View>
-        )
-    );
+        ) : null;
+    };
 
     const CollapsibleHeader = () => (
         <Animated.View 
@@ -198,22 +149,19 @@ export default function ChatSupportScreen() {
                 <View style={tw`flex-row items-center justify-between`}>
                     <View style={tw`flex-row items-center`}>
                         <View style={tw`w-10 h-10 bg-blue-100 rounded-full items-center justify-center mr-3`}>
-                            <Text style={tw`text-blue-600 font-bold`}>A</Text>
+                            <Text style={tw`text-blue-600 font-bold`}>S</Text>
                         </View>
                         <View>
-                            <Text style={tw`font-bold text-gray-800`}>{supportAgent}</Text>
+                            <Text style={tw`font-bold text-gray-800`}>Suporte MME</Text>
                             <View style={tw`flex-row items-center`}>
-                                <View style={tw`w-2 h-2 ${isOnline ? 'bg-green-500' : 'bg-red-500'} rounded-full mr-2`} />
-                                <Text style={tw`text-sm ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
-                                    {isOnline ? 'Online' : 'Offline'}
+                                <View style={tw`w-2 h-2 ${chat.isSocketConnected ? 'bg-green-500' : 'bg-red-500'} rounded-full mr-2`} />
+                                <Text style={tw`text-sm ${chat.isSocketConnected ? 'text-green-600' : 'text-red-600'}`}>
+                                    {chat.isSocketConnected ? 'Online' : 'Offline'}
                                 </Text>
                             </View>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => setIsOnline(!isOnline)}
-                        style={tw`p-2`}
-                    >
+                    <TouchableOpacity style={tw`p-2`}>
                         <Feather name="more-vertical" size={20} color="#6B7280" />
                     </TouchableOpacity>
                 </View>
@@ -272,7 +220,7 @@ export default function ChatSupportScreen() {
             <View style={tw`flex-1`}>
                 <FlatList
                     ref={flatListRef}
-                    data={messages}
+                    data={chat.messages}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={tw`p-4`}
                     renderItem={({ item }) => <MessageItem message={item} />}
@@ -312,12 +260,12 @@ export default function ChatSupportScreen() {
                 
                 <View style={tw`flex-1 bg-gray-100 rounded-full px-4 py-2 flex-row items-center mr-3`}>
                     <TextInput
-                        placeholder={isOnline ? "Digite sua mensagem..." : "Suporte offline..."}
+                        placeholder={chat.isSocketConnected ? "Digite sua mensagem..." : "Suporte offline..."}
                         style={tw`flex-1 text-gray-700`}
                         value={newMessage}
                         onChangeText={setNewMessage}
                         multiline
-                        editable={isOnline}
+                        editable={chat.isSocketConnected}
                     />
                     <TouchableOpacity style={tw`ml-2`}>
                         <Feather name="smile" size={20} color="#6B7280" />
@@ -327,9 +275,9 @@ export default function ChatSupportScreen() {
                 <TouchableOpacity
                     onPress={handleSendMessage}
                     style={tw`${
-                        newMessage.trim() && isOnline ? 'bg-green-500' : 'bg-gray-300'
+                        newMessage.trim() && chat.isSocketConnected ? 'bg-green-500' : 'bg-gray-300'
                     } p-3 rounded-full`}
-                    disabled={!newMessage.trim() || !isOnline}
+                    disabled={!newMessage.trim() || !chat.isSocketConnected || chat.isSendingMessage}
                 >
                     <Feather name="send" size={20} color="white" />
                 </TouchableOpacity>

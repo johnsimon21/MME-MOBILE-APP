@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { FlatList, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import tw from 'twrnc';
 
-import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 
 interface User {
     id: number;
@@ -49,7 +49,7 @@ export function UserDrawer({ visible, onClose, onSelectUser }: UserDrawerProps) 
                 name: user.name,
                 image: user.photo,
                 messages: [], // Start with empty messages or fetch from a service
-                timestamp: new Date().toISOString(),
+                timestamp: new Date().toString(),
                 unreadCount: 0
             };
 

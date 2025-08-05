@@ -44,7 +44,7 @@ export function AdminReportsScreen() {
             // Create trend data from the dashboard analytics
             const trend: ITrendData[] = [
                 {
-                    period: formatDate(new Date().toISOString()),
+                    period: formatDate(new Date().toString()),
                     sessions: dashboardData.metrics.totalSessions,
                     completedSessions: dashboardData.metrics.completedSessions,
                     uniqueUsers: dashboardData.metrics.uniqueParticipants,

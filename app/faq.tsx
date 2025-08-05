@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, FlatList } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSupport } from '../src/context/SupportContext';
+import { IFAQ, FAQCategory } from '../src/interfaces/support.interface';
 
-interface FAQ {
-    id: string;
-    question: string;
-    answer: string;
-    category: string;
-    helpful: number;
-    notHelpful: number;
+interface FAQ extends IFAQ {
     isExpanded?: boolean;
 }
 
@@ -19,64 +15,33 @@ export default function FAQScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Todas');
-    const [faqs, setFaqs] = useState<FAQ[]>([
-        {
-            id: '1',
-            question: 'Como criar uma nova sessão?',
-            answer: 'Para criar uma nova sessão, vá até a tela de "Gerenciamento de Sessões", toque no botão "+" e selecione o usuário com quem deseja iniciar a sessão. Você pode escolher entre chat ou chamada de voz.',
-            category: 'Sessões',
-            helpful: 15,
-            notHelpful: 2,
-            isExpanded: false
-        },
-        {
-            id: '2',
-            question: 'Como enviar arquivos no chat?',
-            answer: 'No chat, toque no ícone "+" ao lado do campo de mensagem. Você pode escolher entre enviar imagens da galeria, tirar uma foto, enviar documentos ou gravar áudio.',
-            category: 'Comunicação',
-            helpful: 23,
-            notHelpful: 1,
-            isExpanded: false
-        },
-        {
-            id: '3',
-            question: 'Posso alterar minha senha?',
-            answer: 'Sim! Vá em Configurações > Conta > Alterar Senha. Você precisará inserir sua senha atual e depois a nova senha duas vezes para confirmar.',
-            category: 'Conta',
-            helpful: 18,
-            notHelpful: 0,
-            isExpanded: false
-        },
-        {
-            id: '4',
-            question: 'O que fazer se a chamada não conectar?',
-            answer: 'Verifique sua conexão com a internet. Se o problema persistir, tente reiniciar o aplicativo. Certifique-se também de que você deu permissão para o app usar o microfone.',
-            category: 'Técnico',
-            helpful: 12,
-            notHelpful: 3,
-            isExpanded: false
-        },
-        {
-            id: '5',
-            question: 'Como visualizar o histórico de sessões?',
-            answer: 'Acesse "Gerenciamento de Sessões" e use os filtros para ver sessões concluídas. Você pode ver detalhes como duração, participantes e data de cada sessão.',
-            category: 'Sessões',
-            helpful: 20,
-            notHelpful: 1,
-            isExpanded: false
-        },
-        {
-            id: '6',
-            question: 'Como ativar notificações?',
-            answer: 'Vá em Configurações > Notificações e ative os tipos de notificação que deseja receber. Certifique-se de que as notificações estão habilitadas nas configurações do seu dispositivo.',
-            category: 'Geral',
-            helpful: 14,
-            notHelpful: 2,
-            isExpanded: false
-        }
-    ]);
+    const [faqs, setFaqs] = useState<FAQ[]>([]);
+    const [categories, setCategories] = useState<string[]>(['Todas']);
+    const { faqs: faqState } = useSupport();
 
-    const categories = ['Todas', 'Conta', 'Sessões', 'Comunicação', 'Técnico', 'Geral'];
+    useEffect(() => {
+        // Load FAQs on component mount
+        faqState.loadFAQs();
+    }, []);
+
+    useEffect(() => {
+        // Map API FAQs to local state with isExpanded property
+        if (faqState.faqs) {
+            const mappedFaqs = faqState.faqs.map(faq => ({
+                ...faq,
+                isExpanded: false
+            }));
+            setFaqs(mappedFaqs);
+        }
+    }, [faqState.faqs]);
+
+    useEffect(() => {
+        // Map API categories to local state
+        if (faqState.categories) {
+            const categoryNames = ['Todas', ...faqState.categories.map(cat => cat.category)];
+            setCategories(categoryNames);
+        }
+    }, [faqState.categories]);
 
     const filteredFaqs = faqs.filter(faq => {
         const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,16 +56,14 @@ export default function FAQScreen() {
         ));
     };
 
-    const markHelpful = (id: string, isHelpful: boolean) => {
-        setFaqs(prev => prev.map(faq =>
-            faq.id === id
-                ? {
-                    ...faq,
-                    helpful: isHelpful ? faq.helpful + 1 : faq.helpful,
-                    notHelpful: !isHelpful ? faq.notHelpful + 1 : faq.notHelpful
-                }
-                : faq
-        ));
+    const markHelpful = async (id: string, isHelpful: boolean) => {
+        try {
+            await faqState.voteFAQ(id, isHelpful);
+            // Reload FAQs to get updated vote counts
+            faqState.loadFAQs();
+        } catch (error) {
+            console.error('Error voting on FAQ:', error);
+        }
     };
 
     const FAQItem = ({ item }: { item: FAQ }) => (
@@ -118,7 +81,7 @@ export default function FAQScreen() {
                             </View>
                             <View style={tw`flex-row items-center`}>
                                 <Feather name="thumbs-up" size={12} color="#10B981" />
-                                <Text style={tw`text-green-600 text-xs ml-1`}>{item.helpful}</Text>
+                                <Text style={tw`text-green-600 text-xs ml-1`}>{item.helpfulCount}</Text>
                             </View>
                         </View>
                         <Text style={tw`font-semibold text-gray-800 leading-5`}>{item.question}</Text>

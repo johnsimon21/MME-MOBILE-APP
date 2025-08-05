@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
-import { SupportTicket } from '@/src/types/support.types';
+import { UITicket } from '@/src/utils/ticketAdapters';
 import { TicketItem } from './TicketItem';
 
 interface TicketsListProps {
-    tickets: SupportTicket[];
+    tickets: UITicket[];
     searchQuery: string;
     onSearchChange: (query: string) => void;
-    onTicketPress: (ticket: SupportTicket) => void;
+    onTicketPress: (ticket: UITicket) => void;
     onNewTicket: () => void;
     isAdmin?: boolean;
 }

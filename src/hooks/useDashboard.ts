@@ -31,8 +31,8 @@ export const useDashboard = () => {
       setError(null);
 
       const params = new URLSearchParams();
-      if (query?.startDate) params.append('startDate', query.startDate.toISOString());
-      if (query?.endDate) params.append('endDate', query.endDate.toISOString());
+      if (query?.startDate) params.append('startDate', query.startDate.toString());
+      if (query?.endDate) params.append('endDate', query.endDate.toString());
       if (query?.school) params.append('school', query.school);
       if (query?.role) params.append('role', query.role);
 
@@ -97,8 +97,8 @@ export const useDashboard = () => {
       setError(null);
 
       const params = new URLSearchParams();
-      if (query?.startDate) params.append('startDate', query.startDate.toISOString());
-      if (query?.endDate) params.append('endDate', query.endDate.toISOString());
+      if (query?.startDate) params.append('startDate', query.startDate.toString());
+      if (query?.endDate) params.append('endDate', query.endDate.toString());
       if (query?.status) params.append('status', query.status);
       if (query?.mentorId) params.append('mentorId', query.mentorId);
       if (query?.subject) params.append('subject', query.subject);

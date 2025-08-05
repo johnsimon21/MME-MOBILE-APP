@@ -190,7 +190,7 @@ function UserTabNavigator() {
             iconName = "chatbubble-ellipses";
             label = "Mensagens";
             // Use the unreadCount variable to ensure re-renders
-            badge = unreadCount;
+            badge = unreadCount > 0 ? unreadCount : undefined;
           } else if (route.name === "Emparelhamento") {
             iconName = "apps";
             label = "Home";

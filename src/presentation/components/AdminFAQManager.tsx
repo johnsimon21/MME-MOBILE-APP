@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, Alert, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
-import { FAQ } from '@/src/types/support.types';
+import { IFAQ, FAQCategory } from '@/src/interfaces/support.interface';
 
 interface AdminFAQManagerProps {
-    faqs: FAQ[];
+    faqs: IFAQ[];
     searchQuery: string;
     onSearchChange: (query: string) => void;
-    onAddFAQ: (faq: Partial<FAQ>) => void;
-    onUpdateFAQ: (faqId: string, faq: Partial<FAQ>) => void;
+    onAddFAQ: (faq: Partial<IFAQ>) => void;
+    onUpdateFAQ: (faqId: string, faq: Partial<IFAQ>) => void;
     onDeleteFAQ: (faqId: string) => void;
     onUpdateHelpful: (faqId: string, helpful: number) => void;
 }
@@ -25,7 +25,7 @@ export function AdminFAQManager({
 }: AdminFAQManagerProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [showAddModal, setShowAddModal] = useState(false);
-    const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
+    const [editingFAQ, setEditingFAQ] = useState<IFAQ | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
 
     const categories = ['all', 'Conta', 'Sessões', 'Comunicação', 'Técnico', 'Geral'];
@@ -48,7 +48,7 @@ export function AdminFAQManager({
         );
     };
 
-    const AdminFAQItem = ({ faq }: { faq: FAQ }) => (
+    const AdminFAQItem = ({ faq }: { faq: IFAQ }) => (
         <View style={tw`bg-white rounded-xl mb-3 shadow-sm overflow-hidden`}>
             <View style={tw`p-4`}>
                 <View style={tw`flex-row items-start justify-between mb-2`}>
@@ -66,7 +66,7 @@ export function AdminFAQManager({
                             <View style={tw`flex-row items-center`}>
                                 <Feather name="thumbs-up" size={12} color="#10B981" />
                                 <Text style={tw`text-green-600 text-xs ml-1`}>
-                                    {faq.helpful} úteis
+                                    {faq.helpfulCount} úteis
                                 </Text>
                             </View>
                         </View>
@@ -187,9 +187,9 @@ export function AdminFAQManager({
 // FAQ Modal Component
 interface FAQModalProps {
     visible: boolean;
-    faq: FAQ | null;
+    faq: IFAQ | null;
     onClose: () => void;
-    onSave: (faq: Partial<FAQ>) => void;
+    onSave: (faq: Partial<IFAQ>) => void;
     isEditing: boolean;
 }
 
@@ -224,11 +224,11 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
             return;
         }
 
-        const faqData: Partial<FAQ> = {
+        const faqData: Partial<IFAQ> = {
             question: formData.question,
             answer: formData.answer,
-            category: formData.category,
-            helpful: isEditing ? faq?.helpful : 0
+            category: FAQCategory.GENERAL, // Default, should be mapped properly
+            helpfulCount: isEditing ? faq?.helpfulCount : 0
         };
 
         onSave(faqData);

@@ -90,6 +90,7 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
       const newSocket = io(`${ENV.API_BASE_URL}/dashboard`, {
         query: {
           userId: user.uid,
+          role: user.role,
           token: token
         },
         transports: ['websocket'],
@@ -149,8 +150,10 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
 
       newSocket.on('session-update', (data: any) => {
         console.log('📅 Session update:', data);
-        // Refresh session analytics when sessions are updated
-        refreshSessionAnalytics();
+        // Update session analytics directly instead of triggering refresh to avoid loops
+        if (data.sessionAnalytics) {
+          setSessionAnalytics(data.sessionAnalytics);
+        }
       });
 
       newSocket.on('error', (data: any) => {
@@ -248,14 +251,19 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     }
   }, [user, connect, disconnect]);
 
-  // Load initial data
+  // Load initial data only once when user becomes coordinator
   useEffect(() => {
     if (user && user.role === 'coordinator') {
-      refreshDashboardStats();
-      refreshUserAnalytics();
-      refreshSessionAnalytics();
+      // Use a timeout to prevent immediate firing on every dependency change
+      const timer = setTimeout(() => {
+        refreshDashboardStats();
+        refreshUserAnalytics();
+        refreshSessionAnalytics();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [user, refreshDashboardStats, refreshUserAnalytics, refreshSessionAnalytics]);
+  }, [user?.uid, user?.role]); // Only depend on user id and role, not the refresh functions
 
   // Cleanup on unmount
   useEffect(() => {

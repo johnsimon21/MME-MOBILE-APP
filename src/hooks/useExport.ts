@@ -24,7 +24,7 @@ export const useExport = () => {
       if (query.role) params.append('role', query.role);
       if (query.school) params.append('school', query.school);
       if (query.search) params.append('search', query.search);
-      if (query.isOnline !== undefined) params.append('isOnline', query.isOnline.toString());
+      if (query.isOnline !== undefined) params.append('nline', query.isOnline.toString());
       if (query.sortBy) params.append('sortBy', query.sortBy);
       if (query.sortOrder) params.append('sortOrder', query.sortOrder);
       if (query.includePersonalData) params.append('includePersonalData', 'true');
@@ -57,7 +57,7 @@ export const useExport = () => {
       };
 
       // Create file name with timestamp
-      const timestamp = new Date().toISOString().split('T')[0];
+      const timestamp = new Date().toString().split('T')[0];
       const fileName = `user_analytics_${timestamp}.${getFileExtension(format)}`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
@@ -141,14 +141,14 @@ export const useExport = () => {
       setExportProgress(0);
 
       const params = new URLSearchParams();
-      if (query.startDate) params.append('startDate', query.startDate.toISOString());
-      if (query.endDate) params.append('endDate', query.endDate.toISOString());
+      if (query.startDate) params.append('startDate', query.startDate.toString());
+      if (query.endDate) params.append('endDate', query.endDate.toString());
       if (query.status) params.append('status', query.status);
       if (query.mentorId) params.append('mentorId', query.mentorId);
       if (query.subject) params.append('subject', query.subject);
       if (query.school) params.append('school', query.school);
       if (query.search) params.append('search', query.search);
-      if (query.isOnline !== undefined) params.append('isOnline', query.isOnline.toString());
+      if (query.nline !== undefined) params.append('nline', query.nline.toString());
       if (query.sortBy) params.append('sortBy', query.sortBy);
       if (query.sortOrder) params.append('sortOrder', query.sortOrder);
       if (query.includePersonalData) params.append('includePersonalData', 'true');
@@ -181,7 +181,7 @@ export const useExport = () => {
       };
 
       // Create file name with timestamp
-      const timestamp = new Date().toISOString().split('T')[0];
+      const timestamp = new Date().toString().split('T')[0];
       const fileName = `session_analytics_${timestamp}.${getFileExtension(format)}`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 

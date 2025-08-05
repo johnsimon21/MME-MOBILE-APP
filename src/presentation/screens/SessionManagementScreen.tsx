@@ -1,33 +1,30 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    RefreshControl,
-    Alert,
-    ActivityIndicator,
-    TextInput,
-    Modal,
-    FlatList,
-    Platform,
-    SafeAreaView,
-    Dimensions,
-    Animated,
-    StatusBar
-} from "react-native";
+import { useAuth } from "@/src/context/AuthContext";
+import { useChatContext } from "@/src/context/ChatContext";
+import { useSessionContext } from "@/src/context/SessionContext";
+import { useConnections } from "@/src/hooks/useConnections";
+import { ChatType } from "@/src/interfaces/chat.interface";
+import { IConnectedUser } from "@/src/interfaces/connections.interface";
+import { ISessionResponse, SessionStatus, SessionType } from "@/src/interfaces/sessions.interface";
 import { Ionicons } from "@expo/vector-icons";
-import tw from "twrnc";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { useSessionContext } from "@/src/context/SessionContext";
-import { useChatContext } from "@/src/context/ChatContext";
-import { useAuth } from "@/src/context/AuthContext";
-import { useConnections } from "@/src/hooks/useConnections";
-import { SessionStatus, SessionType, ISessionResponse, ICreateSessionRequest } from "@/src/interfaces/sessions.interface";
-import { ChatType } from "@/src/interfaces/chat.interface";
-import { IConnectedUser, IConnectionResponse } from "@/src/interfaces/connections.interface";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Modal,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
+import tw from "twrnc";
 import { Navbar } from "../components/ui/navbar";
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -646,7 +643,7 @@ export function SessionManagementScreen() {
                     materials: formData.materials.length > 0 ? formData.materials : undefined,
                     type: formData.type,
                     duration: formData.duration,
-                    scheduledAt: formData.scheduledAt.toISOString(),
+                    scheduledAt: formData.scheduledAt.toString(),
                     menteeIds: formData.selectedParticipants.map(p => p.uid),
                     maxParticipants: formData.type === SessionType.GROUP ? Math.max(formData.selectedParticipants.length + 2, 5) : 1
                 });

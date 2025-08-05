@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { SupportTicket, FAQ, ChatMessage } from '@/src/types/support.types';
+import { IFAQ, ITicket, ICreateTicketRequest } from '@/src/interfaces/support.interface';
+import { ChatMessage } from '@/src/types/support.types';
+import { useCallback, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useAuthState } from './useAuthState';
 
@@ -7,14 +8,14 @@ export function useSupport() {
     const { user } = useAuth();
     const { isCoordinator } = useAuthState();
 
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
-    const [faqs, setFaqs] = useState<FAQ[]>([]);
+    const [tickets, setTickets] = useState<ITicket[]>([]);
+    const [faqs, setFaqs] = useState<IFAQ[]>([]);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Ticket operations
-    const createTicket = useCallback(async (ticketData: Partial<SupportTicket>) => {
+    const createTicket = useCallback(async (ticketData: ICreateTicketRequest) => {
         setLoading(true);
         try {
             const newTicket: SupportTicket = {
@@ -24,15 +25,15 @@ export function useSupport() {
                 status: 'open',
                 priority: ticketData.priority || 'medium',
                 category: ticketData.category || 'Geral',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                userId: user?.id || '',
-                userName: user?.fullName || 'Usuário',
+                createdAt: new Date().toString(),
+                updatedAt: new Date().toString(),
+                userId: user?.uid || '',
+                userName: user?.firebaseClaims.name || 'Usuário',
                 messages: [{
                     id: '1',
                     message: ticketData.description || '',
                     sender: 'user',
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toString()
                 }]
             };
 
@@ -69,8 +70,8 @@ export function useSupport() {
             id: Date.now().toString(),
             message,
             sender: isCoordinator ? 'admin' : 'user',
-            timestamp: new Date().toISOString(),
-            senderName: isCoordinator ? 'Admin' : user?.fullName || 'Usuário'
+            timestamp: new Date().toString(),
+            senderName: isCoordinator ? 'Admin' : user?.firebaseClaims.name || 'Usuário'
         };
 
         setChatMessages(prev => [...prev, newMessage]);
@@ -80,7 +81,7 @@ export function useSupport() {
     // Filter functions
     const getFilteredTickets = useCallback((searchQuery: string) => {
         return tickets.filter(ticket => {
-            const matchesUser = isCoordinator || ticket.userId === user?.id;
+            const matchesUser = isCoordinator || ticket.userId === user?.uid;
             const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesUser && matchesSearch;

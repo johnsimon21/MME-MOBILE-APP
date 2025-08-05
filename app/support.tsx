@@ -65,7 +65,7 @@ export default function SupportScreen() {
                 break;
             case 'phone':
                 // Open phone dialer
-                Linking.openURL('tel:+244922691189');
+                Linking.openURL('tel:+33695947384');
                 break;
         }
     };

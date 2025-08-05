@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
-import { SupportTicket } from '@/src/types/support.types';
+import { UITicket } from '@/src/utils/ticketAdapters';
 import { getStatusColor, getStatusText, getPriorityColor, formatSupportDate } from '@/src/utils/support.utils';
 
 interface TicketItemProps {
-    ticket: SupportTicket;
+    ticket: UITicket;
     onPress: () => void;
     isAdmin?: boolean;
 }
@@ -38,7 +38,7 @@ export function TicketItem({ ticket, onPress, isAdmin = false }: TicketItemProps
     return (
         <TouchableOpacity
             onPress={onPress}
-            style={tw`bg-white rounded-xl p-4 mb-3 shadow-sm border-l-4`}
+            style={tw`bg-white rounded-xl p-4 mb-3 shadow-sm`}
             activeOpacity={0.7}
         >
             <View style={tw`flex-row items-start justify-between mb-3`}>

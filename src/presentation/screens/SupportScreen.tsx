@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Animated, Alert } from 'react-native';
 import tw from 'twrnc';
 import { Navbar } from '../components/ui/navbar';
-import { SupportTab } from '@/src/types/support.types';
-import { useSupportContext } from '@/src/context/SupportContext';
+import { useSupport } from '@/src/context/SupportContext';
 import { useAuth } from '@/src/context/AuthContext';
+import { SupportTab } from '@/src/types/support.types';
+import { adaptTicketsForUI } from '@/src/utils/ticketAdapters';
 
 // Import all components
 import { SupportTabNavigation } from '../navigation/SupportTabNavigation';
@@ -16,23 +17,15 @@ import { TicketDetailModal } from '../components/TicketDetailModal';
 import { AdminFAQManager } from '../components/AdminFAQManager';
 
 export function SupportScreen() {
-    const { user, isAdmin } = useAuth();
-    const {
-        tickets,
-        faqs,
-        createTicket,
-        updateTicket,
-        updateFAQHelpful,
-        getFilteredTickets,
-        getFilteredFAQs,
-        addFAQ,
-        updateFAQ,
-        deleteFAQ
-    } = useSupportContext();
+    const { user } = useAuth();
+    const { tickets, faqs, admin } = useSupport();
+    
+    // Check if user is admin
+    const isAdmin = user?.role === 'coordinator';
     
     // Redirect if not admin
-    React.useEffect(() => {
-        if (!isAdmin()) {
+    useEffect(() => {
+        if (!isAdmin) {
             Alert.alert('Acesso Negado', 'Esta área é restrita para administradores.');
             // You might want to navigate back here
         }
@@ -41,7 +34,7 @@ export function SupportScreen() {
     // State management
     const [activeTab, setActiveTab] = useState<SupportTab>('tickets'); // Start with tickets for admin
     const [showNewTicketModal, setShowNewTicketModal] = useState(false);
-    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [selectedTicket, setSelectedTicket] = useState<any>(null);
     const [showTicketDetail, setShowTicketDetail] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     
@@ -56,7 +49,7 @@ export function SupportScreen() {
 
     const handleCreateTicket = async (newTicketData: any) => {
         try {
-            await createTicket(newTicketData);
+            await tickets.createTicket(newTicketData);
             setShowNewTicketModal(false);
         } catch (error) {
             console.error('Error creating ticket:', error);
@@ -68,22 +61,42 @@ export function SupportScreen() {
         setShowTicketDetail(true);
     };
 
-    const handleUpdateTicket = (updatedTicket: any) => {
-        updateTicket(updatedTicket);
-        setSelectedTicket(updatedTicket);
+    const handleUpdateTicket = async (updatedTicketData: any) => {
+
+        console.log("Update Ticket Data ==> ", updatedTicketData)
+        try {
+            if (selectedTicket) {
+                await tickets.updateTicket(selectedTicket.id, updatedTicketData);
+                setSelectedTicket({ ...selectedTicket, ...updatedTicketData });
+            }
+        } catch (error) {
+            console.error('Error updating ticket:', error);
+        }
     };
 
     // Admin-specific FAQ handlers
-    const handleAddFAQ = (faqData: any) => {
-        addFAQ(faqData);
+    const handleAddFAQ = async (faqData: any) => {
+        try {
+            await faqs.createFAQ(faqData);
+        } catch (error) {
+            console.error('Error creating FAQ:', error);
+        }
     };
 
-    const handleUpdateFAQ = (faqId: string, faqData: any) => {
-        updateFAQ(faqId, faqData);
+    const handleUpdateFAQ = async (faqId: string, faqData: any) => {
+        try {
+            await faqs.updateFAQ(faqId, faqData);
+        } catch (error) {
+            console.error('Error updating FAQ:', error);
+        }
     };
 
-    const handleDeleteFAQ = (faqId: string) => {
-        deleteFAQ(faqId);
+    const handleDeleteFAQ = async (faqId: string) => {
+        try {
+            await faqs.deleteFAQ(faqId);
+        } catch (error) {
+            console.error('Error deleting FAQ:', error);
+        }
     };
 
     // Render content based on active tab
@@ -102,10 +115,10 @@ export function SupportScreen() {
                         }]
                     }
                 ]}
-            >
+            >   
                 {activeTab === 'tickets' && (
                     <TicketsList
-                        tickets={getFilteredTickets(searchQuery)}
+                        tickets={adaptTicketsForUI(tickets.tickets)}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
                         onTicketPress={handleTicketPress}
@@ -116,25 +129,31 @@ export function SupportScreen() {
                 
                 {activeTab === 'faq' && (
                     <AdminFAQManager
-                        faqs={getFilteredFAQs(searchQuery, 'all')}
+                        faqs={faqs.faqs}
                         searchQuery={searchQuery}
                         onSearchChange={setSearchQuery}
                         onAddFAQ={handleAddFAQ}
                         onUpdateFAQ={handleUpdateFAQ}
                         onDeleteFAQ={handleDeleteFAQ}
-                        onUpdateHelpful={updateFAQHelpful}
+                        onUpdateHelpful={(faqId: string, helpful: number) => faqs.voteFAQ(faqId, helpful > 0)}
                     />
                 )}
                 
                 {activeTab === 'chat' && (
                     <LiveChat isAdmin={true} />
                 )}
+                
+                {activeTab === 'help' && (
+                    <View style={tw`flex-1 p-4`}>
+                        {/* Admin dashboard content will go here */}
+                    </View>
+                )}
             </Animated.View>
         );
     };
 
     // Don't render if not admin
-    if (!isAdmin()) {
+    if (!isAdmin) {
         return null;
     }
 
@@ -157,8 +176,8 @@ export function SupportScreen() {
                 onClose={() => setShowNewTicketModal(false)}
                 onCreateTicket={handleCreateTicket}
                 currentUser={
-                    user && user.id && user.fullName
-                        ? { id: user.id, fullName: user.fullName }
+                    user && user.uid && user.firebaseClaims?.name
+                        ? { id: user.uid, fullName: user.firebaseClaims.name }
                         : undefined
                 }
             />
@@ -170,7 +189,6 @@ export function SupportScreen() {
                     setShowTicketDetail(false);
                     setSelectedTicket(null);
                 }}
-                onUpdateTicket={handleUpdateTicket}
                 currentUser={user}
                 isAdmin={true}
             />

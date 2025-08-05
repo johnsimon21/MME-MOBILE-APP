@@ -280,7 +280,7 @@ export const useSessions = () => {
                         sortBy: 'scheduledAt',
                         sortOrder: 'asc',
                         limit,
-                        dateFrom: new Date().toISOString()
+                        dateFrom: new Date().toString()
                     },
                     headers
                 }

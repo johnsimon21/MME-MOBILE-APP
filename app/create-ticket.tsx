@@ -4,59 +4,61 @@ import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSupport } from '../src/context/SupportContext';
+import { ICreateTicketRequest, TicketCategory, TicketPriority } from '../src/interfaces/support.interface';
 
-interface TicketForm {
-    subject: string;
-    category: string;
-    priority: string;
-    description: string;
-    email: string;
-}
 
 export default function CreateTicketScreen() {
     const router = useRouter();
-    const [formData, setFormData] = useState<TicketForm>({
-        subject: '',
-        category: '',
-        priority: 'medium',
+    const { tickets } = useSupport();
+    const [formData, setFormData] = useState<ICreateTicketRequest>({
+        title: '',
+        category: TicketCategory.OTHER,
+        priority: TicketPriority.MEDIUM,
         description: '',
-        email: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const categories = [
-        { id: 'technical', label: 'Problema Técnico', icon: 'tool' },
-        { id: 'account', label: 'Conta e Perfil', icon: 'user' },
-        { id: 'sessions', label: 'Sessões', icon: 'video' },
-        { id: 'billing', label: 'Cobrança', icon: 'credit-card' },
-        { id: 'feature', label: 'Solicitação de Recurso', icon: 'plus-circle' },
-        { id: 'other', label: 'Outros', icon: 'help-circle' }
+        { id: TicketCategory.TECHNICAL, label: 'Problema Técnico', icon: 'tool' },
+        { id: TicketCategory.ACCOUNT, label: 'Conta e Perfil', icon: 'user' },
+        { id: TicketCategory.BUG_REPORT, label: 'Relatar Bug', icon: 'alert-circle' },
+        { id: TicketCategory.BILLING, label: 'Cobrança', icon: 'credit-card' },
+        { id: TicketCategory.FEATURE_REQUEST, label: 'Solicitação de Recurso', icon: 'plus-circle' },
+        { id: TicketCategory.OTHER, label: 'Outros', icon: 'help-circle' }
     ];
 
     const priorities = [
-        { id: 'low', label: 'Baixa', color: 'bg-green-100 text-green-800', description: 'Não urgente' },
-        { id: 'medium', label: 'Média', color: 'bg-yellow-100 text-yellow-800', description: 'Moderadamente importante' },
-        { id: 'high', label: 'Alta', color: 'bg-red-100 text-red-800', description: 'Urgente' }
+        { id: TicketPriority.LOW, label: 'Baixa', color: 'bg-green-100 text-green-800', description: 'Não urgente' },
+        { id: TicketPriority.MEDIUM, label: 'Média', color: 'bg-yellow-100 text-yellow-800', description: 'Moderadamente importante' },
+        { id: TicketPriority.HIGH, label: 'Alta', color: 'bg-red-100 text-red-800', description: 'Urgente' }
     ];
 
     const handleSubmit = async () => {
-        if (!formData.subject.trim() || !formData.category || !formData.description.trim()) {
+        if (!formData.title.trim() || !formData.category || !formData.description.trim()) {
             Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios.');
             return;
         }
 
         setIsSubmitting(true);
-
+        console.log("Ticket Form Data ===> ", formData)
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const ticketData = {
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                priority: formData.priority
+            };
             
+            console.log('Creating ticket with data:', ticketData);
+            await tickets.createTicket(ticketData);
+
             Alert.alert(
                 'Ticket Criado!',
                 'Seu ticket foi criado com sucesso. Você receberá uma resposta em breve.',
                 [
                     {
-                                              text: 'OK',
+                        text: 'OK',
                         onPress: () => router.back()
                     }
                 ]
@@ -68,7 +70,7 @@ export default function CreateTicketScreen() {
         }
     };
 
-    const updateFormData = (field: keyof TicketForm, value: string) => {
+    const updateFormData = (field: keyof ICreateTicketRequest, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -86,12 +88,12 @@ export default function CreateTicketScreen() {
                     >
                         <Feather name="arrow-left" size={20} color="white" />
                     </TouchableOpacity>
-                    
+
                     <Text style={tw`text-white text-xl font-bold`}>Criar Ticket</Text>
-                    
+
                     <View style={tw`w-10 h-10`} />
                 </View>
-                
+
                 <Text style={tw`text-white text-opacity-90 mt-2`}>
                     Descreva seu problema e nossa equipe entrará em contato
                 </Text>
@@ -99,7 +101,7 @@ export default function CreateTicketScreen() {
 
             <ScrollView style={tw`flex-1`} showsVerticalScrollIndicator={false}>
                 <View style={tw`p-6`}>
-                    {/* Subject */}
+                    {/* title */}
                     <View style={tw`mb-6`}>
                         <Text style={tw`text-gray-800 font-semibold mb-2`}>
                             Assunto <Text style={tw`text-red-500`}>*</Text>
@@ -107,8 +109,8 @@ export default function CreateTicketScreen() {
                         <TextInput
                             style={tw`bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800`}
                             placeholder="Resumo do seu problema"
-                            value={formData.subject}
-                            onChangeText={(value) => updateFormData('subject', value)}
+                            value={formData.title}
+                            onChangeText={(value) => updateFormData('title', value)}
                         />
                     </View>
 
@@ -122,27 +124,24 @@ export default function CreateTicketScreen() {
                                 <TouchableOpacity
                                     key={category.id}
                                     onPress={() => updateFormData('category', category.id)}
-                                    style={tw`w-[48%] mb-3 mr-[2%] ${
-                                        formData.category === category.id 
-                                            ? 'bg-purple-500' 
+                                    style={tw`w-[48%] mb-3 mr-[2%] ${formData.category === category.id
+                                            ? 'bg-purple-500'
                                             : 'bg-white border border-gray-200'
-                                    } rounded-xl p-4`}
+                                        } rounded-xl p-4`}
                                 >
                                     <View style={tw`items-center`}>
-                                        <View style={tw`w-12 h-12 ${
-                                            formData.category === category.id 
-                                                ? 'bg-white bg-opacity-20' 
+                                        <View style={tw`w-12 h-12 ${formData.category === category.id
+                                                ? 'bg-white bg-opacity-20'
                                                 : 'bg-gray-100'
-                                        } rounded-full items-center justify-center mb-2`}>
-                                            <Feather 
-                                                name={category.icon as any} 
-                                                size={20} 
-                                                color={formData.category === category.id ? 'white' : '#6B7280'} 
+                                            } rounded-full items-center justify-center mb-2`}>
+                                            <Feather
+                                                name={category.icon as any}
+                                                size={20}
+                                                color={formData.category === category.id ? 'white' : '#6B7280'}
                                             />
                                         </View>
-                                        <Text style={tw`text-center text-sm font-medium ${
-                                            formData.category === category.id ? 'text-white' : 'text-gray-800'
-                                        }`}>
+                                        <Text style={tw`text-center text-sm font-medium ${formData.category === category.id ? 'text-white' : 'text-gray-800'
+                                            }`}>
                                             {category.label}
                                         </Text>
                                     </View>
@@ -159,16 +158,14 @@ export default function CreateTicketScreen() {
                                 <TouchableOpacity
                                     key={priority.id}
                                     onPress={() => updateFormData('priority', priority.id)}
-                                    style={tw`p-4 flex-row items-center justify-between ${
-                                        index < priorities.length - 1 ? 'border-b border-gray-100' : ''
-                                    } ${formData.priority === priority.id ? 'bg-gray-50' : ''}`}
+                                    style={tw`p-4 flex-row items-center justify-between ${index < priorities.length - 1 ? 'border-b border-gray-100' : ''
+                                        } ${formData.priority === priority.id ? 'bg-gray-50' : ''}`}
                                 >
                                     <View style={tw`flex-row items-center flex-1`}>
-                                        <View style={tw`w-4 h-4 rounded-full border-2 ${
-                                            formData.priority === priority.id 
-                                                ? 'border-purple-500 bg-purple-500' 
+                                        <View style={tw`w-4 h-4 rounded-full border-2 ${formData.priority === priority.id
+                                                ? 'border-purple-500 bg-purple-500'
                                                 : 'border-gray-300'
-                                        } mr-3 items-center justify-center`}>
+                                            } mr-3 items-center justify-center`}>
                                             {formData.priority === priority.id && (
                                                 <View style={tw`w-2 h-2 bg-white rounded-full`} />
                                             )}
@@ -206,22 +203,6 @@ export default function CreateTicketScreen() {
                         </Text>
                     </View>
 
-                    {/* Email */}
-                    <View style={tw`mb-6`}>
-                        <Text style={tw`text-gray-800 font-semibold mb-2`}>Email para contato</Text>
-                        <TextInput
-                            style={tw`bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800`}
-                            placeholder="seu@email.com"
-                            value={formData.email}
-                            onChangeText={(value) => updateFormData('email', value)}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                        <Text style={tw`text-gray-500 text-sm mt-1`}>
-                            Deixe em branco para usar o email da sua conta
-                        </Text>
-                    </View>
-
                     {/* Tips */}
                     <View style={tw`bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6`}>
                         <View style={tw`flex-row items-start`}>
@@ -242,9 +223,8 @@ export default function CreateTicketScreen() {
                     <TouchableOpacity
                         onPress={handleSubmit}
                         disabled={isSubmitting}
-                        style={tw`${
-                            isSubmitting ? 'bg-gray-400' : 'bg-purple-500'
-                        } rounded-xl py-4 items-center mb-6`}
+                        style={tw`${isSubmitting ? 'bg-gray-400' : 'bg-purple-500'
+                            } rounded-xl py-4 items-center mb-6`}
                     >
                         <View style={tw`flex-row items-center`}>
                             {isSubmitting && (

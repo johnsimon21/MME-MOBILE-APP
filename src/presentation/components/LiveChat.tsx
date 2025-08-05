@@ -3,9 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ScrollView, A
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { ChatMessage } from '@/src/types/support.types';
-import { useSupportContext } from '@/src/context/SupportContext';
 import { useAuth } from '@/src/context/AuthContext';
 import { formatSupportDate } from '@/src/utils/support.utils';
+import { useSupport } from '@/src/hooks/useSupport';
 
 interface LiveChatProps {
     isAdmin?: boolean;
@@ -13,7 +13,7 @@ interface LiveChatProps {
 
 export function LiveChat({ isAdmin = false }: LiveChatProps) {
     const { user } = useAuth();
-    const { chatMessages, sendChatMessage } = useSupportContext();
+    const { chatMessages, sendChatMessage } =  useSupport();
     const [newMessage, setNewMessage] = useState('');
     const [isOnline, setIsOnline] = useState(isAdmin); // Admin is always online
     const [showQuickResponses, setShowQuickResponses] = useState(true);

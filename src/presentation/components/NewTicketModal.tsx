@@ -2,29 +2,35 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Modal, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
-import { SupportTicket } from '@/src/types/support.types';
+import { ICreateTicketRequest, TicketCategory, TicketPriority } from '@/src/interfaces/support.interface';
 
 interface NewTicketModalProps {
     visible: boolean;
     onClose: () => void;
-    onCreateTicket: (ticketData: Partial<SupportTicket>) => void; // Changed type
-    currentUser?: { id: string; fullName: string }; // Add user prop
+    onCreateTicket: (ticketData: ICreateTicketRequest) => void;
+    currentUser?: { id: string; fullName: string };
 }
 
 export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }: NewTicketModalProps) {
     const [ticketData, setTicketData] = useState({
         title: '',
         description: '',
-        category: 'Geral',
-        priority: 'medium'
+        category: TicketCategory.GENERAL,
+        priority: TicketPriority.MEDIUM
     });
 
-    const categories = ['Conta', 'Sessões', 'Comunicação', 'Técnico', 'Geral'];
+    const categories = [
+        { value: TicketCategory.ACCOUNT, label: 'Conta' },
+        { value: TicketCategory.TECHNICAL, label: 'Técnico' },
+        { value: TicketCategory.GENERAL, label: 'Geral' },
+        { value: TicketCategory.BUG_REPORT, label: 'Bug Report' }
+    ];
+    
     const priorities = [
-        { value: 'low', label: 'Baixa', color: '#10B981' },
-        { value: 'medium', label: 'Média', color: '#F59E0B' },
-        { value: 'high', label: 'Alta', color: '#EF4444' },
-        { value: 'urgent', label: 'Urgente', color: '#DC2626' }
+        { value: TicketPriority.LOW, label: 'Baixa', color: '#10B981' },
+        { value: TicketPriority.MEDIUM, label: 'Média', color: '#F59E0B' },
+        { value: TicketPriority.HIGH, label: 'Alta', color: '#EF4444' },
+        { value: TicketPriority.URGENT, label: 'Urgente', color: '#DC2626' }
     ];
 
     const createTicket = () => {
@@ -33,23 +39,31 @@ export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }
             return;
         }
 
-        const newTicketData: Partial<SupportTicket> = {
+        const newTicketData: ICreateTicketRequest = {
             title: ticketData.title,
             description: ticketData.description,
             category: ticketData.category,
-            priority: ticketData.priority as any,
-            userId: currentUser?.id || '1',
-            userName: currentUser?.fullName || 'Usuário'
+            priority: ticketData.priority
         };
 
         onCreateTicket(newTicketData);
-        setTicketData({ title: '', description: '', category: 'Geral', priority: 'medium' });
+        setTicketData({ 
+            title: '', 
+            description: '', 
+            category: TicketCategory.GENERAL, 
+            priority: TicketPriority.MEDIUM 
+        });
         onClose();
         Alert.alert('Sucesso', 'Ticket criado com sucesso!');
     };
 
     const resetForm = () => {
-        setTicketData({ title: '', description: '', category: 'Geral', priority: 'medium' });
+        setTicketData({ 
+            title: '', 
+            description: '', 
+            category: TicketCategory.GENERAL, 
+            priority: TicketPriority.MEDIUM 
+        });
     };
 
     const handleClose = () => {
@@ -91,19 +105,19 @@ export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                 <View style={tw`flex-row`}>
                                     {categories.map((category) => (
-                                        <TouchableOpacity
-                                            key={category}
-                                            onPress={() => setTicketData(prev => ({ ...prev, category }))}
-                                            style={tw`px-4 py-2 mr-2 rounded-full border ${ticketData.category === category
-                                                    ? 'bg-blue-500 border-blue-500'
-                                                    : 'bg-white border-gray-300'
-                                                }`}
-                                        >
-                                            <Text style={tw`${ticketData.category === category ? 'text-white' : 'text-gray-600'
-                                                }`}>
-                                                {category}
-                                            </Text>
-                                        </TouchableOpacity>
+                                    <TouchableOpacity
+                                    key={category.value}
+                                    onPress={() => setTicketData(prev => ({ ...prev, category: category.value }))}
+                                    style={tw`px-4 py-2 mr-2 rounded-full border ${ticketData.category === category.value
+                                    ? 'bg-blue-500 border-blue-500'
+                                    : 'bg-white border-gray-300'
+                                    }`}
+                                    >
+                                    <Text style={tw`${ticketData.category === category.value ? 'text-white' : 'text-gray-600'
+                                    }`}>
+                                    {category.label}
+                                    </Text>
+                                    </TouchableOpacity>
                                     ))}
                                 </View>
                             </ScrollView>
