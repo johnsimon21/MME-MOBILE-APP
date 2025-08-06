@@ -3,6 +3,9 @@ import { IChatResponse, IMessageResponse, IChatParticipant } from '@/src/interfa
 export const chatUtils = {
   // Get other participant in a chat
   getOtherParticipant: (chat: IChatResponse, currentUserId: string): IChatParticipant | null => {
+      if (!chat.participants || !Array.isArray(chat.participants)) {
+          return null;
+      }
       return chat.participants.find(p => p.uid !== currentUserId) || null;
   },
 

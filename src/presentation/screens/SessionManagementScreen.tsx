@@ -2,6 +2,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useChatContext } from "@/src/context/ChatContext";
 import { useSessionContext } from "@/src/context/SessionContext";
 import { useConnections } from "@/src/hooks/useConnections";
+import { useChat } from "@/src/hooks/useChat";
 import { ChatType } from "@/src/interfaces/chat.interface";
 import { IConnectedUser } from "@/src/interfaces/connections.interface";
 import { ISessionResponse, SessionStatus, SessionType } from "@/src/interfaces/sessions.interface";
@@ -59,6 +60,7 @@ export function SessionManagementScreen() {
     } = useSessionContext();
 
     const { createChat } = useChatContext();
+    const { getChatById } = useChat();
     const { getAcceptedConnections, searchConnections } = useConnections();
 
     // State
@@ -215,14 +217,21 @@ export function SessionManagementScreen() {
 
     const handleJoinSessionChat = useCallback(async (session: ISessionResponse) => {
         try {
-            // If session already has a chat, use it
+            // If session already has a chat, try to fetch the full chat object
             if (session.chatId) {
-                // @ts-ignore
-                navigation.navigate('ChatScreen', {
-                    chat: { id: session.chatId },
-                    startSession: session.status === SessionStatus.SCHEDULED
-                });
-                return;
+                try {
+                    const fullChat = await getChatById(session.chatId);
+                    // @ts-ignore
+                    navigation.navigate('ChatScreen', {
+                        chat: fullChat,
+                        startSession: session.status === SessionStatus.SCHEDULED
+                    });
+                    return;
+                } catch (error) {
+                    console.error('Error fetching existing chat:', error);
+                    // If chat doesn't exist anymore, create a new one
+                    console.log('Chat not found, creating new one...');
+                }
             }
 
             // Create session chat with the first participant (mentee)
@@ -643,7 +652,7 @@ export function SessionManagementScreen() {
                     materials: formData.materials.length > 0 ? formData.materials : undefined,
                     type: formData.type,
                     duration: formData.duration,
-                    scheduledAt: formData.scheduledAt.toString(),
+                    scheduledAt: formData.scheduledAt.toISOString(),
                     menteeIds: formData.selectedParticipants.map(p => p.uid),
                     maxParticipants: formData.type === SessionType.GROUP ? Math.max(formData.selectedParticipants.length + 2, 5) : 1
                 });

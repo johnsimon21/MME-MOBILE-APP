@@ -69,7 +69,7 @@ export interface ICreateSessionRequest {
   description?: string;
   menteeIds: string[];
   type: SessionType;
-  scheduledAt?: string;
+  scheduledAt: string;
   duration: number;
   subject?: string;
   materials?: string[];
