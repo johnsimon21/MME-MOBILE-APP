@@ -15,6 +15,7 @@ import { LiveChat } from '../components/LiveChat';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { TicketDetailModal } from '../components/TicketDetailModal';
 import { AdminFAQManager } from '../components/AdminFAQManager';
+import { HelpCenter } from '../components/HelpCenter';
 
 export function SupportScreen() {
     const { user } = useAuth();
@@ -23,11 +24,16 @@ export function SupportScreen() {
     // Check if user is admin
     const isAdmin = user?.role === 'coordinator';
     
-    // Redirect if not admin
+    // Redirect if not admin and load admin stats
     useEffect(() => {
         if (!isAdmin) {
             Alert.alert('Acesso Negado', 'Esta área é restrita para administradores.');
             // You might want to navigate back here
+        } else {
+            // Load admin stats when component mounts
+            admin.loadStats('month');
+            admin.loadAdminUsers();
+            admin.loadWaitingSessions();
         }
     }, [isAdmin]);
     
@@ -144,9 +150,10 @@ export function SupportScreen() {
                 )}
                 
                 {activeTab === 'help' && (
-                    <View style={tw`flex-1 p-4`}>
-                        {/* Admin dashboard content will go here */}
-                    </View>
+                    <HelpCenter 
+                        onTabChange={handleTabChange}
+                        isAdmin={true}
+                    />
                 )}
             </Animated.View>
         );

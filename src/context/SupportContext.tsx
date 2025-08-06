@@ -64,9 +64,12 @@ interface SupportContextType {
     refresh: () => void;
     createTicket: (ticketData: ICreateTicketRequest, files?: File[]) => Promise<ITicket>;
     getTicketDetails: (ticketId: string) => Promise<ITicketDetails>;
+    getTicketById: (ticketId: string) => Promise<ITicketDetails>;
+    getMyTickets: (filters?: TicketFilters) => Promise<any>;
     updateTicket: (ticketId: string, updateData: IUpdateTicketRequest) => Promise<ITicket>;
     updateTicketStatus: (ticketId: string, statusData: IUpdateTicketStatusRequest) => Promise<ITicket>;
     addTicketMessage: (ticketId: string, messageData: IAddTicketMessageRequest, files?: File[]) => Promise<{ message: string }>;
+    addMessage: (ticketId: string, messageData: IAddTicketMessageRequest, files?: File[]) => Promise<{ message: string }>;
     assignTicket: (ticketId: string, assigneeId: string) => Promise<ITicket>;
     leaveCurrentTicket: () => void;
     getFilteredTickets: (filters: TicketFilters) => ITicket[];
@@ -225,9 +228,12 @@ export function SupportProvider({ children }: SupportProviderProps) {
       refresh: ticketsHook.refresh,
       createTicket: ticketsHook.createTicket,
       getTicketDetails: ticketsHook.getTicketDetails,
+      getTicketById: ticketsHook.getTicketById,
+      getMyTickets: ticketsHook.getMyTickets,
       updateTicket: ticketsHook.updateTicket,
       updateTicketStatus: ticketsHook.updateTicketStatus,
       addTicketMessage: ticketsHook.addTicketMessage,
+      addMessage: ticketsHook.addMessage,
       assignTicket: ticketsHook.assignTicket,
       leaveCurrentTicket: ticketsHook.leaveCurrentTicket,
       getFilteredTickets: ticketsHook.getFilteredTickets,

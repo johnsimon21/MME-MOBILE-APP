@@ -244,8 +244,8 @@ export enum FAQCategory {
   GENERAL = 'general',
   ACCOUNT = 'account',
   TECHNICAL = 'technical',
-  BILLING = 'billing',
-  FEATURES = 'features'
+  SESSION = 'session',
+  COMMUNICATION = 'communication'
 }
 
 export interface IFAQ {

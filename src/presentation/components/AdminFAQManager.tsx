@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, Alert, M
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { IFAQ, FAQCategory } from '@/src/interfaces/support.interface';
+import { FAQCategoryLabel, FAQCategoryValue } from '@/src/utils';
 
 interface AdminFAQManagerProps {
     faqs: IFAQ[];
@@ -28,10 +29,10 @@ export function AdminFAQManager({
     const [editingFAQ, setEditingFAQ] = useState<IFAQ | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
 
-    const categories = ['all', 'Conta', 'Sessões', 'Comunicação', 'Técnico', 'Geral'];
+    const categories = ['all', ...FAQCategoryLabel];
     
     const filteredFAQs = faqs.filter(faq => {
-        const matchesCategory = selectedCategory === 'all' || faq.category === selectedCategory;
+        const matchesCategory = selectedCategory === 'all' || faq.category === FAQCategoryValue[selectedCategory as keyof typeof FAQCategoryValue];
         const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
@@ -197,23 +198,32 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
     const [formData, setFormData] = useState({
         question: '',
         answer: '',
-        category: 'Geral'
+        category: FAQCategoryValue[FAQCategoryLabel[0]],
+        tags: [] as string[],
+        order: 0,
+        isActive: true
     });
 
-    const categories = ['Conta', 'Sessões', 'Comunicação', 'Técnico', 'Geral'];
+    const categories = FAQCategoryLabel
 
     React.useEffect(() => {
         if (faq && isEditing) {
             setFormData({
                 question: faq.question,
                 answer: faq.answer,
-                category: faq.category
+                category: faq.category,
+                tags: faq.tags || [],
+                order: faq.order || 0,
+                isActive: faq.isActive !== undefined ? faq.isActive : true
             });
         } else {
             setFormData({
                 question: '',
                 answer: '',
-                category: 'Geral'
+                category: FAQCategoryValue[FAQCategoryLabel[0]],
+                tags: [],
+                order: 0,
+                isActive: true
             });
         }
     }, [faq, isEditing, visible]);
@@ -227,10 +237,12 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
         const faqData: Partial<IFAQ> = {
             question: formData.question,
             answer: formData.answer,
-            category: FAQCategory.GENERAL, // Default, should be mapped properly
-            helpfulCount: isEditing ? faq?.helpfulCount : 0
+            category: formData.category as IFAQ['category'],
+            tags: formData.tags,
+            order: formData.order,
+            isActive: formData.isActive
         };
-
+        console.log('========: Saving FAQ Data: ', faqData);
         onSave(faqData);
     };
 
@@ -273,15 +285,15 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
                                     {categories.map((category) => (
                                         <TouchableOpacity
                                             key={category}
-                                            onPress={() => setFormData(prev => ({ ...prev, category }))}
+                                            onPress={() => setFormData(prev => ({ ...prev, category: FAQCategoryValue[category] }))}
                                             style={tw`px-4 py-2 mr-2 rounded-full border ${
-                                                formData.category === category 
+                                                formData.category === FAQCategoryValue[category] 
                                                     ? 'bg-blue-200 border-blue-300' 
                                                     : 'bg-white border-gray-300'
                                             }`}
                                         >
                                             <Text style={tw`${
-                                                formData.category === category ? 'text-blue-800' : 'text-gray-600'
+                                                formData.category === FAQCategoryValue[category] ? 'text-blue-800' : 'text-gray-600'
                                             }`}>
                                                 {category}
                                             </Text>
@@ -292,7 +304,7 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
                         </View>
 
                         {/* Answer */}
-                        <View style={tw`mb-6`}>
+                        <View style={tw`mb-4`}>
                             <Text style={tw`font-semibold mb-2`}>Resposta *</Text>
                             <TextInput
                                 style={tw`border border-gray-300 rounded-lg px-4 py-3 h-32`}
@@ -302,6 +314,50 @@ function FAQModal({ visible, faq, onClose, onSave, isEditing }: FAQModalProps) {
                                 multiline
                                 textAlignVertical="top"
                             />
+                        </View>
+
+                        {/* Tags */}
+                        <View style={tw`mb-4`}>
+                            <Text style={tw`font-semibold mb-2`}>Tags (separadas por vírgula)</Text>
+                            <TextInput
+                                style={tw`border border-gray-300 rounded-lg px-4 py-3`}
+                                placeholder="Digite as tags separadas por vírgula..."
+                                value={formData.tags.join(', ')}
+                                onChangeText={(text) => setFormData(prev => ({ 
+                                    ...prev, 
+                                    tags: text.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                                }))}
+                            />
+                        </View>
+
+                        {/* Order and Active */}
+                        <View style={tw`flex-row mb-4`}>
+                            <View style={tw`flex-1 mr-2`}>
+                                <Text style={tw`font-semibold mb-2`}>Ordem</Text>
+                                <TextInput
+                                    style={tw`border border-gray-300 rounded-lg px-4 py-3`}
+                                    placeholder="0"
+                                    value={formData.order.toString()}
+                                    onChangeText={(text) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        order: parseInt(text) || 0
+                                    }))}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                            <View style={tw`flex-1 ml-2`}>
+                                <Text style={tw`font-semibold mb-2`}>Status</Text>
+                                <TouchableOpacity
+                                    onPress={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+                                    style={tw`border border-gray-300 rounded-lg px-4 py-3 flex-row items-center justify-center ${
+                                        formData.isActive ? 'bg-green-50 border-green-300' : 'bg-gray-50'
+                                    }`}
+                                >
+                                    <Text style={tw`${formData.isActive ? 'text-green-700' : 'text-gray-600'}`}>
+                                        {formData.isActive ? 'Ativo' : 'Inativo'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         {/* Save Button */}

@@ -26,3 +26,20 @@ export const roleOptions = {
     "mentor": "MENTOR",
     "mentee": "MENTEE",
 }
+
+export const FAQCategoryLabel: ['Geral', 'Conta', 'Técnico', 'Sessões', 'Comunicação'] = [
+    'Geral',
+    'Conta',
+    'Técnico',
+    'Sessões',
+    'Comunicação'
+]
+
+export const FAQCategoryValue = {
+    'Geral': 'general',
+    'Conta': 'account',
+    'Técnico': 'technical',
+    'Sessões': 'session',
+    'Comunicação': 'communication'
+}
+

@@ -1,12 +1,12 @@
 // Environment configuration
-const IP = '192.168.101.92' // '192.168.1.11';
+const IP = '192.168.1.11' //  '192.168.101.92'; 
 
 export const ENV = {
   // 🔥 FRONTEND Firebase Config (Web App Config)
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyDutAFOSxYSaq6ZaxKg3MCLe9mscz4SWE4",
     authDomain: "meu-mentor-eiffel.firebaseapp.com",
-    projectId: "meu-mentor-eiffel",
+    projectId: "meu-mentor-eiffel", 
     storageBucket: "meu-mentor-eiffel.firebasestorage.app",
     messagingSenderId: "522028357639",
     appId: "1:522028357639:web:f0085373a46e341cd3f2a2",

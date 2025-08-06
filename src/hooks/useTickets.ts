@@ -331,7 +331,6 @@ export const useTickets = () => {
     files?: File[]
   ): Promise<{ message: string }> => {
     if (!user?.uid) throw new Error('User not authenticated');
-
     try {
       const result = await SupportAPI.addTicketMessage(ticketId, messageData, files);
 
@@ -382,6 +381,60 @@ export const useTickets = () => {
       throw error;
     }
   }, [user?.uid]);
+
+  // Get user's tickets (alias for loadTickets with user filter)
+  const getMyTickets = useCallback(async (filters: TicketFilters = {}): Promise<ITicketsResponse> => {
+    if (!isAuthenticated || !user?.uid) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      const params: IQueryTicketsRequest = {
+        page: 1,
+        limit: state.limit,
+        ...filters,
+      };
+
+      const data = await SupportAPI.getTickets(params);
+      
+      setState(prev => ({
+        ...prev,
+        tickets: data.tickets,
+        total: data.total,
+        page: data.page,
+        totalPages: data.totalPages,
+        hasMore: data.hasNext,
+        stats: data.stats || null,
+        isLoading: false,
+      }));
+
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to get my tickets:', error);
+      setState(prev => ({
+        ...prev,
+        error: error.message || 'Erro ao carregar meus tickets',
+        isLoading: false,
+      }));
+      throw error;
+    }
+  }, [isAuthenticated, user?.uid, state.limit]);
+
+  // Get ticket by ID (alias for getTicketDetails)
+  const getTicketById = useCallback(async (ticketId: string): Promise<ITicketDetails> => {
+    return getTicketDetails(ticketId);
+  }, [getTicketDetails]);
+
+  // Add message (alias for addTicketMessage with simpler interface)
+  const addMessage = useCallback(async (
+    ticketId: string,
+    messageData: IAddTicketMessageRequest,
+    files?: File[]
+  ): Promise<{ message: string }> => {
+    return addTicketMessage(ticketId, messageData, files);
+  }, [addTicketMessage]);
 
   // Leave current ticket room
   const leaveCurrentTicket = useCallback(() => {
@@ -457,9 +510,12 @@ export const useTickets = () => {
     refresh,
     createTicket,
     getTicketDetails,
+    getTicketById,
+    getMyTickets,
     updateTicket,
     updateTicketStatus,
     addTicketMessage,
+    addMessage,
     assignTicket,
     leaveCurrentTicket,
     getFilteredTickets,

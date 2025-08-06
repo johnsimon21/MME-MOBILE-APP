@@ -497,7 +497,7 @@ export function SessionManagementScreen() {
                         end={{ x: 1, y: 1 }}
                     >
                         <Text style={tw`text-white text-xs opacity-90`}>Total</Text>
-                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.totalSessions}</Text>
+                        <Text style={tw`text-white text-medium font-bold drop-shadow-lg`}>{stats.totalSessions}</Text>
                     </LinearGradient>
 
                     <LinearGradient
@@ -507,17 +507,17 @@ export function SessionManagementScreen() {
                         end={{ x: 1, y: 1 }}
                     >
                         <Text style={tw`text-white text-xs opacity-90`}>Ativas</Text>
-                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.activeSessions || 0}</Text>
+                        <Text style={tw`text-white text-medium font-bold drop-shadow-lg`}>{stats.activeSessions || 0}</Text>
                     </LinearGradient>
 
                     <LinearGradient
                         colors={['rgba(245,158,11,1)', 'rgba(217,119,6,0.5)']}
-                        style={tw`w-21 h-15 rounded-xl p-3 mr-2 justify-between border border-white border-opacity-20`}
+                        style={tw`w-22 h-15 rounded-xl p-3 mr-2 justify-between border border-white border-opacity-20`}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
                         <Text style={tw`text-white text-xs opacity-90`}>Concluídas</Text>
-                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.completedSessions}</Text>
+                        <Text style={tw`text-white text-medium font-bold drop-shadow-lg`}>{stats.completedSessions}</Text>
                     </LinearGradient>
 
                     <LinearGradient
@@ -527,7 +527,7 @@ export function SessionManagementScreen() {
                         end={{ x: 1, y: 1 }}
                     >
                         <Text style={tw`text-white text-xs opacity-90`}>Taxa (%)</Text>
-                        <Text style={tw`text-white text-lg font-medium drop-shadow-lg`}>{stats.completionRate || 0}%</Text>
+                        <Text style={tw`text-white text-medium font-bold drop-shadow-lg`}>{stats.completionRate || 0}%</Text>
                     </LinearGradient>
                 </View>
             </ScrollView>
@@ -1031,7 +1031,7 @@ export function SessionManagementScreen() {
     return (
         <SafeAreaView style={tw`flex-1 bg-gray-50`}>
             <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
-            <Navbar title="Sesões" />
+            {/* <Navbar title="Sesões" /> */}
 
             {/* Enhanced Header with Gradient */}
             <LinearGradient
@@ -1040,7 +1040,7 @@ export function SessionManagementScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <View style={tw`flex-row items-center justify-between mb-6`}>
+                <View style={tw`flex-row items-center justify-between mb-6 pt-4`}>
                     <View style={tw`flex-1`}>
                         <Text style={tw`text-2xl font-bold text-white mb-1`}>
                             Gerenciar Sessões
@@ -1074,7 +1074,7 @@ export function SessionManagementScreen() {
 
                 {/* Enhanced Search Bar */}
                 <View style={tw`flex-row items-center`}>
-                    <View style={tw`flex-1 flex-row items-center bg-white bg-opacity-30 rounded-2xl px-4 py-3 mr-3 border border-white border-opacity-20`}>
+                    <View style={tw`flex-1 flex-row items-center bg-white bg-opacity-30 rounded-2xl px-4 py-1 mr-3 border border-white border-opacity-20`}>
                         <Ionicons name="search" size={20} color="white" />
                         <TextInput
                             style={tw`flex-1 ml-3 text-white text-base`}

@@ -11,6 +11,24 @@ export default function SupportScreen() {
 
     const supportOptions = [
         {
+            id: 'my-tickets',
+            title: 'Meus Tickets',
+            description: 'Visualize e acompanhe seus tickets',
+            icon: 'inbox',
+            color: 'from-indigo-400 to-indigo-600',
+            iconBg: 'bg-indigo-100',
+            iconColor: '#6366F1'
+        },
+        {
+            id: 'ticket',
+            title: 'Criar Ticket',
+            description: 'Relate um problema detalhado',
+            icon: 'clipboard',
+            color: 'from-purple-400 to-purple-600',
+            iconBg: 'bg-purple-100',
+            iconColor: '#8B5CF6'
+        },
+        {
             id: 'faq',
             title: 'Perguntas Frequentes',
             description: 'Encontre respostas rápidas para dúvidas comuns',
@@ -28,29 +46,15 @@ export default function SupportScreen() {
             iconBg: 'bg-green-100',
             iconColor: '#10B981',
             badge: 'Online'
-        },
-        {
-            id: 'ticket',
-            title: 'Criar Ticket',
-            description: 'Relate um problema detalhado',
-            icon: 'clipboard',
-            color: 'from-purple-400 to-purple-600',
-            iconBg: 'bg-purple-100',
-            iconColor: '#8B5CF6'
-        },
-        {
-            id: 'phone',
-            title: 'Suporte por Telefone',
-            description: 'Ligue para nossa central de atendimento',
-            icon: 'phone',
-            color: 'from-orange-400 to-orange-600',
-            iconBg: 'bg-orange-100',
-            iconColor: '#F59E0B'
         }
     ];
 
     const handleSupportOption = (optionId: string) => {
         switch (optionId) {
+            case 'my-tickets':
+                // Navigate to my tickets
+                router.push('/my-tickets');
+                break;
             case 'faq':
                 // Navigate to FAQ section
                 router.push('/faq');
@@ -62,10 +66,6 @@ export default function SupportScreen() {
             case 'ticket':
                 // Navigate to create ticket
                 router.push('/create-ticket');
-                break;
-            case 'phone':
-                // Open phone dialer
-                Linking.openURL('tel:+33695947384');
                 break;
         }
     };

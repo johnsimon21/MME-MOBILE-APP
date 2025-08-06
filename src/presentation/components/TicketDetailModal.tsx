@@ -40,8 +40,7 @@ export function TicketDetailModal({
 
         try {
             await tickets.addTicketMessage(ticket.id, {
-                message: newMessage,
-                isInternal: false
+                message: newMessage
             });
             setNewMessage('');
             Alert.alert('Sucesso', 'Mensagem enviada com sucesso');

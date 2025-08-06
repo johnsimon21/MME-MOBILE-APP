@@ -1,19 +1,18 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
-import { useAuth } from './AuthContext';
-import { useDashboard } from '../hooks/useDashboard';
 import { ENV } from '../config/env';
+import { useDashboard } from '../hooks/useDashboard';
 import {
   IDashboardStats,
-  IUserAnalyticsListResponse,
-  ISessionAnalytics,
+  IDashboardStatsQuery,
   IRealTimeStats,
   IRecentActivity,
-  IDashboardSocketEvents,
-  IDashboardStatsQuery,
-  IUserAnalyticsQuery,
-  ISessionAnalyticsQuery
+  ISessionAnalytics,
+  ISessionAnalyticsQuery,
+  IUserAnalyticsListResponse,
+  IUserAnalyticsQuery
 } from '../interfaces/dashboard.interface';
+import { useAuth } from './AuthContext';
 
 interface DashboardContextType {
   // Real-time data
@@ -22,27 +21,27 @@ interface DashboardContextType {
   sessionAnalytics: ISessionAnalytics | null;
   realTimeStats: IRealTimeStats | null;
   recentActivity: IRecentActivity[];
-  
+
   // Connection state
   isConnected: boolean;
   connectionError: string | null;
-  
+
   // Loading states
   isLoadingStats: boolean;
   isLoadingUsers: boolean;
   isLoadingSessions: boolean;
-  
+
   // Actions
   refreshDashboardStats: (query?: IDashboardStatsQuery) => Promise<void>;
   refreshUserAnalytics: (query?: IUserAnalyticsQuery) => Promise<void>;
   refreshSessionAnalytics: (query?: ISessionAnalyticsQuery) => Promise<void>;
   requestUserAnalytics: (filters: IUserAnalyticsQuery) => void;
   requestSessionAnalytics: (filters: ISessionAnalyticsQuery) => void;
-  
+
   // Socket actions
   connect: () => void;
   disconnect: () => void;
-  
+
   // Utility
   clearErrors: () => void;
 }
@@ -58,14 +57,14 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
   const [socket, setSocket] = useState<typeof Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  
+
   // Data state
   const [dashboardStats, setDashboardStats] = useState<IDashboardStats | null>(null);
   const [userAnalytics, setUserAnalytics] = useState<IUserAnalyticsListResponse | null>(null);
   const [sessionAnalytics, setSessionAnalytics] = useState<ISessionAnalytics | null>(null);
   const [realTimeStats, setRealTimeStats] = useState<IRealTimeStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<IRecentActivity[]>([]);
-  
+
   // Loading states
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -73,6 +72,12 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
 
   const { user, getIdToken } = useAuth();
   const dashboardHook = useDashboard();
+
+  // Get WebSocket URL
+  const getSocketUrl = useCallback(() => {
+    const baseUrl = ENV.API_BASE_URL.replace('/api', '');
+    return `${baseUrl}/dashboard`;
+  }, []);
 
   // Socket connection
   const connect = useCallback(async () => {
@@ -87,7 +92,7 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
 
       console.log('🔄 Connecting to dashboard socket...');
 
-      const newSocket = io(`${ENV.API_BASE_URL}/dashboard`, {
+      const newSocket = io(getSocketUrl(), {
         query: {
           userId: user.uid,
           role: user.role,
@@ -260,7 +265,7 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
         refreshUserAnalytics();
         refreshSessionAnalytics();
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [user?.uid, user?.role]); // Only depend on user id and role, not the refresh functions
@@ -282,27 +287,27 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     sessionAnalytics,
     realTimeStats,
     recentActivity,
-    
+
     // Connection state
     isConnected,
     connectionError,
-    
+
     // Loading states
     isLoadingStats,
     isLoadingUsers,
     isLoadingSessions,
-    
+
     // Actions
     refreshDashboardStats,
     refreshUserAnalytics,
     refreshSessionAnalytics,
     requestUserAnalytics,
     requestSessionAnalytics,
-    
+
     // Socket actions
     connect,
     disconnect,
-    
+
     // Utility
     clearErrors,
   };

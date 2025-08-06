@@ -10,7 +10,7 @@ export const getStatusColor = (status: string): IColor => {
         'resolved': {bg:'bg-green-200', text: 'text-green-800'},
         'closed': {bg:'bg-gray-200', text: 'text-gray-800'},
     };
-    return {bg: colors[status].bg || 'bg-gray-200', text: colors[status].text || 'text-gray-600'};
+    return colors[status] || {bg: 'bg-gray-200', text: 'text-gray-600'};
 };
 
 export const getStatusText = (status: string): string => {
@@ -21,7 +21,7 @@ export const getStatusText = (status: string): string => {
         'closed': 'Fechado'
     };
     return texts[status] || status;
-};
+}
 
 export const getPriorityColor = (priority: string): IColor => {
     const colors: { [key: string]: IColor } = {
@@ -30,7 +30,7 @@ export const getPriorityColor = (priority: string): IColor => {
         'high': {bg:'bg-orange-200', text: 'text-orange-800'},
         'urgent': {bg:'bg-red-200', text: 'text-red-800'},
     };
-    return{bg: colors[priority].bg || 'bg-gray-200', text: colors[priority].text || 'text-gray-600'};
+    return colors[priority] || {bg: 'bg-gray-200', text: 'text-gray-600'};
 };
 
 export const formatSupportDate = (timestamp: string): string => {

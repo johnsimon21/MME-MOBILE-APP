@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import tw from 'twrnc';
 import { SupportTab } from '@/src/types/support.types';
+import { useSupport } from '@/src/context/SupportContext';
 
 interface HelpCenterProps {
     onTabChange: (tab: SupportTab) => void;
@@ -10,6 +11,7 @@ interface HelpCenterProps {
 }
 
 export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
+    const { admin } = useSupport();
     const adminActions = [
         { 
             title: 'Gerenciar Tickets', 
@@ -43,11 +45,32 @@ export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
         { title: 'Perguntas Frequentes', desc: 'Respostas rápidas', icon: 'help-circle', action: () => onTabChange('faq') }
     ];
 
+    // Real admin stats from backend
     const adminStats = [
-        { label: 'Tickets Abertos', value: '12', icon: 'alert-circle', color: 'text-red-600' },
-        { label: 'Em Andamento', value: '8', icon: 'clock', color: 'text-yellow-600' },
-        { label: 'Resolvidos Hoje', value: '24', icon: 'check-circle', color: 'text-green-600' },
-        { label: 'Usuários Online', value: '3', icon: 'users', color: 'text-blue-600' }
+        { 
+            label: 'Tickets Abertos', 
+            value: admin.stats?.tickets?.open?.toString() || '0', 
+            icon: 'alert-circle', 
+            color: 'text-red-600' 
+        },
+        { 
+            label: 'Em Andamento', 
+            value: admin.stats?.tickets?.inProgress?.toString() || '0', 
+            icon: 'clock', 
+            color: 'text-yellow-600' 
+        },
+        { 
+            label: 'Resolvidos', 
+            value: admin.stats?.tickets?.resolved?.toString() || '0', 
+            icon: 'check-circle', 
+            color: 'text-green-600' 
+        },
+        { 
+            label: 'FAQs Ativas', 
+            value: admin.stats?.faqs?.active?.toString() || '0', 
+            icon: 'help-circle', 
+            color: 'text-blue-600' 
+        }
     ];
 
     const recentActivity = [
@@ -70,7 +93,18 @@ export function HelpCenter({ onTabChange, isAdmin = false }: HelpCenterProps) {
 
                 {/* Stats */}
                 <View style={tw`px-4 mb-6`}>
-                    <Text style={tw`text-lg font-bold mb-4`}>Estatísticas</Text>
+                    <View style={tw`flex-row items-center justify-between mb-4`}>
+                        <Text style={tw`text-lg font-bold`}>Estatísticas</Text>
+                        {admin.isLoadingStats && (
+                            <Text style={tw`text-blue-500 text-sm`}>Atualizando...</Text>
+                        )}
+                        <TouchableOpacity 
+                            onPress={() => admin.loadStats('month')}
+                            style={tw`p-2`}
+                        >
+                            <Feather name="refresh-cw" size={16} color="#4F46E5" />
+                        </TouchableOpacity>
+                    </View>
                     <View style={tw`flex-row flex-wrap justify-between`}>
                         {adminStats.map((stat, index) => (
                             <View key={index} style={tw`bg-white p-4 rounded-xl w-[48%] mb-3 shadow-sm`}>

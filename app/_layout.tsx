@@ -82,6 +82,7 @@ function RootLayoutContent() {
           <Stack.Screen name="support" options={{ headerShown: false }} />
           <Stack.Screen name="faq" options={{ headerShown: false }} />
           <Stack.Screen name="chat-support" options={{ headerShown: false }} />
+          <Stack.Screen name="my-tickets" options={{ headerShown: false }} />
           <Stack.Screen name="create-ticket" options={{ headerShown: false }} />
           <Stack.Screen
             name="voice-call"
