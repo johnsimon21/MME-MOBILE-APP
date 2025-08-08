@@ -1,8 +1,8 @@
 import { useAuth } from "@/src/context/AuthContext";
 import { useChatContext } from "@/src/context/ChatContext";
 import { useSessionContext } from "@/src/context/SessionContext";
-import { useConnections } from "@/src/hooks/useConnections";
 import { useChat } from "@/src/hooks/useChat";
+import { useConnections } from "@/src/hooks/useConnections";
 import { ChatType } from "@/src/interfaces/chat.interface";
 import { IConnectedUser } from "@/src/interfaces/connections.interface";
 import { ISessionResponse, SessionStatus, SessionType } from "@/src/interfaces/sessions.interface";
@@ -26,7 +26,7 @@ import {
     View
 } from "react-native";
 import tw from "twrnc";
-import { Navbar } from "../components/ui/navbar";
+import { RenderSessionItem } from "../components/SessionItem";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -161,15 +161,91 @@ export function SessionManagementScreen() {
         return filtered;
     }, [sessions, filters]);
 
-    // Session actions
-    const handleStartSession = useCallback(async (sessionId: string) => {
+    const handleJoinSessionChat = useCallback(async (session: ISessionResponse) => {
         try {
+            // If session already has a chat, try to fetch the full chat object
+            if (session.chatId) {
+                try {
+                    const fullChat = await getChatById(session.chatId);
+                    // @ts-ignore
+                    navigation.navigate('ChatScreen', {
+                        chat: fullChat,
+                        startSession: session.status === SessionStatus.SCHEDULED
+                    });
+                    return;
+                } catch (error) {
+                    console.error('Error fetching existing chat:', error);
+                    // If chat doesn't exist anymore, create a new one
+                    console.log('Chat not found, creating new one...');
+                }
+            }
+
+            // Create session chat with the first participant (mentee)
+            const firstParticipant = session.participants[0];
+            if (!firstParticipant) {
+                Alert.alert('Erro', 'Sessão não possui participantes');
+                return;
+            }
+
+            const chat = await createChat({
+                participantId: firstParticipant.uid,
+                type: ChatType.SESSION,
+                sessionId: session.id,
+                title: `Sessão: ${session.title}`
+            });
+
+            // Navigate to chat
+            // @ts-ignore
+            navigation.navigate('ChatScreen', {
+                chat: chat,
+                startSession: session.status === SessionStatus.SCHEDULED
+            });
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Não foi possível abrir o chat da sessão');
+        }
+    }, [createChat, navigation]);
+
+    // Session actions
+    const handleStartSession = useCallback(async (sessionId: string, type: 'chat' | 'voice') => {
+        try {
+            if (type === 'chat') {
+                // Find the session and navigate to chat
+                const session = sessions.find(s => s.id === sessionId);
+                if (session) {
+                    await handleJoinSessionChat(session);
+                }
+            } else if (type === 'voice') {
+                // Navigate to voice call
+                // @ts-ignore
+                navigation.navigate('VoiceCall', { sessionId });
+            }
+
+            // Start the session in the backend
             await startSession(sessionId);
-            Alert.alert('Sucesso', 'Sessão iniciada com sucesso!');
+            Alert.alert('Sucesso', `Sessão ${type === 'chat' ? 'de chat' : 'de voz'} iniciada com sucesso!`);
         } catch (error: any) {
             Alert.alert('Erro', error.message || 'Não foi possível iniciar a sessão');
         }
-    }, [startSession]);
+    }, [startSession, sessions, navigation, handleJoinSessionChat]);
+
+    const showStartSessionOptions = useCallback((sessionId: string) => {
+        Alert.alert(
+            'Iniciar Sessão',
+            'Escolha como deseja iniciar a sessão:',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: '💬 Chat de Texto',
+                    onPress: () => handleStartSession(sessionId, 'chat')
+                },
+                {
+                    text: '📞 Chamada de Voz',
+                    onPress: () => handleStartSession(sessionId, 'voice')
+                }
+            ],
+            { cancelable: true }
+        );
+    }, [handleStartSession]);
 
     const handleEndSession = useCallback(async (sessionId: string) => {
         Alert.alert(
@@ -215,49 +291,29 @@ export function SessionManagementScreen() {
         );
     }, [cancelSession]);
 
-    const handleJoinSessionChat = useCallback(async (session: ISessionResponse) => {
-        try {
-            // If session already has a chat, try to fetch the full chat object
-            if (session.chatId) {
-                try {
-                    const fullChat = await getChatById(session.chatId);
-                    // @ts-ignore
-                    navigation.navigate('ChatScreen', {
-                        chat: fullChat,
-                        startSession: session.status === SessionStatus.SCHEDULED
-                    });
-                    return;
-                } catch (error) {
-                    console.error('Error fetching existing chat:', error);
-                    // If chat doesn't exist anymore, create a new one
-                    console.log('Chat not found, creating new one...');
+    const handleDeleteSession = useCallback(async (sessionId: string) => {
+        Alert.alert(
+            'Deletar Sessão',
+            'Esta ação não pode ser desfeita. Tem certeza que deseja deletar esta sessão permanentemente?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Deletar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Note: You'll need to add this function to your session context
+                            // For now, we'll use cancelSession as a placeholder
+                            await cancelSession(sessionId, 'Sessão deletada');
+                            Alert.alert('Sucesso', 'Sessão deletada com sucesso!');
+                        } catch (error: any) {
+                            Alert.alert('Erro', error.message || 'Não foi possível deletar a sessão');
+                        }
+                    }
                 }
-            }
-
-            // Create session chat with the first participant (mentee)
-            const firstParticipant = session.participants[0];
-            if (!firstParticipant) {
-                Alert.alert('Erro', 'Sessão não possui participantes');
-                return;
-            }
-
-            const chat = await createChat({
-                participantId: firstParticipant.uid,
-                type: ChatType.SESSION,
-                sessionId: session.id,
-                title: `Sessão: ${session.title}`
-            });
-
-            // Navigate to chat
-            // @ts-ignore
-            navigation.navigate('ChatScreen', {
-                chat: chat,
-                startSession: session.status === SessionStatus.SCHEDULED
-            });
-        } catch (error: any) {
-            Alert.alert('Erro', error.message || 'Não foi possível abrir o chat da sessão');
-        }
-    }, [createChat, navigation]);
+            ]
+        );
+    }, [cancelSession]);
 
     // Bulk actions
     const handleBulkCancel = useCallback(async () => {
@@ -334,158 +390,311 @@ export function SessionManagementScreen() {
     };
 
     // Render session item
-    const renderSessionItem = ({ item: session }: { item: ISessionResponse }) => {
-        const canStart = session.status === SessionStatus.SCHEDULED;
-        const canEnd = session.status === SessionStatus.ACTIVE;
-        const canCancel = [SessionStatus.SCHEDULED, SessionStatus.ACTIVE].includes(session.status);
-        const isActive = currentSession?.id === session.id;
-        const isSelected = selectedSessions.includes(session.id);
+    // const renderSessionItem = ({ item: session }: { item: ISessionResponse }) => {
+    //     const canStart = session.status === SessionStatus.SCHEDULED;
+    //     const canEnd = session.status === SessionStatus.ACTIVE;
+    //     const canCancel = [SessionStatus.SCHEDULED, SessionStatus.ACTIVE].includes(session.status);
+    //     const isActive = currentSession?.id === session.id;
+    //     const isSelected = selectedSessions.includes(session.id);
 
-        const participantNames = session.participants.map(p => p.fullName).join(', ');
-        const scheduledDate = session.scheduledAt ? new Date(session.scheduledAt) : null;
+    //     const participantNames = session.participants.map(p => p.fullName).join(', ');
+    //     const scheduledDate = session.scheduledAt ? new Date(session.scheduledAt) : null;
 
-        return (
-            <View style={tw`mx-4 mb-4`}>
-                <TouchableOpacity
-                    style={tw`bg-white rounded-2xl shadow-lg ${isSelected ? 'border-2 border-purple-400' : 'border border-gray-100'} overflow-hidden`}
-                    onPress={() => {
-                        if (selectedSessions.length > 0) {
-                            // Selection mode
-                            if (isSelected) {
-                                setSelectedSessions(prev => prev.filter(id => id !== session.id));
-                            } else {
-                                setSelectedSessions(prev => [...prev, session.id]);
-                            }
-                        } else {
-                            // Normal navigation
-                            handleJoinSessionChat(session);
-                        }
-                    }}
-                    onLongPress={() => {
-                        if (!isSelected) {
-                            setSelectedSessions([session.id]);
-                        }
-                    }}
-                    activeOpacity={0.8}
-                >
-                <View style={tw`p-4`}>
-                    {/* Header */}
-                    <View style={tw`flex-row items-start justify-between mb-3`}>
-                        <View style={tw`flex-1 mr-3`}>
-                            <View style={tw`flex-row items-center mb-2`}>
-                                <Ionicons
-                                    name={getTypeIcon(session.type)}
-                                    size={16}
-                                    color="#6B7280"
-                                />
-                                <Text style={tw`font-bold text-gray-800 text-lg ml-2 flex-1`}>
-                                    {session.title}
-                                </Text>
-                                {isSelected && (
-                                    <View style={tw`w-5 h-5 bg-indigo-500 rounded-full items-center justify-center ml-2`}>
-                                        <Ionicons name="checkmark" size={12} color="white" />
-                                    </View>
-                                )}
-                            </View>
+    //     return (
+    //         <View style={tw`mx-4 mb-4`}>
+    //             <TouchableOpacity
+    //                 style={tw`bg-white rounded-2xl shadow-lg ${isSelected ? 'border-2 border-purple-400' : 'border border-gray-100'} overflow-hidden`}
+    //                 onPress={() => {
+    //                     if (selectedSessions.length > 0) {
+    //                         // Selection mode
+    //                         if (isSelected) {
+    //                             setSelectedSessions(prev => prev.filter(id => id !== session.id));
+    //                         } else {
+    //                             setSelectedSessions(prev => [...prev, session.id]);
+    //                         }
+    //                     } else {
+    //                         // Normal navigation
+    //                         handleJoinSessionChat(session);
+    //                     }
+    //                 }}
+    //                 onLongPress={() => {
+    //                     if (!isSelected) {
+    //                         setSelectedSessions([session.id]);
+    //                     }
+    //                 }}
+    //                 activeOpacity={0.8}
+    //             >
+    //                 <View style={tw`p-4`}>
+    //                     {/* Header */}
+    //                     <View style={tw`flex-row items-start justify-between mb-3`}>
+    //                         <View style={tw`flex-1 mr-3`}>
+    //                             <View style={tw`flex-row items-center mb-2`}>
+    //                                 <Ionicons
+    //                                     name={getTypeIcon(session.type)}
+    //                                     size={16}
+    //                                     color="#6B7280"
+    //                                 />
+    //                                 <Text style={tw`font-bold text-gray-800 text-lg ml-2 flex-1`}>
+    //                                     {session.title}
+    //                                 </Text>
+    //                                 {isSelected && (
+    //                                     <View style={tw`w-5 h-5 bg-indigo-500 rounded-full items-center justify-center ml-2`}>
+    //                                         <Ionicons name="checkmark" size={12} color="white" />
+    //                                     </View>
+    //                                 )}
+    //                             </View>
 
-                            {session.metadata?.subject && (
-                                <Text style={tw`text-gray-600 mb-1`}>
-                                    📚 {session.metadata.subject}
-                                </Text>
-                            )}
+    //                             {session.metadata?.subject && (
+    //                                 <Text style={tw`text-gray-600 mb-1`}>
+    //                                     📚 {session.metadata.subject}
+    //                                 </Text>
+    //                             )}
 
-                            <Text style={tw`text-gray-600 mb-1`}>
-                                👥 {participantNames || 'Nenhum participante'}
-                            </Text>
+    //                             <Text style={tw`text-gray-600 mb-1`}>
+    //                                 👥 {participantNames || 'Nenhum participante'}
+    //                             </Text>
 
-                            {scheduledDate && (
-                                <Text style={tw`text-gray-500 text-sm`}>
-                                    🕒 {scheduledDate.toLocaleDateString('pt-BR')} às{' '}
-                                    {scheduledDate.toLocaleTimeString('pt-BR', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
-                                </Text>
-                            )}
-                        </View>
+    //                             {scheduledDate && (
+    //                                 <Text style={tw`text-gray-500 text-sm`}>
+    //                                     🕒 {scheduledDate.toLocaleDateString('pt-BR')} às{' '}
+    //                                     {scheduledDate.toLocaleTimeString('pt-BR', {
+    //                                         hour: '2-digit',
+    //                                         minute: '2-digit'
+    //                                     })}
+    //                                 </Text>
+    //                             )}
+    //                         </View>
 
-                        <View style={tw`items-end`}>
-                            <View style={tw`${getStatusColor(session.status)} px-3 py-1 rounded-full border mb-2`}>
-                                <Text style={tw`text-sm font-medium`}>
-                                    {getStatusLabel(session.status)}
-                                </Text>
-                            </View>
+    //                         <View style={tw`items-end`}>
+    //                             <View style={tw`${getStatusColor(session.status)} px-3 py-1 rounded-full border mb-2`}>
+    //                                 <Text style={tw`text-sm font-medium`}>
+    //                                     {getStatusLabel(session.status)}
+    //                                 </Text>
+    //                             </View>
 
-                            <Text style={tw`text-xs text-gray-500`}>
-                                {session.duration}min
-                            </Text>
-                        </View>
-                    </View>
+    //                             <Text style={tw`text-xs text-gray-500`}>
+    //                                 {session.duration} min
+    //                             </Text>
+    //                         </View>
+    //                     </View>
 
-                    {/* Description */}
-                    {session.description && (
-                        <Text style={tw`text-gray-600 mb-3 text-sm`} numberOfLines={2}>
-                            {session.description}
-                        </Text>
-                    )}
+    //                     {/* Description */}
+    //                     {session.description && (
+    //                         <Text style={tw`text-gray-600 mb-3 text-sm`} numberOfLines={2}>
+    //                             {session.description}
+    //                         </Text>
+    //                     )}
 
-                    {/* Active session indicator */}
-                    {isActive && (
-                        <View style={tw`bg-green-50 border border-green-200 p-3 rounded-lg mb-3`}>
-                            <Text style={tw`text-green-700 font-medium text-center`}>
-                                🟢 Sessão ativa
-                            </Text>
-                        </View>
-                    )}
+    //                     {/* Active session indicator */}
+    //                     {isActive && (
+    //                         <View style={tw`bg-green-50 border border-green-200 p-3 rounded-lg mb-3`}>
+    //                             <Text style={tw`text-green-700 font-medium text-center`}>
+    //                                 🟢 Sessão ativa
+    //                             </Text>
+    //                         </View>
+    //                     )}
 
-                    {/* Actions */}
-                    <View style={tw`flex-row items-center justify-between pt-2 border-t border-gray-100`}>
-                        <TouchableOpacity
-                            onPress={() => handleJoinSessionChat(session)}
-                            style={tw`bg-indigo-500 px-4 py-2 rounded-lg flex-row items-center`}
-                        >
-                            <Ionicons name="chatbubble" size={16} color="white" />
-                            <Text style={tw`text-white font-medium ml-2`}>Chat</Text>
-                        </TouchableOpacity>
+    //                     {/* Enhanced Professional Action Buttons */}
+    //                     <View style={tw`pt-3 border-t border-gray-100`}>
+    //                         {/* Primary Actions Row */}
+    //                         <View style={tw`flex-row justify-between mb-3`}>
+    //                             {/* Start Session Button - Shows when session is scheduled */}
+    //                             {canStart && (
+    //                                 <TouchableOpacity
+    //                                     onPress={() => showStartSessionOptions(session.id)}
+    //                                     style={[
+    //                                         tw`flex-1 px-3 py-3 rounded-xl flex-row items-center justify-center mr-2`,
+    //                                         {
+    //                                             backgroundColor: '#10B981',
+    //                                             shadowColor: '#000',
+    //                                             shadowOffset: { width: 0, height: 2 },
+    //                                             shadowOpacity: 0.25,
+    //                                             shadowRadius: 3.84,
+    //                                             elevation: 5,
+    //                                         }
+    //                                     ]}
+    //                                     activeOpacity={0.8}
+    //                                 >
+    //                                     <Ionicons name="play-circle" size={18} color="white" />
+    //                                     <Text style={tw`text-white font-semibold ml-2 text-sm`}>Iniciar</Text>
+    //                                 </TouchableOpacity>
+    //                             )}
 
-                        <View style={tw`flex-row items-center`}>
-                            {canStart && (
-                                <TouchableOpacity
-                                    onPress={() => handleStartSession(session.id)}
-                                    style={tw`bg-green-500 px-4 py-2 rounded-lg mr-2`}
-                                >
-                                    <Text style={tw`text-white font-medium`}>Iniciar</Text>
-                                </TouchableOpacity>
-                            )}
+    //                             {/* End Session Button - Shows when session is active */}
+    //                             {canEnd && (
+    //                                 <TouchableOpacity
+    //                                     onPress={() => handleEndSession(session.id)}
+    //                                     style={[
+    //                                         tw`flex-1 px-3 py-3 rounded-xl flex-row items-center justify-center mr-2`,
+    //                                         {
+    //                                             backgroundColor: '#EF4444',
+    //                                             shadowColor: '#000',
+    //                                             shadowOffset: { width: 0, height: 2 },
+    //                                             shadowOpacity: 0.25,
+    //                                             shadowRadius: 3.84,
+    //                                             elevation: 5,
+    //                                         }
+    //                                     ]}
+    //                                     activeOpacity={0.8}
+    //                                 >
+    //                                     <Ionicons name="stop-circle" size={18} color="white" />
+    //                                     <Text style={tw`text-white font-semibold ml-2 text-sm`}>Finalizar</Text>
+    //                                 </TouchableOpacity>
+    //                             )}
 
-                            {canEnd && (
-                                <TouchableOpacity
-                                    onPress={() => handleEndSession(session.id)}
-                                    style={tw`bg-red-500 px-4 py-2 rounded-lg mr-2`}
-                                >
-                                    <Text style={tw`text-white font-medium`}>Finalizar</Text>
-                                </TouchableOpacity>
-                            )}
+    //                             {/* Join Chat Button - Always available for active sessions */}
+    //                             {(session.status === SessionStatus.ACTIVE || session.status === SessionStatus.PAUSED) && (
+    //                                 <TouchableOpacity
+    //                                     onPress={() => handleJoinSessionChat(session)}
+    //                                     style={[
+    //                                         tw`${canEnd ? 'flex-1' : 'flex-1 mr-2'} px-3 py-3 rounded-xl flex-row items-center justify-center`,
+    //                                         {
+    //                                             backgroundColor: '#3B82F6',
+    //                                             shadowColor: '#000',
+    //                                             shadowOffset: { width: 0, height: 2 },
+    //                                             shadowOpacity: 0.25,
+    //                                             shadowRadius: 3.84,
+    //                                             elevation: 5,
+    //                                         }
+    //                                     ]}
+    //                                     activeOpacity={0.8}
+    //                                 >
+    //                                     <Ionicons name="chatbubble-ellipses" size={16} color="white" />
+    //                                     <Text style={tw`text-white font-semibold ml-2 text-sm`}>Chat</Text>
+    //                                 </TouchableOpacity>
+    //                             )}
 
-                            {canCancel && (
-                                <TouchableOpacity
-                                    onPress={() => handleCancelSession(session.id)}
-                                    style={tw`p-2`}
-                                >
-                                    <Ionicons name="close-circle" size={20} color="#EF4444" />
-                                </TouchableOpacity>
-                            )}
+    //                             {/* View Chat Button - For scheduled/completed sessions */}
+    //                             {(session.status === SessionStatus.SCHEDULED || session.status === SessionStatus.COMPLETED) && (
+    //                                 <TouchableOpacity
+    //                                     onPress={() => handleJoinSessionChat(session)}
+    //                                     style={[
+    //                                         tw`${canStart ? 'flex-1' : 'flex-1 mr-2'} px-3 py-3 rounded-xl flex-row items-center justify-center`,
+    //                                         {
+    //                                             backgroundColor: '#8B5CF6',
+    //                                             shadowColor: '#000',
+    //                                             shadowOffset: { width: 0, height: 2 },
+    //                                             shadowOpacity: 0.25,
+    //                                             shadowRadius: 3.84,
+    //                                             elevation: 5,
+    //                                         }
+    //                                     ]}
+    //                                     activeOpacity={0.8}
+    //                                 >
+    //                                     <Ionicons name="chatbubble" size={16} color="white" />
+    //                                     <Text style={tw`text-white font-semibold ml-1 text-xs`}>
+    //                                         {session.status === SessionStatus.COMPLETED ? 'Ver' : 'Chat'}
+    //                                     </Text>
+    //                                 </TouchableOpacity>
+    //                             )}
 
-                            <TouchableOpacity style={tw`p-2`}>
-                                <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-                </TouchableOpacity>
-                </View>
-                );
-    };
+    //                             {/* Delete Button - Always available for scheduled/cancelled sessions */}
+    //                             {(session.status === SessionStatus.SCHEDULED || session.status === SessionStatus.CANCELLED) && (
+    //                                 <TouchableOpacity
+    //                                     onPress={() => handleDeleteSession(session.id)}
+    //                                     style={[
+    //                                         tw`w-12 h-12 rounded-xl items-center justify-center`,
+    //                                         {
+    //                                             backgroundColor: '#F87171',
+    //                                             shadowColor: '#000',
+    //                                             shadowOffset: { width: 0, height: 2 },
+    //                                             shadowOpacity: 0.25,
+    //                                             shadowRadius: 3.84,
+    //                                             elevation: 5,
+    //                                         }
+    //                                     ]}
+    //                                     activeOpacity={0.8}
+    //                                 >
+    //                                     <Ionicons name="trash" size={16} color="white" />
+    //                                 </TouchableOpacity>
+    //                             )}
+    //                         </View>
+
+    //                         {/* Secondary Actions Row - Quick actions */}
+    //                         <View style={tw`flex-row justify-between items-center`}>
+    //                             {/* Session Status Info */}
+    //                             <View style={tw`flex-row items-center flex-1`}>
+    //                                 <View style={tw`w-2 h-2 rounded-full mr-2 ${session.status === SessionStatus.ACTIVE ? 'bg-green-400' :
+    //                                         session.status === SessionStatus.SCHEDULED ? 'bg-blue-400' :
+    //                                             session.status === SessionStatus.COMPLETED ? 'bg-gray-400' :
+    //                                                 session.status === SessionStatus.CANCELLED ? 'bg-red-400' : 'bg-yellow-400'
+    //                                     }`} />
+    //                                 <Text style={tw`text-sm text-gray-600 flex-1`}>
+    //                                     {session.status === SessionStatus.ACTIVE ? 'Sessão em andamento' :
+    //                                         session.status === SessionStatus.SCHEDULED ? 'Aguardando início' :
+    //                                             session.status === SessionStatus.COMPLETED ? 'Sessão finalizada' :
+    //                                                 session.status === SessionStatus.CANCELLED ? 'Sessão cancelada' : 'Sessão pausada'}
+    //                                 </Text>
+    //                             </View>
+
+    //                             {/* Quick Action Buttons */}
+    //                             <View style={tw`flex-row items-center`}>
+    //                                 {/* Pause/Resume for active sessions */}
+    //                                 {session.status === SessionStatus.ACTIVE && (
+    //                                     <TouchableOpacity
+    //                                         onPress={() => {
+    //                                             // Add pause functionality here
+    //                                             Alert.alert('Pausar', 'Funcionalidade de pausar sessão em desenvolvimento');
+    //                                         }}
+    //                                         style={tw`p-2 mx-1 bg-yellow-100 rounded-lg`}
+    //                                         activeOpacity={0.7}
+    //                                     >
+    //                                         <Ionicons name="pause" size={16} color="#F59E0B" />
+    //                                     </TouchableOpacity>
+    //                                 )}
+
+    //                                 {/* Info button */}
+    //                                 <TouchableOpacity
+    //                                     onPress={() => {
+    //                                         Alert.alert(
+    //                                             session.title,
+    //                                             `Descrição: ${session.description || 'Sem descrição'}\n\nParticipantes: ${participantNames}\n\nDuração: ${session.duration} minutos\n\nStatus: ${getStatusLabel(session.status)}`,
+    //                                             [{ text: 'OK' }]
+    //                                         );
+    //                                     }}
+    //                                     style={tw`p-2 mx-1 bg-gray-100 rounded-lg`}
+    //                                     activeOpacity={0.7}
+    //                                 >
+    //                                     <Ionicons name="information-circle" size={16} color="#6B7280" />
+    //                                 </TouchableOpacity>
+
+    //                                 {/* More options button */}
+    //                                 <TouchableOpacity
+    //                                     onPress={() => {
+    //                                         Alert.alert(
+    //                                             'Opções da Sessão',
+    //                                             'Escolha uma ação:',
+    //                                             [
+    //                                                 { text: 'Cancelar', style: 'cancel' },
+    //                                                 ...(canCancel ? [{
+    //                                                     text: 'Cancelar Sessão',
+    //                                                     style: 'destructive' as const,
+    //                                                     onPress: () => handleCancelSession(session.id)
+    //                                                 }] : []),
+    //                                                 {
+    //                                                     text: 'Editar Sessão',
+    //                                                     onPress: () => Alert.alert('Editar', 'Funcionalidade de edição em desenvolvimento')
+    //                                                 },
+    //                                                 {
+    //                                                     text: 'Compartilhar',
+    //                                                     onPress: () => Alert.alert('Compartilhar', 'Funcionalidade de compartilhamento em desenvolvimento')
+    //                                                 }
+    //                                             ]
+    //                                         );
+    //                                     }}
+    //                                     style={tw`p-2 mx-1 bg-gray-100 rounded-lg`}
+    //                                     activeOpacity={0.7}
+    //                                 >
+    //                                     <Ionicons name="ellipsis-horizontal" size={16} color="#6B7280" />
+    //                                 </TouchableOpacity>
+    //                             </View>
+    //                         </View>
+    //                     </View>
+    //                 </View>
+    //             </TouchableOpacity>
+    //         </View>
+    //     );
+    // };
 
     // Stats component
     const StatsSection = () => {
@@ -659,7 +868,7 @@ export function SessionManagementScreen() {
 
                 Alert.alert('Sucesso', 'Sessão criada com sucesso!');
                 setShowCreateModal(false);
-                
+
                 // Reset form
                 setFormData({
                     title: '',
@@ -729,18 +938,16 @@ export function SessionManagementScreen() {
                                     <TouchableOpacity
                                         key={type.key}
                                         onPress={() => setFormData(prev => ({ ...prev, type: type.key }))}
-                                        style={tw`flex-1 flex-row items-center justify-center p-3 mr-2 rounded-lg ${
-                                            formData.type === type.key ? 'bg-indigo-500' : 'bg-gray-200'
-                                        }`}
+                                        style={tw`flex-1 flex-row items-center justify-center p-3 mr-2 rounded-lg ${formData.type === type.key ? 'bg-indigo-500' : 'bg-gray-200'
+                                            }`}
                                     >
-                                        <Ionicons 
-                                            name={type.icon as any} 
-                                            size={20} 
-                                            color={formData.type === type.key ? 'white' : '#6B7280'} 
+                                        <Ionicons
+                                            name={type.icon as any}
+                                            size={20}
+                                            color={formData.type === type.key ? 'white' : '#6B7280'}
                                         />
-                                        <Text style={tw`ml-2 font-medium ${
-                                            formData.type === type.key ? 'text-white' : 'text-gray-700'
-                                        }`}>
+                                        <Text style={tw`ml-2 font-medium ${formData.type === type.key ? 'text-white' : 'text-gray-700'
+                                            }`}>
                                             {type.label}
                                         </Text>
                                     </TouchableOpacity>
@@ -754,13 +961,11 @@ export function SessionManagementScreen() {
                                     <TouchableOpacity
                                         key={duration}
                                         onPress={() => setFormData(prev => ({ ...prev, duration }))}
-                                        style={tw`flex-1 p-3 mr-2 rounded-lg ${
-                                            formData.duration === duration ? 'bg-indigo-500' : 'bg-gray-200'
-                                        }`}
+                                        style={tw`flex-1 p-3 mr-2 rounded-lg ${formData.duration === duration ? 'bg-indigo-500' : 'bg-gray-200'
+                                            }`}
                                     >
-                                        <Text style={tw`text-center font-medium ${
-                                            formData.duration === duration ? 'text-white' : 'text-gray-700'
-                                        }`}>
+                                        <Text style={tw`text-center font-medium ${formData.duration === duration ? 'text-white' : 'text-gray-700'
+                                            }`}>
                                             {duration}min
                                         </Text>
                                     </TouchableOpacity>
@@ -769,7 +974,7 @@ export function SessionManagementScreen() {
 
                             {/* Participants */}
                             <Text style={tw`text-lg font-semibold text-gray-700 mb-2`}>Participantes *</Text>
-                            
+
                             {/* Selected Participants */}
                             {formData.selectedParticipants.map((participant) => (
                                 <View key={participant.uid} style={tw`flex-row items-center bg-indigo-50 p-3 rounded-lg mb-2`}>
@@ -795,7 +1000,7 @@ export function SessionManagementScreen() {
                                     </TouchableOpacity>
                                 </View>
                             ))}
-                            
+
                             {/* Add Participant Button */}
                             <TouchableOpacity
                                 onPress={() => setShowParticipantSearch(true)}
@@ -816,7 +1021,7 @@ export function SessionManagementScreen() {
                                             <Ionicons name="close" size={20} color="#6B7280" />
                                         </TouchableOpacity>
                                     </View>
-                                    
+
                                     {/* Search Input */}
                                     <View style={tw`flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3`}>
                                         <Ionicons name="search" size={16} color="#6B7280" />
@@ -895,7 +1100,7 @@ export function SessionManagementScreen() {
                                 >
                                     <Text style={tw`text-center text-gray-600 font-medium`}>Cancelar</Text>
                                 </TouchableOpacity>
-                                
+
                                 <TouchableOpacity
                                     onPress={handleSubmit}
                                     style={tw`flex-1 p-3 ml-2 bg-indigo-500 rounded-lg ${isSubmitting ? 'opacity-50' : ''}`}
@@ -1070,7 +1275,7 @@ export function SessionManagementScreen() {
                                 color="white"
                             />
                         </TouchableOpacity> */}
- 
+
                         <TouchableOpacity
                             onPress={() => setShowCreateModal(true)}
                             style={tw`bg-white px-3 py-3 rounded-xl flex-row items-center shadow-lg`}
@@ -1181,7 +1386,7 @@ export function SessionManagementScreen() {
                 ) : (
                     <FlatList
                         data={filteredSessions}
-                        renderItem={renderSessionItem}
+                        renderItem={RenderSessionItem}
                         keyExtractor={(item) => item.id}
                         refreshControl={
                             <RefreshControl

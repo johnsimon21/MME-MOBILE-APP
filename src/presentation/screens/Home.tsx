@@ -1,16 +1,16 @@
+import { useAuthState } from "@/src/hooks/useAuthState";
+import { useConnections } from "@/src/hooks/useConnections";
+import { useUsers } from "@/src/hooks/useUsers";
+import { UserRole } from "@/src/interfaces/index.interface";
+import { IUser } from "@/src/interfaces/user.interface";
+import { FilterModal } from "@/src/presentation/components/ui/FilterModal";
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 import * as React from "react";
-import { Image, FlatList, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert } from "react-native";
-import tw from "twrnc";
-
-import { FilterModal } from "@/src/presentation/components/ui/FilterModal";
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Navbar } from "../components/ui/navbar";
-import { useUsers } from "@/src/hooks/useUsers";
-import { useConnections } from "@/src/hooks/useConnections";
-import { useAuthState } from "@/src/hooks/useAuthState";
-import { IUser } from "@/src/interfaces/user.interface";
-import { UserRole } from "@/src/interfaces/index.interface";
+import tw from 'twrnc';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Enhanced interface to include connection status
 interface EnhancedUser extends IUser {
@@ -149,7 +149,7 @@ export function HomeScreen() {
       connectionType: connectionStatus.type as any,
       connectionId: connectionStatus.connectionId,
       canCancel: connectionStatus.canCancel,
-      mutualConnections: 0, // TODO: Get from API response
+      mutualConnections: 0 // TODO: Get from API response
     };
   };
 
@@ -477,38 +477,31 @@ export function HomeScreen() {
     const isProcessing = connectionRequests.has(user.id);
 
     return (
-      <View style={tw`bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100`}>
+      <View style={styles.cardContainer}>
         {/* User Header */}
-        <View style={tw`flex-row items-center mb-3`}>
-          <TouchableOpacity onPress={() => handleViewProfile(user.id)}>
+        <View style={styles.cardHeader}>
+          <TouchableOpacity onPress={() => handleViewProfile(user.id)} accessibilityLabel="Ver perfil">
             <Image
               source={
                 user.photo
                   ? { uri: user.photo }
                   : require("@/assets/images/avatar.svg")
               }
-              style={tw`w-16 h-16 rounded-full mr-3`}
+              style={styles.avatar}
+              resizeMode="cover"
             />
           </TouchableOpacity>
-
-          <View style={tw`flex-1`}>
+          <View style={styles.headerInfo}>
             <TouchableOpacity onPress={() => handleViewProfile(user.id)}>
-              <Text style={tw`text-lg font-semibold text-gray-800`}>
-                {user.name}
-              </Text>
+              <Text style={styles.userName}>{user.name}</Text>
             </TouchableOpacity>
-
-            <View style={tw`flex-row items-center mt-1`}>
-              <View style={tw`bg-blue-100 px-2 py-1 rounded-full mr-2`}>
-                <Text style={tw`text-xs font-medium text-blue-700`}>
-                  {user.userType}
-                </Text>
+            <View style={styles.userTypeRow}>
+              <View style={[styles.badge, styles.badgeBlue]}>
+                <Text style={styles.badgeTextBlue}>{user.userType}</Text>
               </View>
-
-              {/* ✅ NEW: Connection status indicator */}
               {user.connectionStatus !== 'none' && (
-                <View style={tw`bg-gray-100 px-2 py-1 rounded-full`}>
-                  <Text style={tw`text-xs font-medium text-gray-600`}>
+                <View style={[styles.badge, styles.badgeGray]}>
+                  <Text style={styles.badgeTextGray}>
                     {user.connectionStatus === 'pending'
                       ? (user.connectionType === 'sent' ? 'Enviado' : 'Recebido')
                       : user.connectionStatus === 'accepted'
@@ -520,119 +513,100 @@ export function HomeScreen() {
               )}
             </View>
           </View>
-
-          {/* Status indicator */}
-          <View style={tw`items-center`}>
+          <View style={styles.statusContainer}>
             <View
               style={[
-                tw`w-3 h-3 rounded-full`,
-                user.status === "Disponível" ? tw`bg-green-400` : tw`bg-gray-400`,
+                styles.statusDot,
+                user.status === "Disponível" ? styles.statusDotAvailable : styles.statusDotUnavailable,
               ]}
             />
-            <Text style={tw`text-xs text-gray-500 mt-1`}>
-              {user.status}
-            </Text>
+            <Text style={styles.statusText}>{user.status}</Text>
           </View>
         </View>
-
         {/* User Info */}
-        <View style={tw`mb-3`}>
-          <View style={tw`flex-row items-center mb-2`}>
-            <Feather name="map-pin" size={14} color="#6B7280" />
-            <Text style={tw`text-sm text-gray-600 ml-1`}>
-              {user.location || 'Localização não informada'}
+        <View style={styles.infoRow}>
+          <Feather name="map-pin" size={14} color="#6B7280" />
+          <Text style={styles.infoText}>{user.location || 'Localização não informada'}</Text>
+        </View>
+        <View style={styles.infoRowBetween}>
+          <View style={styles.infoRow}>
+            <Feather name="users" size={14} color="#6B7280" />
+            <Text style={styles.infoText}>
+              {user.userType === "Mentor"
+                ? `${user.mentorias} mentorias`
+                : `${user.programCount} programas`
+              }
             </Text>
           </View>
-
-          <View style={tw`flex-row items-center justify-between`}>
-            <View style={tw`flex-row items-center`}>
-              <Feather name="users" size={14} color="#6B7280" />
-              <Text style={tw`text-sm text-gray-600 ml-1`}>
-                {user.userType === "Mentor"
-                  ? `${user.mentorias} mentorias`
-                  : `${user.programCount} programas`
-                }
+          {(user.mutualConnections && user.mutualConnections > 0) ? (
+            <View style={styles.infoRow}>
+              <Feather name="link" size={14} color="#6B7280" />
+              <Text style={styles.infoText}>
+                {user.mutualConnections} conexões mútuas
               </Text>
             </View>
-
-            {/* ✅ NEW: Mutual connections indicator */}
-            {(user.mutualConnections && user.mutualConnections > 0) ? (
-              <View style={tw`flex-row items-center`}>
-                <Feather name="link" size={14} color="#6B7280" />
-                <Text style={tw`text-sm text-gray-600 ml-1`}>
-                  {user.mutualConnections} conexões mútuas
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          ) : null}
         </View>
-
         {/* Action Buttons */}
-        <View style={tw`flex-row items-center justify-between`}>
+        <View style={styles.actionRow}>
           <TouchableOpacity
             onPress={() => handleViewProfile(user.id)}
-            style={tw`flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 px-4 mr-2`}
+            style={styles.profileButton}
+            accessibilityLabel="Ver perfil"
           >
-            <Text style={tw`text-center text-gray-700 font-medium`}>
-              Ver Perfil
-            </Text>
+            <Text style={styles.profileButtonText}>Ver Perfil</Text>
           </TouchableOpacity>
-
-          {/* ✅ ENHANCED: Dynamic connection button */}
-          <View style={tw`flex-row flex-1`}>
+          <View style={styles.flex1Row}>
             <TouchableOpacity
               onPress={buttonConfig.onPress}
               disabled={buttonConfig.disabled || isProcessing}
               style={[
-                tw`flex-1 rounded-lg py-2 px-4 border`,
+                styles.connectButton,
                 buttonConfig.style,
-                (buttonConfig.disabled || isProcessing) && tw`opacity-50`
+                (buttonConfig.disabled || isProcessing) && styles.disabledButton
               ]}
+              accessibilityLabel={buttonConfig.text}
             >
               {isProcessing ? (
-                <View style={tw`flex-row items-center justify-center`}>
+                <View style={styles.centerRow}>
                   <ActivityIndicator size="small" color="white" />
-                  <Text style={[tw`text-center font-medium ml-2`, buttonConfig.textStyle]}>
+                  <Text style={[styles.connectButtonText, buttonConfig.textStyle, { marginLeft: 8 }]}>
                     {buttonConfig.text}
                   </Text>
                 </View>
               ) : (
-                <Text style={[tw`text-center font-medium`, buttonConfig.textStyle]}>
+                <Text style={[styles.connectButtonText, buttonConfig.textStyle]}>
                   {buttonConfig.text}
                 </Text>
               )}
             </TouchableOpacity>
-
-            {/* ✅ NEW: Secondary button for received requests (Reject) */}
             {buttonConfig.secondaryButton && (
               <TouchableOpacity
                 onPress={buttonConfig.secondaryButton.onPress}
                 disabled={isProcessing}
                 style={[
-                  tw`px-3 py-2 rounded-lg border`,
+                  styles.rejectButton,
                   buttonConfig.secondaryButton.style,
-                  isProcessing && tw`opacity-50`
+                  isProcessing && styles.disabledButton
                 ]}
+                accessibilityLabel={buttonConfig.secondaryButton.text}
               >
-                <Text style={[tw`text-center font-medium text-xs`, buttonConfig.secondaryButton.textStyle]}>
+                <Text style={[styles.rejectButtonText, buttonConfig.secondaryButton.textStyle]}>
                   {buttonConfig.secondaryButton.text}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-
-        {/* ✅ NEW: Connection info for accepted connections */}
         {user.connectionStatus === 'accepted' && (
           <TouchableOpacity
             onPress={() => handleChatOpen(user.id)}
-            style={tw`mt-3 bg-blue-50 border border-blue-200 rounded-lg py-2 px-3`}
+            style={styles.chatButton}
+            accessibilityLabel="Iniciar conversa"
           >
-            <View style={tw`flex-row items-center justify-center`}>
+            <View style={styles.centerRow}>
               <Feather name="message-circle" size={16} color="#3B82F6" />
-              <Text style={tw`text-blue-600 font-medium ml-2`}>
-                Iniciar Conversa
-              </Text>
+              <Text style={styles.chatButtonText}>Iniciar Conversa</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -654,20 +628,20 @@ export function HomeScreen() {
   }
 
   return (
-    <View style={tw`flex-1 bg-gray-50`}>
+    <View style={styles.screen}>
       <Navbar title='Emparelhamentos' />
-
       {/* Search and Filter Header */}
-      <View style={tw`bg-white px-4 py-3 border-b border-gray-200`}>
-        <View style={tw`flex-row items-center`}>
-          <View style={tw`flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mr-3`}>
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <View style={styles.searchBox}>
             <Feather name="search" size={20} color="#6B7280" />
             <TextInput
-              style={tw`flex-1 ml-2 text-gray-700`}
+              style={styles.searchInput}
               placeholder="Buscar usuários..."
               value={searchQuery}
               onChangeText={handleSearch}
               placeholderTextColor="#9CA3AF"
+              accessibilityLabel="Buscar usuários"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -675,60 +649,51 @@ export function HomeScreen() {
               </TouchableOpacity>
             )}
           </View>
-
           <TouchableOpacity
             onPress={() => setFilterModalVisible(true)}
-            style={tw`bg-blue-500 rounded-lg p-2`}
+            style={styles.filterButton}
+            accessibilityLabel="Abrir filtros"
           >
             <Feather name="filter" size={20} color="white" />
           </TouchableOpacity>
         </View>
-
-        {/* ✅ NEW: Active filters indicator */}
         {(filters.userType || filters.status || filters.location) && (
-          <View style={tw`flex-row items-center mt-2`}>
-            <Text style={tw`text-sm text-gray-600 mr-2`}>Filtros ativos:</Text>
+          <View style={styles.activeFiltersRow}>
+            <Text style={styles.activeFiltersLabel}>Filtros ativos:</Text>
             {filters.userType && (
-              <View style={tw`bg-blue-100 px-2 py-1 rounded-full mr-2`}>
-                <Text style={tw`text-xs text-blue-700`}>{filters.userType}</Text>
+              <View style={[styles.badge, styles.badgeBlue]}>
+                <Text style={styles.badgeTextBlue}>{filters.userType}</Text>
               </View>
             )}
             {filters.status && (
-              <View style={tw`bg-green-100 px-2 py-1 rounded-full mr-2`}>
-                <Text style={tw`text-xs text-green-700`}>{filters.status}</Text>
+              <View style={[styles.badge, styles.badgeGreen]}>
+                <Text style={styles.badgeTextGreen}>{filters.status}</Text>
               </View>
             )}
             {filters.location && (
-              <View style={tw`bg-purple-100 px-2 py-1 rounded-full mr-2`}>
-                <Text style={tw`text-xs text-purple-700`}>{filters.location}</Text>
+              <View style={[styles.badge, styles.badgePurple]}>
+                <Text style={styles.badgeTextPurple}>{filters.location}</Text>
               </View>
             )}
             <TouchableOpacity onPress={resetFilters}>
-              <Text style={tw`text-xs text-red-600 underline`}>Limpar</Text>
+              <Text style={styles.clearFiltersText}>Limpar</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
-
       {/* Users List */}
-      <View style={tw`flex-1 px-4`}>
-        {/* ✅ NEW: Results header */}
-        <View style={tw`flex-row items-center justify-between py-3`}>
-          <Text style={tw`text-lg font-semibold text-gray-800`}>
-            Usuários Disponíveis
-          </Text>
-          <Text style={tw`text-sm text-gray-600`}>
+      <View style={styles.listContainer}>
+        <View style={styles.resultsHeader}>
+          <Text style={styles.resultsTitle}>Usuários Disponíveis</Text>
+          <Text style={styles.resultsCount}>
             {filteredUsers.length} encontrado{filteredUsers.length !== 1 ? 's' : ''}
           </Text>
         </View>
-
         {filteredUsers.length === 0 ? (
-          <View style={tw`flex-1 justify-center items-center`}>
+          <View style={styles.emptyState}>
             <Feather name="users" size={64} color="#D1D5DB" />
-            <Text style={tw`text-xl font-semibold text-gray-600 mt-4`}>
-              Nenhum usuário encontrado
-            </Text>
-            <Text style={tw`text-gray-500 text-center mt-2 px-8`}>
+            <Text style={styles.emptyTitle}>Nenhum usuário encontrado</Text>
+            <Text style={styles.emptyDesc}>
               {searchQuery || filters.userType || filters.status || filters.location
                 ? "Tente ajustar os filtros de busca"
                 : "Não há usuários disponíveis para conexão no momento"
@@ -737,9 +702,9 @@ export function HomeScreen() {
             {(searchQuery || filters.userType || filters.status || filters.location) && (
               <TouchableOpacity
                 onPress={resetFilters}
-                style={tw`bg-blue-500 rounded-lg px-6 py-3 mt-4`}
+                style={styles.clearFiltersButton}
               >
-                <Text style={tw`text-white font-medium`}>Limpar Filtros</Text>
+                <Text style={styles.clearFiltersButtonText}>Limpar Filtros</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -751,12 +716,10 @@ export function HomeScreen() {
             showsVerticalScrollIndicator={false}
             refreshing={isRefreshing}
             onRefresh={() => fetchAvailableUsers(true)}
-            contentContainerStyle={tw`pb-6`}
+            contentContainerStyle={styles.flatListContent}
           />
         )}
       </View>
-
-      {/* Filter Modal */}
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
@@ -768,3 +731,280 @@ export function HomeScreen() {
     </View>
   );
 }
+
+// --- Styles ---
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  header: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 10 : 6,
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#374151",
+    fontSize: 16,
+    paddingVertical: 0,
+  },
+  filterButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: 10,
+    padding: 10,
+  },
+  activeFiltersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    flexWrap: "wrap",
+  },
+  activeFiltersLabel: {
+    fontSize: 14,
+    color: "#4B5563",
+    marginRight: 8,
+  },
+  badge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  badgeBlue: { backgroundColor: "#DBEAFE" },
+  badgeGreen: { backgroundColor: "#D1FAE5" },
+  badgePurple: { backgroundColor: "#EDE9FE" },
+  badgeGray: { backgroundColor: "#F3F4F6" },
+  badgeTextBlue: { color: "#2563EB", fontSize: 12, fontWeight: "600" },
+  badgeTextGreen: { color: "#059669", fontSize: 12, fontWeight: "600" },
+  badgeTextPurple: { color: "#7C3AED", fontSize: 12, fontWeight: "600" },
+  badgeTextGray: { color: "#6B7280", fontSize: 12, fontWeight: "600" },
+  clearFiltersText: {
+    color: "#EF4444",
+    fontSize: 12,
+    textDecorationLine: "underline",
+    marginLeft: 8,
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  resultsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1F2937",
+  },
+  resultsCount: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  flatListContent: {
+    paddingBottom: 24,
+  },
+  cardContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 12,
+    backgroundColor: "#E5E7EB",
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1F2937",
+  },
+  userTypeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  statusContainer: {
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 2,
+  },
+  statusDotAvailable: { backgroundColor: "#34D399" },
+  statusDotUnavailable: { backgroundColor: "#D1D5DB" },
+  statusText: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  infoRowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginLeft: 6,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  profileButton: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    borderColor: "#D1D5DB",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  profileButtonText: {
+    color: "#374151",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  flex1Row: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  connectButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginRight: 0,
+    backgroundColor: "#2563EB",
+    borderColor: "#2563EB",
+    borderWidth: 1,
+  },
+  connectButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  rejectButton: {
+    marginLeft: 8,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    backgroundColor: "#EF4444",
+    borderColor: "#EF4444",
+    borderWidth: 1,
+  },
+  rejectButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  chatButton: {
+    marginTop: 10,
+    backgroundColor: "#DBEAFE",
+    borderColor: "#BFDBFE",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  chatButtonText: {
+    color: "#2563EB",
+    fontWeight: "600",
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  centerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#6B7280",
+    marginTop: 16,
+  },
+  emptyDesc: {
+    color: "#9CA3AF",
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 8,
+    marginHorizontal: 24,
+  },
+  clearFiltersButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  clearFiltersButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+    textAlign: "center",
+  },
+});
