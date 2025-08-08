@@ -21,7 +21,7 @@ import { LoadingScreen } from '@/src/components/LoadingScreen';
 import { UserRole } from '@/src/interfaces/index.interface';
 import { DashboardProvider } from '@/src/context/DashboardContext';
 import { DashboardErrorBoundary } from '@/src/components/dashboard/DashboardErrorBoundary';
-import { useAuthState } from '@/src/hooks/useAuthState';
+
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -29,8 +29,9 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const pathname = usePathname();
+  const router = useRouter();
 
-  const { user, isLoading, isInitializing } = useAuth();
+  const { user, isLoading, isInitializing, isAuthenticated } = useAuth();
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -39,9 +40,31 @@ function RootLayoutContent() {
   useEffect(() => {
     if (loaded && !isLoading && !isInitializing) {
       SplashScreen.hideAsync();
-      console.log(`Java Simon`)
+      console.log(`Java Simon - App initialized`)
     }
   }, [loaded, isLoading, isInitializing]);
+
+  // Handle navigation based on authentication state
+  useEffect(() => {
+    if (!isInitializing && loaded) {
+      const authRoutes = ['/auth/LoginScreen', '/auth/RegisterScreen', '/auth/ForgotPasswordScreen', '/auth/ResetPasswordScreen'];
+      const protectedRoutes = ['/(tabs)', '/support', '/notifications', '/user'];
+      
+      if (isAuthenticated && user) {
+        // User is authenticated, redirect to main app if on auth routes
+        if (authRoutes.includes(pathname)) {
+          console.log('🔄 User authenticated, redirecting to main app...');
+          router.replace('/(tabs)');
+        }
+      } else {
+        // User is not authenticated, redirect to login if on protected routes
+        if (protectedRoutes.some(route => pathname.startsWith(route))) {
+          console.log('🔄 User not authenticated, redirecting to login...');
+          router.replace('/auth/LoginScreen');
+        }
+      }
+    }
+  }, [isAuthenticated, user, isInitializing, loaded, pathname, router]);
 
   // Show loading screen during initialization
   if (!loaded || isInitializing) {
@@ -168,28 +191,6 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
 };
 
 export default function RootLayout() {
-  const router = useRouter();
-  const { isLoading, user, isAuthenticated } = useAuthState();
-
-  useEffect(() => {
-    const loadUserAuth = async () => {
-      try {
-        console.log('+++++++++++++Fetching user auth');
-        if (isAuthenticated && user) {
-          console.log(`=========User authenticated: ${user.email}`);
-          router.replace('/(tabs)');
-        }else{
-          console.log(`=========User not authenticated or user data not available`);
-        }
-      } catch (error) {
-        console.log('------User not authenticated or user data not available ', error);
-      }
-    }
-
-    loadUserAuth();
-
-  }, [isLoading, isAuthenticated, user]);
-
   return (
     <AuthProvider>
       <ConditionalSocketProvider>

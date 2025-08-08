@@ -556,14 +556,14 @@ export function HomeScreen() {
             </View>
 
             {/* ✅ NEW: Mutual connections indicator */}
-            {user.mutualConnections && user.mutualConnections > 0 && (
+            {(user.mutualConnections && user.mutualConnections > 0) ? (
               <View style={tw`flex-row items-center`}>
                 <Feather name="link" size={14} color="#6B7280" />
                 <Text style={tw`text-sm text-gray-600 ml-1`}>
                   {user.mutualConnections} conexões mútuas
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
         </View>
 

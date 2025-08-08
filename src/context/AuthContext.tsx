@@ -148,10 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         
                         console.log("✅ User profile loaded:", user);
                         setUser(user);
-                        // Only set initialization complete after user is fully loaded
-                        setTimeout(() => {
-                            setIsInitializing(false);
-                        }, 100);
+                        setIsInitializing(false);
                     } catch (profileError: any) {
                         console.error("❌ Failed to fetch user profile:", profileError);
 
@@ -199,8 +196,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             console.log('✅ Firebase login successful:', firebaseUser.uid);
 
-            // Get ID token
-            const idToken = await firebaseUser.getIdToken();
+            // Get fresh ID token and store it
+            const idToken = await firebaseUser.getIdToken(true);
             await AsyncStorage.setItem('@token_id', idToken);
 
             console.log('✅ Backend Simulation verification successful');
@@ -208,9 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // const response = await api.post('/auth/verify-token');
             // console.log('✅ Backend verification successful:', response.data);
 
-            // Navigate to main app
-            router.replace('/(tabs)');
-
+            // Don't navigate here - let the auth state listener handle navigation
             return true;
 
         } catch (error: any) {
@@ -385,7 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             console.log('🔄 Fetching user profile...');
-            const response = await api.get(`/profile/${firebaseUser.uid}`);
+            const response = await api.get(`/auth/profile/${firebaseUser.uid}`);
             setProfile(response.data);
             console.log('✅ User profile updated');
 

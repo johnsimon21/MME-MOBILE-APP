@@ -15,6 +15,7 @@ import { UserRole } from "@/src/interfaces/index.interface";
 import { useUsers } from "@/src/hooks/useUsers";
 import { ProfileSkeleton } from "../components/ui/ProfileSkeleton";
 import { IUser } from "@/src/interfaces/user.interface";
+import { roleLabel } from "@/src/utils";
 
 interface UserData {
     fullName: string;
@@ -86,7 +87,7 @@ export const ProfileScreen = () => {
                     ...conn.connectedUser,
                     id: conn.connectedUser.uid,
                     fullName: conn.connectedUser.fullName,
-                    role: conn.connectedUser.role === UserRole.MENTOR ? "Mentor" : "Mentorado",
+                    role: roleLabel[conn.connectedUser.role],
                     province: conn.connectedUser.school || "",
                     image: conn.connectedUser.image || 'https://randomuser.me/api/portraits/men/75.jpg',
                 }));
@@ -522,7 +523,7 @@ export const ProfileScreen = () => {
                             <Feather name="edit-2" size={14} color="#6B7280" />
                         </TouchableOpacity>
 
-                        <Text style={tw`text-xs text-gray-500`}>{userData?.role || "Mentorado"}</Text>
+                        <Text style={tw`text-xs text-gray-500`}>{roleLabel[userData?.role]}</Text>
 
                         {/* Instruction text */}
                         <Text style={tw`text-xs text-gray-400 mt-1 text-center px-4`}>

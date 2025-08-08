@@ -256,23 +256,7 @@ function UserTabNavigator() {
 
 // Main Stack Navigator with role-based routing
 function MainStack() {
-  const { isAuthenticated, isLoading, isCoordinator } = useAuthState();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      console.log('&&&&&&&&&&&&& User not authenticated &&&&&&&&&&&&&');
-      router.replace('/auth/LoginScreen');
-    }
-  }, [isAuthenticated, isLoading]);
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  const { isCoordinator } = useAuthState();
 
   return (
     <AuthGuard>
