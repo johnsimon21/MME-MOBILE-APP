@@ -4,10 +4,10 @@ import { useUsers } from "@/src/hooks/useUsers";
 import { UserRole } from "@/src/interfaces/index.interface";
 import { IUser } from "@/src/interfaces/user.interface";
 import { FilterModal } from "@/src/presentation/components/ui/FilterModal";
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
 import * as React from "react";
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Navbar } from "../components/ui/navbar";
 import tw from 'twrnc';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -143,9 +143,9 @@ export function HomeScreen() {
       mentorias: user.role === UserRole.MENTOR ? 0 : 0, // TODO: Get real data
       programCount: user.programs?.length || 0,
       userType: user.role === UserRole.MENTOR ? "Mentor" : "Mentorado",
-      status: "Disponível", // TODO: Implement real status logic
-      // ✅ NEW: Connection status fields
-      connectionStatus: connectionStatus.status as any,
+      status: user.role === UserRole.MENTOR && (user.maxMenteeNumber ?? 0) < 15 ? "Disponível" : "Indisponível",
+
+      connectionStatus: connectionStatus.status as any, 
       connectionType: connectionStatus.type as any,
       connectionId: connectionStatus.connectionId,
       canCancel: connectionStatus.canCancel,
@@ -513,6 +513,7 @@ export function HomeScreen() {
               )}
             </View>
           </View>
+          {user.role === UserRole.MENTOR && 
           <View style={styles.statusContainer}>
             <View
               style={[
@@ -522,6 +523,7 @@ export function HomeScreen() {
             />
             <Text style={styles.statusText}>{user.status}</Text>
           </View>
+          }
         </View>
         {/* User Info */}
         <View style={styles.infoRow}>
@@ -631,95 +633,91 @@ export function HomeScreen() {
     <View style={styles.screen}>
       <Navbar title='Emparelhamentos' />
       {/* Search and Filter Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.searchBox}>
-            <Feather name="search" size={20} color="#6B7280" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar usuários..."
-              value={searchQuery}
-              onChangeText={handleSearch}
-              placeholderTextColor="#9CA3AF"
-              accessibilityLabel="Buscar usuários"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <Feather name="x" size={20} color="#6B7280" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={() => setFilterModalVisible(true)}
-            style={styles.filterButton}
-            accessibilityLabel="Abrir filtros"
-          >
-            <Feather name="filter" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-        {(filters.userType || filters.status || filters.location) && (
-          <View style={styles.activeFiltersRow}>
-            <Text style={styles.activeFiltersLabel}>Filtros ativos:</Text>
-            {filters.userType && (
-              <View style={[styles.badge, styles.badgeBlue]}>
-                <Text style={styles.badgeTextBlue}>{filters.userType}</Text>
-              </View>
-            )}
-            {filters.status && (
-              <View style={[styles.badge, styles.badgeGreen]}>
-                <Text style={styles.badgeTextGreen}>{filters.status}</Text>
-              </View>
-            )}
-            {filters.location && (
-              <View style={[styles.badge, styles.badgePurple]}>
-                <Text style={styles.badgeTextPurple}>{filters.location}</Text>
-              </View>
-            )}
-            <TouchableOpacity onPress={resetFilters}>
-              <Text style={styles.clearFiltersText}>Limpar</Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <View style={styles.searchBox}>
+              <Feather name="search" size={20} color="#6B7280" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar usuários..."
+                value={searchQuery}
+                onChangeText={handleSearch}
+                placeholderTextColor="#9CA3AF"
+                accessibilityLabel="Buscar usuários"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Feather name="x" size={20} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() => setFilterModalVisible(true)}
+              style={styles.filterButton}
+              accessibilityLabel="Abrir filtros"
+            >
+              <Ionicons name="options" size={26} color="black" />
             </TouchableOpacity>
           </View>
-        )}
-      </View>
-      {/* Users List */}
-      <View style={styles.listContainer}>
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsTitle}>Usuários Disponíveis</Text>
-          <Text style={styles.resultsCount}>
-            {filteredUsers.length} encontrado{filteredUsers.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-        {filteredUsers.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Feather name="users" size={64} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>Nenhum usuário encontrado</Text>
-            <Text style={styles.emptyDesc}>
-              {searchQuery || filters.userType || filters.status || filters.location
-                ? "Tente ajustar os filtros de busca"
-                : "Não há usuários disponíveis para conexão no momento"
-              }
-            </Text>
-            {(searchQuery || filters.userType || filters.status || filters.location) && (
-              <TouchableOpacity
-                onPress={resetFilters}
-                style={styles.clearFiltersButton}
-              >
-                <Text style={styles.clearFiltersButtonText}>Limpar Filtros</Text>
+          {(filters.userType || filters.status || filters.location) && (
+            <View style={styles.activeFiltersRow}>
+              <Text style={styles.activeFiltersLabel}>Filtros ativos:</Text>
+              {filters.userType && (
+                <View style={[styles.badge, styles.badgeBlue]}>
+                  <Text style={styles.badgeTextBlue}>{filters.userType}</Text>
+                </View>
+              )}
+              {filters.status && (
+                <View style={[styles.badge, styles.badgeGreen]}>
+                  <Text style={styles.badgeTextGreen}>{filters.status}</Text>
+                </View>
+              )}
+              {filters.location && (
+                <View style={[styles.badge, styles.badgePurple]}>
+                  <Text style={styles.badgeTextPurple}>{filters.location}</Text>
+                </View>
+              )}
+              <TouchableOpacity onPress={resetFilters}>
+                <Text style={styles.clearFiltersText}>Limpar</Text>
               </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={filteredUsers}
-            renderItem={renderUserCard}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            refreshing={isRefreshing}
-            onRefresh={() => fetchAvailableUsers(true)}
-            contentContainerStyle={styles.flatListContent}
-          />
-        )}
-      </View>
+            </View>
+          )}
+        </View>
+        {/* Users List */}
+        <View style={styles.listContainer}>
+          {filteredUsers.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Feather name="users" size={64} color="#D1D5DB" />
+              <Text style={styles.emptyTitle}>Nenhum usuário encontrado</Text>
+              <Text style={styles.emptyDesc}>
+                {searchQuery || filters.userType || filters.status || filters.location
+                  ? "Tente ajustar os filtros de busca"
+                  : "Não há usuários disponíveis para conexão no momento"
+                }
+              </Text>
+              {(searchQuery || filters.userType || filters.status || filters.location) && (
+                <TouchableOpacity
+                  onPress={resetFilters}
+                  style={styles.clearFiltersButton}
+                >
+                  <Text style={styles.clearFiltersButtonText}>Limpar Filtros</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <FlatList
+              data={filteredUsers}
+              renderItem={renderUserCard}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              refreshing={isRefreshing}
+              onRefresh={() => fetchAvailableUsers(true)}
+              contentContainerStyle={styles.flatListContent}
+            />
+          )}
+        </View>
+      </ScrollView>
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
@@ -741,7 +739,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#fff",
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -757,7 +755,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 10 : 6,
+    paddingVertical: Platform.OS === "ios" ? 12 : 10,
     marginRight: 12,
   },
   searchInput: {
@@ -768,9 +766,9 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   filterButton: {
-    backgroundColor: "#2563EB",
+    // backgroundColor: "#F3F4F6",
     borderRadius: 10,
-    padding: 10,
+    padding: 1,
   },
   activeFiltersRow: {
     flexDirection: "row",
@@ -807,6 +805,9 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 38,
+
   },
   resultsHeader: {
     flexDirection: "row",

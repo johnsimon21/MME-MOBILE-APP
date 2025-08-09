@@ -241,7 +241,7 @@ export function Navbar({
     }
 
     return (
-      <View style={tw`flex-row items-center px-4 pt-12 pb-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+      <View style={tw`flex-row items-center px-4 pt-10 pb-2 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
         }`}>
         {baseContent}
       </View>
