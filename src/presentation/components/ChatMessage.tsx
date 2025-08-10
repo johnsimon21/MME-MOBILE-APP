@@ -16,7 +16,7 @@ interface ChatMessageProps {
 export function ChatMessage({ message, onImagePress, onFilePress, onReplyPress }: ChatMessageProps) {
     const { user } = useAuth();
     const isOwnMessage = chatUtils.isOwnMessage(message, user?.uid || '');
-
+  
     const renderMessageContent = () => {
         switch (message.type) {
             case 'image':

@@ -7,7 +7,7 @@ import { ChatType } from "@/src/interfaces/chat.interface";
 import { IConnectedUser } from "@/src/interfaces/connections.interface";
 import { ISessionResponse, SessionStatus, SessionType } from "@/src/interfaces/sessions.interface";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -83,6 +83,17 @@ export function SessionManagementScreen() {
             loadInitialData();
         }
     }, [user?.role]);
+
+    // Refresh sessions when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            if (user?.role === 'mentor' || user?.role === 'coordinator') {
+                // Clear any stuck loading state and refresh
+                clearError();
+                loadInitialData();
+            }
+        }, [user?.role, clearError])
+    );
 
     const loadInitialData = async () => {
         try {
@@ -160,6 +171,7 @@ export function SessionManagementScreen() {
 
         return filtered;
     }, [sessions, filters]);
+
 
     const handleJoinSessionChat = useCallback(async (session: ISessionResponse) => {
         try {
@@ -342,6 +354,8 @@ export function SessionManagementScreen() {
             ]
         );
     }, [selectedSessions, cancelSession]);
+
+
 
     // UI Helper functions
     const getStatusColor = (status: SessionStatus) => {
@@ -704,7 +718,7 @@ export function SessionManagementScreen() {
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={tw`mb-2 max-h-20`}
+                style={tw`my-2 max-h-20`}
                 contentContainerStyle={tw`px-2 justify-center items-center w-full`}
             >
                 <View style={tw`flex-row justify-center items-center max-h-fit`}>
@@ -865,23 +879,28 @@ export function SessionManagementScreen() {
                     menteeIds: formData.selectedParticipants.map(p => p.uid),
                     maxParticipants: formData.type === SessionType.GROUP ? Math.max(formData.selectedParticipants.length + 2, 5) : 1
                 });
+                console.log("Session Creation")
+                console.log(formData)
 
-                Alert.alert('Sucesso', 'Sessão criada com sucesso!');
-                setShowCreateModal(false);
+                // Wait a brief moment to ensure context loading is complete
+                setTimeout(() => {
+                    Alert.alert('Sucesso', 'Sessão criada com sucesso!');
+                    setShowCreateModal(false);
 
-                // Reset form
-                setFormData({
-                    title: '',
-                    description: '',
-                    subject: '',
-                    materials: [],
-                    type: SessionType.INDIVIDUAL,
-                    duration: 60,
-                    scheduledAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
-                    selectedParticipants: []
-                });
-                setSearchQuery('');
-                setSearchResults([]);
+                    // Reset form
+                    setFormData({
+                        title: '',
+                        description: '',
+                        subject: '',
+                        materials: [],
+                        type: SessionType.INDIVIDUAL,
+                        duration: 60,
+                        scheduledAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+                        selectedParticipants: []
+                    });
+                    setSearchQuery('');
+                    setSearchResults([]);
+                }, 500); // Small delay to ensure context finishes
             } catch (error: any) {
                 Alert.alert('Erro', error.message || 'Não foi possível criar a sessão');
             } finally {
@@ -1250,7 +1269,7 @@ export function SessionManagementScreen() {
             {/* Enhanced Header with Gradient */}
             <LinearGradient
                 colors={['#667eea', '#764ba2']}
-                style={tw`px-4 py-6`}
+                style={tw`px-4 py-4`}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
@@ -1360,34 +1379,45 @@ export function SessionManagementScreen() {
                 </View>
             )}
 
-            {/* Stats */}
-            <StatsSection />
-
-            {/* Sessions list */}
+            {/* Sessions list with integrated stats */}
             <View style={tw`flex-1`}>
                 {isLoading && !refreshing ? (
                     <View style={tw`flex-1 items-center justify-center`}>
                         <ActivityIndicator size="large" color="#4F46E5" />
                         <Text style={tw`text-gray-500 mt-4`}>Carregando sessões...</Text>
                     </View>
-                ) : filteredSessions.length === 0 ? (
-                    <View style={tw`flex-1 items-center justify-center px-8`}>
-                        <Ionicons name="calendar-outline" size={64} color="#D1D5DB" />
-                        <Text style={tw`text-gray-500 text-lg font-medium mt-4 text-center`}>
-                            Nenhuma sessão encontrada
-                        </Text>
-                        <Text style={tw`text-gray-400 text-center mt-2`}>
-                            {filters.search || filters.status !== 'all' || filters.type !== 'all'
-                                ? 'Tente ajustar os filtros de busca'
-                                : 'Suas sessões aparecerão aqui quando forem criadas'
-                            }
-                        </Text>
-                    </View>
                 ) : (
                     <FlatList
                         data={filteredSessions}
-                        renderItem={RenderSessionItem}
+                        renderItem={({ item }) => (
+                            <RenderSessionItem
+                                item={item}
+                                onStartSession={handleStartSession}
+                                onEndSession={handleEndSession}
+                                onDeleteSession={handleDeleteSession}
+                                onOpenChat={handleJoinSessionChat}
+                            />
+                        )}
                         keyExtractor={(item) => item.id}
+                        ListHeaderComponent={() => (
+                            <View>
+                                <StatsSection />
+                                {filteredSessions.length === 0 && (
+                                    <View style={tw`items-center justify-center px-8 py-12`}>
+                                        <Ionicons name="calendar-outline" size={64} color="#D1D5DB" />
+                                        <Text style={tw`text-gray-500 text-lg font-medium mt-4 text-center`}>
+                                            Nenhuma sessão encontrada
+                                        </Text>
+                                        <Text style={tw`text-gray-400 text-center mt-2`}>
+                                            {filters.search || filters.status !== 'all' || filters.type !== 'all'
+                                                ? 'Tente ajustar os filtros de busca'
+                                                : 'Suas sessões aparecerão aqui quando forem criadas'
+                                            }
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        )}
                         refreshControl={
                             <RefreshControl
                                 refreshing={refreshing}
@@ -1401,11 +1431,7 @@ export function SessionManagementScreen() {
                         initialNumToRender={10}
                         maxToRenderPerBatch={10}
                         windowSize={10}
-                        getItemLayout={(data, index) => ({
-                            length: 200,
-                            offset: 200 * index,
-                            index,
-                        })}
+                        stickyHeaderIndices={[]}
                     />
                 )}
             </View>

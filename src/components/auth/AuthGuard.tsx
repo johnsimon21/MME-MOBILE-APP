@@ -57,7 +57,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   // Check role permissions
   if (requiredRoles && requiredRoles.length > 0) {
-    const hasRequiredRole = requiredRoles.includes(user.role);
+    const hasRequiredRole = user.role && requiredRoles.includes(user.role);
     
     if (!hasRequiredRole) {
       return (

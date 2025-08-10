@@ -148,7 +148,7 @@ export function ChatScreen({ route, navigation }: Props) {
 
         try {
             handleTypingStop();
-            await sendMessage(newMessage.trim());
+            await sendMessage(newMessage.trim(), new Date());
             setNewMessage("");
             setShowEmojiPicker(false);
         } catch (error: any) {

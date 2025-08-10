@@ -78,7 +78,9 @@ export function MessagesScreen() {
   const getUnreadCount = (chat: IChatResponse) => {
     return chat.unreadCount;
   };
-
+  console.log("========================== Here ====================================")
+  console.log(chats)
+  console.log("==============================================================")
   // Filter chats based on search query and filter selection
   const filteredChats = chats.filter(chat => {
     const otherParticipant = chatUtils.getOtherParticipant(chat, user?.uid || '');
@@ -144,7 +146,7 @@ export function MessagesScreen() {
   return (
     <View style={tw`flex-1 bg-gray-50`}>
       {/* Header */}
-      <View style={tw`pt-10 pb-1 border border-1 border-gray-300 bg-white shadow-sm`}>
+      <View style={tw`pt-2 pb-1 border border-1 border-gray-300 bg-white shadow-sm`}>
         <View style={tw`flex-row justify-between items-center mx-5`}>
           <Text style={tw`text-2xl font-bold text-gray-800`}>Mensagens</Text>
           <TouchableOpacity onPress={handleRefresh}>
@@ -357,7 +359,7 @@ export function MessagesScreen() {
                   ? `Não encontramos resultados para "${searchQuery}"`
                   : "Inicie uma nova conversa para começar a mensagem"}
               </Text>
-              {!searchQuery && (
+              {/* {!searchQuery && (
                 <TouchableOpacity
                   style={tw`mt-6 bg-indigo-600 px-6 py-3 rounded-full flex-row items-center`}
                   onPress={() => {
@@ -369,7 +371,7 @@ export function MessagesScreen() {
                   <Feather name="edit" size={20} color="white" />
                   <Text style={tw`ml-2 text-white font-medium`}>Nova Mensagem</Text>
                 </TouchableOpacity>
-              )}
+              )} */}
             </View>
           )}
         </ScrollView>

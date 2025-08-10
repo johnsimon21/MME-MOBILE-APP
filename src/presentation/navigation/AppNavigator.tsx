@@ -2,12 +2,12 @@ import * as React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { Home } from "../screens/Home";
+import { HomeScreen } from "../screens/Home";
 import { MessagesScreen } from "../screens/MessagesScreen";
 import tw from "twrnc";
 import { AnalyticsScreen } from "../screens/AnalyticsScreen";
 import { ChatScreen } from "../screens/ChatScreen";
-import { SessionManagement } from "../screens/SessionManagementScreen";
+import { SessionManagementScreen } from "../screens/SessionManagementScreen";
 import { EducationalResourcesScreen } from "../screens/EducationalResourcesScreen";
 
 function MessagesStack() {
@@ -47,8 +47,8 @@ function BottomTabNavigator() {
     >
       <Tab.Screen name="Tarefas" component={AnalyticsScreen} />
       <Tab.Screen name="Mensagens" component={MessagesStack} />
-      <Tab.Screen name="Emparelhamento" component={Home} />
-      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagement} />
+      <Tab.Screen name="Emparelhamento" component={HomeScreen} />
+      <Tab.Screen name="Gerenciamento de sessões" component={SessionManagementScreen} />
       <Tab.Screen name="Recursos educacionais" component={EducationalResourcesScreen} />
     </Tab.Navigator>
   );

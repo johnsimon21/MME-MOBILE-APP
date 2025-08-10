@@ -1,4 +1,4 @@
-import { IFAQ, ITicket, ICreateTicketRequest } from '@/src/interfaces/support.interface';
+import { IFAQ, ITicket, ICreateTicketRequest, TicketStatus, TicketPriority, TicketCategory } from '@/src/interfaces/support.interface';
 import { ChatMessage } from '@/src/types/support.types';
 import { useCallback, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -18,23 +18,29 @@ export function useSupport() {
     const createTicket = useCallback(async (ticketData: ICreateTicketRequest) => {
         setLoading(true);
         try {
-            const newTicket: SupportTicket = {
+            const newTicket: ITicket = {
                 id: Date.now().toString(),
                 title: ticketData.title || '',
                 description: ticketData.description || '',
-                status: 'open',
-                priority: ticketData.priority || 'medium',
-                category: ticketData.category || 'Geral',
-                createdAt: new Date().toString(),
-                updatedAt: new Date().toString(),
-                userId: user?.uid || '',
-                userName: user?.firebaseClaims.name || 'Usuário',
-                messages: [{
-                    id: '1',
+                status: TicketStatus.OPEN,
+                priority: ticketData.priority || TicketPriority.MEDIUM,
+                category: ticketData.category || TicketCategory.OTHER,
+                user: {
+                    uid: user?.uid || '',
+                    fullName: user?.firebaseClaims.name || 'Usuário',
+                    email: user?.email || '',
+                    role: user?.role || 'user'
+                },
+                attachments: [],
+                messagesCount: 1,
+                lastMessage: {
                     message: ticketData.description || '',
-                    sender: 'user',
-                    timestamp: new Date().toString()
-                }]
+                    senderName: user?.firebaseClaims.name || 'Usuário',
+                    senderType: 'user',
+                    timestamp: new Date()
+                },
+                createdAt: new Date(),
+                updatedAt: new Date()
             };
 
             setTickets(prev => [newTicket, ...prev]);
@@ -47,7 +53,7 @@ export function useSupport() {
         }
     }, [user]);
 
-    const updateTicket = useCallback((updatedTicket: SupportTicket) => {
+    const updateTicket = useCallback((updatedTicket: ITicket) => {
         setTickets(prev => prev.map(ticket =>
             ticket.id === updatedTicket.id ? updatedTicket : ticket
         ));
@@ -81,7 +87,7 @@ export function useSupport() {
     // Filter functions
     const getFilteredTickets = useCallback((searchQuery: string) => {
         return tickets.filter(ticket => {
-            const matchesUser = isCoordinator || ticket.userId === user?.uid;
+            const matchesUser = isCoordinator || ticket.user.uid === user?.uid;
             const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesUser && matchesSearch;

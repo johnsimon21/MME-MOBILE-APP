@@ -69,7 +69,7 @@ interface ChatContextType extends ChatState {
     // Message operations
     loadMessages: (chatId: string, params?: IMessagesQueryParams) => Promise<void>;
     loadMoreMessages: () => Promise<void>;
-    sendMessage: (content: string, replyTo?: string) => Promise<void>;
+    sendMessage: (content: string, timestamp: Date, replyTo?: string) => Promise<void>;
     sendFileMessage: (fileData: ISendFileMessageRequest) => Promise<void>;
     deleteMessage: (messageId: string) => Promise<void>;
     markAsRead: (chatId?: string) => Promise<void>;
@@ -314,8 +314,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         // Message events
         on('new-message', (data: any) => {
             console.log('📩 New message received:', data);
-            dispatch({ type: 'ADD_MESSAGE', payload: data.message });
-            dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { chatId: data.chatId, message: data.message } });
+            
+            // Transform message timestamp
+            const transformedMessage = {
+                ...data.message,
+                timestamp: data.message.timestamp ? 
+                    (typeof data.message.timestamp === 'string' ? data.message.timestamp : new Date(data.message.timestamp).toISOString()) :
+                    new Date().toISOString()
+            };
+            
+            dispatch({ type: 'ADD_MESSAGE', payload: transformedMessage });
+            dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: { chatId: data.chatId, message: transformedMessage } });
 
             // Update unread count if not current chat
             if (state.currentChat?.id !== data.chatId) {
@@ -451,6 +460,91 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
     };
 
+    // Transform dates from Firebase Timestamps to JavaScript Dates/strings
+    const transformChatDates = useCallback((chats: IChatResponse[]): IChatResponse[] => {
+        return chats.map(chat => {
+            const createdAtTransformed = transformTimestamp(chat.createdAt);
+            
+            return {
+                ...chat,
+                createdAt: createdAtTransformed,
+                // Use createdAt as fallback for lastActivity if it's missing/invalid
+                lastActivity: transformTimestamp(chat.lastActivity, chat.createdAt || createdAtTransformed),
+                lastMessage: chat.lastMessage ? {
+                    ...chat.lastMessage,
+                    timestamp: transformTimestamp(chat.lastMessage.timestamp)
+                } : undefined
+            };
+        });
+    }, []);
+
+    // Helper function to transform Firebase Timestamps
+    const transformTimestamp = (timestamp: any, fallbackTimestamp?: any): string => {
+        if (!timestamp) {
+            // Use fallback timestamp if provided, otherwise current time
+            if (fallbackTimestamp) {
+                return transformTimestamp(fallbackTimestamp);
+            }
+            return new Date().toISOString();
+        }
+        
+        // If it's already a string, validate and return it
+        if (typeof timestamp === 'string') {
+            try {
+                const date = new Date(timestamp);
+                if (!isNaN(date.getTime())) {
+                    return timestamp;
+                }
+            } catch (error) {
+                console.warn('Invalid string timestamp:', timestamp);
+            }
+        }
+        
+        // If it's a Firebase Timestamp object, convert it
+        if (timestamp && typeof timestamp === 'object' && typeof timestamp.toDate === 'function') {
+            return timestamp.toDate().toISOString();
+        }
+        
+        // If it has seconds and nanoseconds (Firebase Timestamp structure)
+        if (timestamp && typeof timestamp === 'object' && timestamp.seconds !== undefined) {
+            return new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000).toISOString();
+        }
+        
+        // Check if it's an empty object {} (malformed Firebase timestamp)
+        if (timestamp && typeof timestamp === 'object' && Object.keys(timestamp).length === 0) {
+            console.warn('Received empty timestamp object');
+            if (fallbackTimestamp) {
+                return transformTimestamp(fallbackTimestamp);
+            }
+            return new Date().toISOString();
+        }
+        
+        // If it's a valid Date object
+        if (timestamp instanceof Date) {
+            return timestamp.toISOString();
+        }
+        
+        // Fallback: try to create a Date from whatever we have
+        try {
+            const date = new Date(timestamp);
+            // Check if the date is valid
+            if (isNaN(date.getTime())) {
+                console.warn('Invalid timestamp:', timestamp);
+                if (fallbackTimestamp) {
+                    return transformTimestamp(fallbackTimestamp);
+                }
+                return new Date().toISOString();
+            }
+            return date.toISOString();
+        } catch (error) {
+            console.warn('Failed to parse timestamp:', timestamp, error);
+            if (fallbackTimestamp) {
+                return transformTimestamp(fallbackTimestamp);
+            }
+            return new Date().toISOString();
+        }
+    };
+
     // Load chats
     const loadChats = useCallback(async (params?: IChatQueryParams) => {
         try {
@@ -458,13 +552,40 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             dispatch({ type: 'SET_ERROR', payload: null });
 
             const response = await chatHook.getUserChats(params);
-            dispatch({ type: 'SET_CHATS', payload: response.chats });
+            
+            // DEBUG: Log the first chat's raw data to understand the timestamp format
+            if (response.chats.length > 0) {
+                const firstChat = response.chats[0];
+                console.log('🔍 Raw chat from API:', {
+                    id: firstChat.id,
+                    createdAt: firstChat.createdAt,
+                    lastActivity: firstChat.lastActivity,
+                    lastMessage: firstChat.lastMessage,
+                    lastMessageTimestamp: firstChat.lastMessage?.timestamp
+                });
+            }
+            
+            const transformedChats = transformChatDates(response.chats);
+            
+            // DEBUG: Log the first transformed chat
+            if (transformedChats.length > 0) {
+                const firstTransformed = transformedChats[0];
+                console.log('✅ Transformed chat:', {
+                    id: firstTransformed.id,
+                    createdAt: firstTransformed.createdAt,
+                    lastActivity: firstTransformed.lastActivity,
+                    lastMessage: firstTransformed.lastMessage,
+                    lastMessageTimestamp: firstTransformed.lastMessage?.timestamp
+                });
+            }
+            
+            dispatch({ type: 'SET_CHATS', payload: transformedChats });
         } catch (error: any) {
             dispatch({ type: 'SET_ERROR', payload: error.message });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    }, []); // Remove chatHook dependency to prevent recreations
+    }, [transformChatDates]); // Remove chatHook dependency to prevent recreations
 
     // Create chat
     const createChat = async (chatData: ICreateChatRequest): Promise<IChatResponse> => {
@@ -472,9 +593,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             dispatch({ type: 'SET_ERROR', payload: null });
 
             const newChat = await chatHook.createChat(chatData);
-            dispatch({ type: 'ADD_CHAT', payload: newChat });
+            const transformedChat = transformChatDates([newChat])[0];
+            dispatch({ type: 'ADD_CHAT', payload: transformedChat });
 
-            return newChat;
+            return transformedChat;
         } catch (error: any) {
             dispatch({ type: 'SET_ERROR', payload: error.message });
             throw error;
@@ -540,7 +662,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     };
 
     // Send message
-    const sendMessage = async (content: string, replyTo?: string) => {
+    const sendMessage = async (content: string, timestamp: Date, replyTo?: string) => {
         if (!state.currentChat) return;
 
         try {
@@ -549,7 +671,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             const messageData: ISendMessageRequest = {
                 content,
                 type: MessageType.TEXT,
-                replyTo
+                replyTo,
+                timestamp
             };
 
             // Send via socket for real-time

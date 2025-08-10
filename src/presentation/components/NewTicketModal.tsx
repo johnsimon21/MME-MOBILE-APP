@@ -15,14 +15,14 @@ export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }
     const [ticketData, setTicketData] = useState({
         title: '',
         description: '',
-        category: TicketCategory.GENERAL,
+        category: TicketCategory.OTHER,
         priority: TicketPriority.MEDIUM
     });
 
     const categories = [
         { value: TicketCategory.ACCOUNT, label: 'Conta' },
         { value: TicketCategory.TECHNICAL, label: 'Técnico' },
-        { value: TicketCategory.GENERAL, label: 'Geral' },
+        { value: TicketCategory.OTHER, label: 'Geral' },
         { value: TicketCategory.BUG_REPORT, label: 'Bug Report' }
     ];
     
@@ -50,7 +50,7 @@ export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }
         setTicketData({ 
             title: '', 
             description: '', 
-            category: TicketCategory.GENERAL, 
+            category: TicketCategory.OTHER, 
             priority: TicketPriority.MEDIUM 
         });
         onClose();
@@ -61,7 +61,7 @@ export function NewTicketModal({ visible, onClose, onCreateTicket, currentUser }
         setTicketData({ 
             title: '', 
             description: '', 
-            category: TicketCategory.GENERAL, 
+            category: TicketCategory.OTHER, 
             priority: TicketPriority.MEDIUM 
         });
     };

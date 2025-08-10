@@ -57,7 +57,7 @@ export const useSessions = () => {
                 { params, headers }
             );
 
-            console.log('✅ Sessions fetched successfully:', data);
+            console.log('✅✅✅✅✅ Sessions fetched successfully:', data);
             return data;
         } catch (error: any) {
             console.error('❌ Error fetching sessions:', error);

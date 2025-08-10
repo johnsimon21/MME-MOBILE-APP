@@ -20,9 +20,9 @@ export interface ISessionResponse {
   }>;
   status: SessionStatus;
   type: SessionType;
-  scheduledAt: Date;
-  startedAt?: Date;
-  endedAt?: Date;
+  scheduledAt: string;
+  startedAt?: string;
+  endedAt?: string;
   duration: number;
   actualDuration?: number;
   chatId?: string;
@@ -37,8 +37,8 @@ export interface ISessionResponse {
     joinedCount: number;
     completionRate: number;
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ISessionsListResponse {
