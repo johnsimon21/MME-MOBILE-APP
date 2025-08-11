@@ -138,6 +138,12 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
             const updatedChats = state.chats.map(chat =>
                 chat.id === action.payload.id ? action.payload : chat
             );
+            
+            // Sort chats by last activity to ensure proper order in MessagesScreen
+            updatedChats.sort((a, b) =>
+                new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+            );
+            
             return {
                 ...state,
                 chats: updatedChats,
@@ -336,11 +342,33 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     });
                 }
             }
+        });
 
-            // CRITICAL: Refresh chats list to update Messages screen
-            setTimeout(() => {
-                loadChats(); // Refresh chats list for Messages screen
-            }, 100);
+        // Chat list updates - CRITICAL for real-time MessagesScreen updates
+        on('chat-updated', (data: any) => {
+            console.log('💬 Chat updated received:', data);
+            
+            if (data.chat) {
+                // Transform chat timestamps if needed
+                const transformedChat = {
+                    ...data.chat,
+                    lastActivity: data.chat.lastActivity || new Date().toISOString(),
+                    createdAt: data.chat.createdAt || new Date().toISOString(),
+                    ...(data.chat.lastMessage && {
+                        lastMessage: {
+                            ...data.chat.lastMessage,
+                            timestamp: data.chat.lastMessage.timestamp || new Date().toISOString()
+                        }
+                    })
+                };
+                
+                dispatch({ type: 'UPDATE_CHAT', payload: transformedChat });
+                
+                // If it's the current chat, update it
+                if (state.currentChat?.id === transformedChat.id) {
+                    dispatch({ type: 'SET_CURRENT_CHAT', payload: transformedChat });
+                }
+            }
         });
 
         on('message-sent', (data: any) => {
@@ -432,6 +460,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             off('joined-chat');
             off('left-chat');
             off('new-message');
+            off('chat-updated');
             off('message-sent');
             off('file-message-received');
             off('user-typing');
@@ -674,7 +703,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
             // Emit via socket for real-time update
             if (isConnected) {
-                emit('mark-read', { chatId: targetChatId });
+                emit('mark-messages-read', { chatId: targetChatId });
             }
 
             dispatch({

@@ -213,6 +213,7 @@ export interface IChatSocketEvents {
   'joined-chat': (data: { chatId: string; message: string }) => void;
   'left-chat': (data: { chatId: string; message: string }) => void;
   'new-message': (data: { chatId: string; message: IMessageResponse }) => void;
+  'chat-updated': (data: { chat: IChatResponse; updateType: string }) => void;
   'message-sent': (data: { chatId: string; messageId: string; timestamp: Date }) => void;
   'file-message-received': (data: { chatId: string; messageId: string; fileType: string; fileName: string; uploadedBy: string; timestamp: Date }) => void;
   'participant-joined': (data: { chatId: string; menteeId: string; addedBy: string; timestamp: Date }) => void;

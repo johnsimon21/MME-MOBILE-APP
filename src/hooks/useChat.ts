@@ -54,9 +54,7 @@ export const useChat = () => {
     const getUserChats = useCallback(async (params?: IChatQueryParams): Promise<IChatsListResponse> => {
         return handleRequest(async () => {
             const response = await api.get('/chats', { params });
-            console.log("========================== Fetched chats for user====================================");
-            console.log(response.data);
-            console.log("==============================================================");
+           
             return response.data;
         });
     }, [handleRequest]);

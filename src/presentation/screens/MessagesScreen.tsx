@@ -101,10 +101,18 @@ export function MessagesScreen() {
     return isOnline ? "bg-green-500" : "bg-gray-400";
   };
 
-  // Get active participants for horizontal scroll
+  // Get active participants for horizontal scroll (deduplicated)
   const activeParticipants = chats
     .map(chat => chatUtils.getOtherParticipant(chat, user?.uid || ''))
     .filter(participant => participant && onlineUsers.includes(participant.uid))
+    .reduce((unique: any[], participant) => {
+      // Only add if not already in the array (deduplicate by uid)
+      const exists = unique.some(p => p?.uid === participant?.uid);
+      if (!exists) {
+        unique.push(participant);
+      }
+      return unique;
+    }, [])
     .slice(0, 10); // Limit to 10 active users
 
   const handleRefresh = useCallback(async () => {
@@ -165,9 +173,9 @@ export function MessagesScreen() {
               )}
               scrollEventThrottle={16}
             >
-              {activeParticipants.map((participant) => (
+              {activeParticipants.map((participant, index) => (
                 <TouchableOpacity
-                  key={participant!.uid}
+                  key={`active-${participant!.uid}-${index}`}
                   style={tw`items-center mr-2`}
                   onPress={() => {
                     const chat = chats.find(c => 

@@ -78,14 +78,8 @@ export function ChatScreen({ route, navigation }: Props) {
             selectChat(chat);
             loadMessages(chat.id);
             joinChat(chat.id);
-            
-            // Mark messages as read after a short delay
-            const timer = setTimeout(() => {
-                markAsRead(chat.id);
-            }, 1000);
 
             return () => {
-                clearTimeout(timer);
                 leaveChat(chat.id);
             };
         }
@@ -107,6 +101,25 @@ export function ChatScreen({ route, navigation }: Props) {
             }, 100);
         }
     }, [messages]);
+
+    // Mark as read when user scrolls or when messages load (indicating user is viewing)
+    const handleMarkAsRead = useCallback(() => {
+        if (chat.unreadCount > 0) {
+            markAsRead(chat.id);
+        }
+    }, [chat.id, chat.unreadCount, markAsRead]);
+
+    // Mark as read when messages are loaded and user is viewing the chat
+    useEffect(() => {
+        if (messages.length > 0 && chat.unreadCount > 0) {
+            // Debounce to avoid excessive calls
+            const timer = setTimeout(() => {
+                handleMarkAsRead();
+            }, 2000); // Wait 2 seconds before marking as read
+
+            return () => clearTimeout(timer);
+        }
+    }, [messages.length, handleMarkAsRead]);
 
     // Handle typing indicators
     const handleTypingStart = useCallback(() => {
@@ -480,6 +493,8 @@ export function ChatScreen({ route, navigation }: Props) {
                     style={tw`flex-1`}
                     contentContainerStyle={tw`py-2`}
                     showsVerticalScrollIndicator={false}
+                    onScrollEndDrag={handleMarkAsRead}
+                    onMomentumScrollEnd={handleMarkAsRead}
                 >
                     {messages.map((message) => {
                         const isSent = message.sender.uid === user?.uid;
