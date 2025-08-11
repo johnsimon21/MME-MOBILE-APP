@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { User } from '../context/AuthContext';
+import type { IUserAuth } from '../interfaces/user.interface';
 
 const KEYS = {
   TOKEN: '@mme_auth_token',
@@ -37,7 +37,7 @@ export const authStorage = {
   },
 
   // User data management
-  async getUser(): Promise<User | null> {
+  async getUser(): Promise<IUserAuth | null> {
     try {
       const userData = await AsyncStorage.getItem(KEYS.USER);
       return userData ? JSON.parse(userData) : null;
@@ -47,7 +47,7 @@ export const authStorage = {
     }
   },
 
-  async setUser(user: User): Promise<void> {
+  async setUser(user: IUserAuth): Promise<void> {
     try {
       await AsyncStorage.setItem(KEYS.USER, JSON.stringify(user));
     } catch (error) {
@@ -126,7 +126,7 @@ export const authStorage = {
   // Get all auth data at once
   async getAllAuthData(): Promise<{
     token: string | null;
-    user: User | null;
+    user: IUserAuth | null;
     rememberedEmail: string | null;
     biometricEnabled: boolean;
   }> {

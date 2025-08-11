@@ -23,7 +23,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-if (__DEV__) {
+if (process.env.NODE_ENV === 'development') {
   console.log('🔥 Firebase initialized for project:', firebaseConfig.projectId);
 }
 

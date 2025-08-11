@@ -19,6 +19,7 @@ export const sessionStatusLabel = {
     'paused': 'Pausado',
     'completed': 'Concluído',
     'cancelled': 'Cancelado',
+    'no_show': 'Não Compareceu',
 }
 
 export const roleOptions = {

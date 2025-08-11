@@ -461,89 +461,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     };
 
     // Transform dates from Firebase Timestamps to JavaScript Dates/strings
+    // Since backend now returns ISO strings, no transformation needed
     const transformChatDates = useCallback((chats: IChatResponse[]): IChatResponse[] => {
-        return chats.map(chat => {
-            const createdAtTransformed = transformTimestamp(chat.createdAt);
-            
-            return {
-                ...chat,
-                createdAt: createdAtTransformed,
-                // Use createdAt as fallback for lastActivity if it's missing/invalid
-                lastActivity: transformTimestamp(chat.lastActivity, chat.createdAt || createdAtTransformed),
-                lastMessage: chat.lastMessage ? {
-                    ...chat.lastMessage,
-                    timestamp: transformTimestamp(chat.lastMessage.timestamp)
-                } : undefined
-            };
-        });
+        return chats;
     }, []);
 
-    // Helper function to transform Firebase Timestamps
-    const transformTimestamp = (timestamp: any, fallbackTimestamp?: any): string => {
-        if (!timestamp) {
-            // Use fallback timestamp if provided, otherwise current time
-            if (fallbackTimestamp) {
-                return transformTimestamp(fallbackTimestamp);
-            }
-            return new Date().toISOString();
-        }
-        
-        // If it's already a string, validate and return it
-        if (typeof timestamp === 'string') {
-            try {
-                const date = new Date(timestamp);
-                if (!isNaN(date.getTime())) {
-                    return timestamp;
-                }
-            } catch (error) {
-                console.warn('Invalid string timestamp:', timestamp);
-            }
-        }
-        
-        // If it's a Firebase Timestamp object, convert it
-        if (timestamp && typeof timestamp === 'object' && typeof timestamp.toDate === 'function') {
-            return timestamp.toDate().toISOString();
-        }
-        
-        // If it has seconds and nanoseconds (Firebase Timestamp structure)
-        if (timestamp && typeof timestamp === 'object' && timestamp.seconds !== undefined) {
-            return new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000).toISOString();
-        }
-        
-        // Check if it's an empty object {} (malformed Firebase timestamp)
-        if (timestamp && typeof timestamp === 'object' && Object.keys(timestamp).length === 0) {
-            console.warn('Received empty timestamp object');
-            if (fallbackTimestamp) {
-                return transformTimestamp(fallbackTimestamp);
-            }
-            return new Date().toISOString();
-        }
-        
-        // If it's a valid Date object
-        if (timestamp instanceof Date) {
-            return timestamp.toISOString();
-        }
-        
-        // Fallback: try to create a Date from whatever we have
-        try {
-            const date = new Date(timestamp);
-            // Check if the date is valid
-            if (isNaN(date.getTime())) {
-                console.warn('Invalid timestamp:', timestamp);
-                if (fallbackTimestamp) {
-                    return transformTimestamp(fallbackTimestamp);
-                }
-                return new Date().toISOString();
-            }
-            return date.toISOString();
-        } catch (error) {
-            console.warn('Failed to parse timestamp:', timestamp, error);
-            if (fallbackTimestamp) {
-                return transformTimestamp(fallbackTimestamp);
-            }
-            return new Date().toISOString();
-        }
-    };
+
 
     // Load chats
     const loadChats = useCallback(async (params?: IChatQueryParams) => {

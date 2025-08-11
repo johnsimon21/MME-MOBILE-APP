@@ -21,9 +21,9 @@ export interface IChatResponse {
   participants: IChatParticipant[];
   type: ChatType;
   sessionId?: string;
-  createdAt: any; // Can be Date, string, or Firebase Timestamp
+  createdAt: string;
   lastMessage?: ILastMessage;
-  lastActivity: any; // Can be Date, string, or Firebase Timestamp
+  lastActivity: string;
   unreadCount: number;
   title?: string;
 }

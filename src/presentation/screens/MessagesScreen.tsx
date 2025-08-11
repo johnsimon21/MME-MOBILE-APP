@@ -78,16 +78,14 @@ export function MessagesScreen() {
   const getUnreadCount = (chat: IChatResponse) => {
     return chat.unreadCount;
   };
-  console.log("========================== Here ====================================")
-  console.log(chats)
-  console.log("==============================================================")
   // Filter chats based on search query and filter selection
   const filteredChats = chats.filter(chat => {
     const otherParticipant = chatUtils.getOtherParticipant(chat, user?.uid || '');
     const chatTitle = chatUtils.getChatTitle(chat, user?.uid || '');
     
     const matchesSearch = chatTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chat.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+    (chat.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+
     
     const matchesFilter =
       selectedFilter === "all" ||

@@ -101,7 +101,7 @@ export default function VoiceCallScreen() {
       scheduledDate: formatDate(callInfoRef.current.startTime),
       completedDate: formatDate(callInfoRef.current.endTime!),
       type: "call",
-      participantId: userId,
+      participantId: userId.toString(),
       participantName: userName,
       duration: callInfoRef.current.duration
     };

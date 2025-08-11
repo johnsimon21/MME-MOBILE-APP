@@ -160,7 +160,7 @@ export const useCall = () => {
                 callId,
                 chatId,
                 targetUserId,
-                callerName: user?.fullName || 'Usuário',
+                callerName: user?.firebaseClaims?.name || 'Usuário',
                 offer,
             });
 
@@ -209,7 +209,7 @@ export const useCall = () => {
             emit('call-answer', {
                 callId: callData.callId,
                 callerId: callData.targetUserId,
-                answerName: user?.fullName || 'Usuário',
+                answerName: user?.firebaseClaims?.name || 'Usuário',
                 answer,
             });
 

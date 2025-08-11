@@ -17,9 +17,16 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
-
+.easignore
 # Metro
 .metro-health-check*
+
+android
+ios
+build
+dist
+.expo
+.expo-shared
 
 # debug
 npm-debug.*

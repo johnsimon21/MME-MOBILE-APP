@@ -1,11 +1,12 @@
 // src/presentation/screens/LoadingScreen.tsx
+import { useAuthStore } from "@/src/state/authStore";
 import React from "react";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import tw from "twrnc";
 
 export default function LoadingScreen({ navigation }: any) {
-  const { checkAuthStatus, isAuthenticated } = useAuthStor();
+  const { checkAuthStatus, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const checkAuth = async () => {

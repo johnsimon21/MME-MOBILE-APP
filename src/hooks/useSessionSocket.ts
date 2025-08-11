@@ -22,7 +22,7 @@ interface SessionSocketEvents {
 
 export const useSessionSocket = () => {
   const { user, isAuthenticated } = useAuth();
-  const [socket, setSocket] = useState<typeof Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const eventListeners = useRef<Map<string, Function[]>>(new Map());
 
@@ -108,7 +108,7 @@ export const useSessionSocket = () => {
   ) => {
     if (!socket) return;
 
-    socket.on(event, callback);
+    socket.on(event as string, callback as any);
 
     // Store listener for cleanup
     const listeners = eventListeners.current.get(event) || [];
@@ -123,7 +123,7 @@ export const useSessionSocket = () => {
     if (!socket) return;
 
     if (callback) {
-      socket.off(event, callback);
+      socket.off(event as string, callback as any);
 
       // Remove from stored listeners
       const listeners = eventListeners.current.get(event) || [];
@@ -133,7 +133,7 @@ export const useSessionSocket = () => {
         eventListeners.current.set(event, listeners);
       }
     } else {
-      socket.off(event);
+      socket.off(event as string);
       eventListeners.current.delete(event);
     }
   };

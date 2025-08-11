@@ -1,57 +1,57 @@
 import { tokenManager } from '../infrastructure/api/custom-instance';
-import type { User } from '../context/AuthContext';
+import type { IUserAuth } from '../interfaces/user.interface';
 
 export const authUtils = {
   // Check if user has specific role
-  hasRole: (user: User | null, role: string | string[]): boolean => {
+  hasRole: (user: IUserAuth | null, role: string | string[]): boolean => {
     if (!user) return false;
     
     if (Array.isArray(role)) {
-      return role.includes(user.role);
+      return role.includes(user.role || user.firebaseClaims?.role);
     }
     
-    return user.role === role;
+    return user.role === role || user.firebaseClaims?.role === role;
   },
 
   // Check if user is mentor
-  isMentor: (user: User | null): boolean => {
+  isMentor: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, 'mentor');
   },
 
   // Check if user is mentee
-  isMentee: (user: User | null): boolean => {
+  isMentee: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, 'mentee');
   },
 
   // Check if user is coordinator
-  isCoordinator: (user: User | null): boolean => {
+  isCoordinator: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, 'coordinator');
   },
 
   // Check if user can access admin features
-  canAccessAdmin: (user: User | null): boolean => {
+  canAccessAdmin: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, 'coordinator');
   },
 
   // Check if user can upload resources
-  canUploadResources: (user: User | null): boolean => {
+  canUploadResources: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, ['mentor', 'coordinator']);
   },
 
   // Check if user can manage sessions
-  canManageSessions: (user: User | null): boolean => {
+  canManageSessions: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, ['mentor', 'coordinator']);
   },
 
   // Check if user can view analytics
-  canViewAnalytics: (user: User | null): boolean => {
+  canViewAnalytics: (user: IUserAuth | null): boolean => {
     return authUtils.hasRole(user, ['mentor', 'coordinator']);
   },
 
   // Get user display name
-  getDisplayName: (user: User | null): string => {
+  getDisplayName: (user: IUserAuth | null): string => {
     if (!user) return 'Usuário';
-    return user.fullName || user.email || 'Usuário';
+    return user.firebaseClaims?.name || user.email || 'Usuário';
   },
 
   // Get role display name in Portuguese
@@ -92,23 +92,24 @@ export const authUtils = {
   },
 
   // Format user info for display
-  formatUserInfo: (user: User | null): string => {
+  formatUserInfo: (user: IUserAuth | null): string => {
     if (!user) return '';
     
-    const role = authUtils.getRoleDisplayName(user.role);
-    return `${user.fullName} (${role})`;
+    const role = authUtils.getRoleDisplayName(user.role || user.firebaseClaims?.role || '');
+    return `${user.firebaseClaims?.name} (${role})`;
   },
 
   // Check if user should see admin dashboard
-  shouldShowAdminDashboard: (user: User | null): boolean => {
+  shouldShowAdminDashboard: (user: IUserAuth | null): boolean => {
     return authUtils.isCoordinator(user);
   },
 
   // Get appropriate home route based on role
-  getHomeRoute: (user: User | null): string => {
+  getHomeRoute: (user: IUserAuth | null): string => {
     if (!user) return '/auth/LoginScreen';
     
-    switch (user.role) {
+    const userRole = user.role || user.firebaseClaims?.role;
+    switch (userRole) {
       case 'coordinator':
         return '/(tabs)'; // Will show admin dashboard
       case 'mentor':
