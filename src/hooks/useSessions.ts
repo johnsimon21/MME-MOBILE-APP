@@ -65,6 +65,25 @@ export const useSessions = () => {
         }
     };
 
+    // ✅ Get sessions for a specific user (coordinators only)
+    const getUserSessions = async (userId: string, params: ISessionQueryParams = {}): Promise<ISessionsListResponse> => {
+        try {
+            console.log('🔄 Fetching sessions for user:', userId, 'with params:', params);
+
+            const headers = await getHeaders();
+            const { data } = await api.get<ISessionsListResponse>(
+                `/sessions/user/${userId}`,
+                { params, headers }
+            );
+
+            console.log('✅ User sessions fetched successfully:', data.sessions.length);
+            return data;
+        } catch (error: any) {
+            console.error('❌ Error fetching user sessions:', error);
+            throw error;
+        }
+    };
+
     // ✅ Get session statistics
     const getSessionStats = async (params: ISessionStatsQueryParams = {}): Promise<ISessionStatsResponse> => {
         try {
@@ -457,6 +476,7 @@ export const useSessions = () => {
         // Core CRUD operations
         createSession,
         getSessions,
+        getUserSessions, // ✅ NEW: Get sessions for a specific user (coordinators only)
         getSessionById,
         updateSession,
         deleteSession,

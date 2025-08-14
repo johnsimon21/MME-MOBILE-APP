@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { formatSessionTime, transformSessionDates } from '@/src/utils/sessionUtils';
-import { chatUtils } from '@/src/utils/chatUtils';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -37,7 +35,6 @@ import { IConnectionResponse } from '@/src/interfaces/connections.interface';
 
 // Components
 import { EnhancedFilterModal } from '@/src/presentation/components/ui/EnhancedFilterModal';
-import { useAuth } from '@/src/context/AuthContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH > 768;
@@ -50,20 +47,16 @@ interface EnhancedUser extends IUser {
     mutualConnections?: number;
 }
 
-// Union type for FlatList data
-type ListItemData = EnhancedUser | IConnectionResponse;
-
 interface TabItem {
-    key: 'discover' | 'friends' | 'requests' | 'sent';
+    key: 'discover' | 'friends' | 'requests';
     title: string;
     icon: string;
     badge?: number;
 }
 
-export function HomeScreen() {
+export function EnhancedHomeScreen() {
     const navigation = useNavigation();
-    const { user } = useAuth();
-    const isMentor = user?.role === UserRole.MENTOR;
+    const { user, isCoordinator, isMentor, isMentee } = useAuthState();
     const { getAvailableUsers } = useUsers();
     const {
         sendConnectionRequest,
@@ -72,18 +65,14 @@ export function HomeScreen() {
         acceptConnectionRequest,
         rejectConnectionRequest,
         getReceivedRequests,
-        getSentRequests,
         getUserFriends,
     } = useConnections();
 
     // State Management
-    const [activeTab, setActiveTab] = useState<'discover' | 'friends' | 'requests' | 'sent'>('discover');
+    const [activeTab, setActiveTab] = useState<'discover' | 'friends' | 'requests'>('discover');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    
-    // Simple loading guard
-    const isLoadingRef = useRef(false);
     
     // Data State
     const [availableUsers, setAvailableUsers] = useState<EnhancedUser[]>([]);
@@ -98,20 +87,14 @@ export function HomeScreen() {
     
     // Filters
     const [filters, setFilters] = useState({
-        userType: null as "Mentor" | "Mentorado" | null,
+        userType: null as "Mentor" | "Mentee" | null,
         status: null as "Disponível" | "Indisponível" | null,
         location: null as string | null,
     });
 
-    // Animation values - use useRef to persist across re-renders
-    const fadeAnim = useRef(new Animated.Value(1)).current;
-    const slideAnim = useRef(new Animated.Value(0)).current;
-
-
-    const handleViewProfile = (userId: string) => {
-        // @ts-ignore
-        navigation.navigate('Profile', { userId });
-    };
+    // Animation values
+    const fadeAnim = new Animated.Value(0);
+    const slideAnim = new Animated.Value(-50);
 
     // Tab configuration
     const tabs: TabItem[] = useMemo(() => [
@@ -128,30 +111,15 @@ export function HomeScreen() {
         },
         {
             key: 'requests',
-            title: 'Recebidas',
+            title: 'Solicitações',
             icon: 'user-plus',
             badge: receivedRequests.length,
         },
-        {
-            key: 'sent',
-            title: 'Enviadas',
-            icon: 'send',
-            badge: sentRequests.length,
-        },
-    ], [friends.length, receivedRequests.length, sentRequests.length]);
+    ], [friends.length, receivedRequests.length]);
 
-    // Simplified load data function without complex throttling
+    // Load initial data
     const loadData = useCallback(async (refresh = false) => {
-        // Prevent multiple simultaneous loads
-        if (isLoadingRef.current) {
-            console.log('🚫 Already loading, skipping...');
-            return;
-        }
-        
         try {
-            console.log('🔄 Starting data load...', { refresh, userId: user?.uid });
-            isLoadingRef.current = true;
-            
             if (refresh) {
                 setIsRefreshing(true);
             } else {
@@ -163,93 +131,76 @@ export function HomeScreen() {
                 throw new Error('User not authenticated');
             }
 
-            // Load data sequentially with minimal delays
-            console.log('📡 Loading available users...');
-            const availableResponse = await getAvailableUsers(user.uid, { page: 1, limit: 20 });
-            
-            console.log('📡 Loading user friends...');
-            const friendsResponse = await getUserFriends(user.uid);
-            
-            console.log('📡 Loading received requests...');
-            const requestsResponse = await getReceivedRequests();
-            
-            console.log('📡 Loading sent requests...');
-            const sentResponse = await getSentRequests();
+            // Load data in parallel
+            const [availableResponse, friendsResponse, requestsResponse] = await Promise.all([
+                getAvailableUsers(user.uid, { page: 1, limit: 50 }),
+                getUserFriends(user.uid),
+                getReceivedRequests(),
+            ]);
 
-            // Process available users
-            console.log(`✅ Processing ${availableResponse.users.length} available users`);
-            
-            const enhancedUsers: EnhancedUser[] = availableResponse.users.map((user: IUser): EnhancedUser => ({
-                ...user,
-                connectionStatus: 'none',
-                mutualConnections: 0,
-            }));
-
-            // Update state
-            setAvailableUsers(enhancedUsers);
-            setFriends(friendsResponse.connections || []);
-            setReceivedRequests(requestsResponse.connections || []);
-            setSentRequests(sentResponse.connections || []);
-            
-            console.log('✅ Data loaded successfully!', {
-                users: enhancedUsers.length,
-                friends: friendsResponse.connections?.length || 0,
-                requests: requestsResponse.connections?.length || 0,
-                sent: sentResponse.connections?.length || 0
-            });
-
-        } catch (error: any) {
-            console.error('❌ Error loading data:', error);
-            setError(error.message || 'Erro ao carregar dados');
-        } finally {
-            console.log('🏁 Finishing data load...');
-            isLoadingRef.current = false;
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    }, [user?.uid, getAvailableUsers, getUserFriends, getReceivedRequests, getSentRequests]);
-
-    // Initial load - only once when component mounts and user is available
-    const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
-    
-    useEffect(() => {
-        if (user?.uid && !hasInitiallyLoaded) {
-            console.log('🚀 Initial data load triggered for user:', user.uid);
-            setHasInitiallyLoaded(true);
-            loadData(false);
-        }
-    }, [user?.uid]); // Only depend on user ID
-
-    useFocusEffect(
-        useCallback(() => {
-            // DISABLED: No animation or automatic refresh on focus to prevent rate limiting
-            // Data will only refresh on manual pull-to-refresh or initial load
-            console.log('🎯 Screen focused - using existing data to prevent rate limiting');
-        }, [])
-    );
-
-    // Lazy load connection status for a specific user
-    const loadConnectionStatus = async (targetUserId: string) => {
-        try {
-            const status = await getConnectionStatus(targetUserId);
-            
-            setAvailableUsers(prev => 
-                prev.map(user => 
-                    user.uid === targetUserId 
-                        ? { 
-                            ...user, 
+            // Process available users with connection status
+            const enhancedUsers = await Promise.all(
+                availableResponse.users.map(async (user: IUser): Promise<EnhancedUser> => {
+                    try {
+                        const status = await getConnectionStatus(user.uid);
+                        return {
+                            ...user,
                             connectionStatus: status.status as any,
                             connectionType: status.type as any,
                             connectionId: status.connectionId,
-                            canCancel: status.type === 'sent'
-                        }
-                        : user
-                )
+                            canCancel: status.type === 'sent',
+                            mutualConnections: 0, // TODO: Implement mutual connections count
+                        };
+                    } catch (error) {
+                        return {
+                            ...user,
+                            connectionStatus: 'none',
+                            mutualConnections: 0,
+                        };
+                    }
+                })
             );
-        } catch (error) {
-            console.warn(`Failed to load connection status for ${targetUserId}:`, error);
+
+            setAvailableUsers(enhancedUsers);
+            setFriends(friendsResponse.connections || []);
+            setReceivedRequests(requestsResponse.connections || []);
+
+        } catch (error: any) {
+            console.error('Error loading data:', error);
+            setError(error.message || 'Erro ao carregar dados');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
         }
-    };
+    }, [user?.uid, getAvailableUsers, getUserFriends, getReceivedRequests, getConnectionStatus]);
+
+    // Initial load and focus refresh
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            // Animate in
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // Refresh data when screen comes into focus
+            if (user?.uid) {
+                loadData(true);
+            }
+        }, [loadData, user?.uid])
+    );
 
     // Connection Request Handlers
     const handleSendConnectionRequest = async (targetUserId: string) => {
@@ -329,26 +280,6 @@ export function HomeScreen() {
         }
     };
 
-    const handleCancelRequest = async (connectionId: string) => {
-        try {
-            setProcessingRequests(prev => new Set([...prev, connectionId]));
-            
-            await cancelConnectionRequest(connectionId);
-            
-            setSentRequests(prev => prev.filter(req => req.id !== connectionId));
-
-            Alert.alert('Sucesso', 'Solicitação cancelada');
-        } catch (error: any) {
-            Alert.alert('Erro', error.message || 'Falha ao cancelar solicitação');
-        } finally {
-            setProcessingRequests(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(connectionId);
-                return newSet;
-            });
-        }
-    };
-
     // Apply filters to available users
     const applyUserFilters = useCallback((users: EnhancedUser[]) => {
         return users.filter(user => {
@@ -387,22 +318,17 @@ export function HomeScreen() {
                 break;
             case 'requests':
                 data = receivedRequests.filter(request => 
-                    request.connectedUser?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
-                );
-                break;
-            case 'sent':
-                data = sentRequests.filter(request => 
-                    request.connectedUser?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
+                    request.requester?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 break;
         }
         
         return data;
-    }, [activeTab, availableUsers, friends, receivedRequests, sentRequests, searchQuery, applyUserFilters]);
+    }, [activeTab, availableUsers, friends, receivedRequests, searchQuery, applyUserFilters]);
 
-    // Custom Navigation Header - using useCallback to prevent unnecessary re-renders
-    const renderHeader = useCallback(() => (
-        <>
+    // Custom Navigation Header
+    const renderHeader = () => (
+        <SafeAreaView style={styles.headerContainer}>
             <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
             <LinearGradient
                 colors={['#4F46E5', '#7C3AED']}
@@ -410,15 +336,19 @@ export function HomeScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.headerGradient}
             >
-                <View style={styles.headerContent}>
+                <Animated.View 
+                    style={[
+                        styles.headerContent,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: slideAnim }],
+                        }
+                    ]}
+                >
                     <View style={styles.headerTop}>
                         <View style={styles.welcomeSection}>
-                            <Text style={styles.welcomeText}>
-                                Olá, {user?.firebaseClaims.name?.split(' ')[0] || 'Usuário'}
-                            </Text>
-                            <Text style={styles.subtitleText}>
-                                Conecte-se com outros {isMentor ? 'mentees' : 'mentores'}
-                            </Text>
+                            <Text style={styles.welcomeText}>Olá, {user?.fullName?.split(' ')[0]}</Text>
+                            <Text style={styles.subtitleText}>Conecte-se com outros {isMentor ? 'mentees' : 'mentores'}</Text>
                         </View>
                         
                         <TouchableOpacity
@@ -429,7 +359,7 @@ export function HomeScreen() {
                             {receivedRequests.length > 0 && (
                                 <View style={styles.notificationBadge}>
                                     <Text style={styles.notificationBadgeText}>
-                                        {String(receivedRequests.length)}
+                                        {receivedRequests.length}
                                     </Text>
                                 </View>
                             )}
@@ -462,10 +392,10 @@ export function HomeScreen() {
                             <Feather name="filter" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
-                </View>
+                </Animated.View>
             </LinearGradient>
-        </>
-    ), [user?.firebaseClaims.name, isMentor, receivedRequests.length, searchQuery]);
+        </SafeAreaView>
+    );
 
     // Tab Navigation
     const renderTabNavigation = () => (
@@ -489,7 +419,7 @@ export function HomeScreen() {
                         {tab.badge !== undefined && tab.badge > 0 && (
                             <View style={styles.tabBadge}>
                                 <Text style={styles.tabBadgeText}>
-                                    {tab.badge > 99 ? '99+' : String(tab.badge)}
+                                    {tab.badge > 99 ? '99+' : tab.badge}
                                 </Text>
                             </View>
                         )}
@@ -512,7 +442,7 @@ export function HomeScreen() {
                 styles.userCard,
                 pressed && styles.userCardPressed,
             ]}
-            onPress={() => handleViewProfile(user.uid)}
+            onPress={() => navigation.navigate('UserProfile', { userId: user.uid })}
         >
             <View style={styles.userCardHeader}>
                 {/* Avatar */}
@@ -543,7 +473,7 @@ export function HomeScreen() {
                                 color="#6B7280" 
                             />
                             <Text style={styles.roleText}>
-                                {user.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
+                                {user.role === UserRole.MENTOR ? 'Mentor' : 'Mentee'}
                             </Text>
                         </View>
                         <View style={styles.locationContainer}>
@@ -570,23 +500,8 @@ export function HomeScreen() {
                                 styles.actionButton,
                                 user.connectionStatus === 'pending' && styles.actionButtonPending,
                             ]}
-                            onPress={async () => {
-                                // First, check actual connection status if not already checked
-                                if (user.connectionStatus === 'none') {
-                                    await loadConnectionStatus(user.uid);
-                                    // After loading status, check if we can still send request
-                                    const updatedUser = availableUsers.find(u => u.uid === user.uid);
-                                    if (updatedUser?.connectionStatus !== 'none') {
-                                        return; // Don't send request if already connected/pending
-                                    }
-                                }
-                                
-                                // Only send request if status is 'none'
-                                if (user.connectionStatus === 'none') {
-                                    handleSendConnectionRequest(user.uid);
-                                }
-                            }}
-                            disabled={user.connectionStatus === 'pending' || user.connectionStatus === 'accepted'}
+                            onPress={() => handleSendConnectionRequest(user.uid)}
+                            disabled={user.connectionStatus !== 'none'}
                         >
                             <Feather
                                 name={
@@ -623,7 +538,7 @@ export function HomeScreen() {
                 styles.userCard,
                 pressed && styles.userCardPressed,
             ]}
-            onPress={() => handleViewProfile(friend.connectedUser.uid)}
+            onPress={() => navigation.navigate('UserProfile', { userId: friend.connectedUser.uid })}
         >
             <View style={styles.userCardHeader}>
                 <View style={styles.avatarContainer}>
@@ -651,12 +566,12 @@ export function HomeScreen() {
                                 color="#6B7280" 
                             />
                             <Text style={styles.roleText}>
-                                {friend.connectedUser.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
+                                {friend.connectedUser.role === UserRole.MENTOR ? 'Mentor' : 'Mentee'}
                             </Text>
                         </View>
                     </View>
                     <Text style={styles.connectionDate}>
-                        Conectado em {chatUtils.formatMessageTime(friend.createdAt) || 'Data não disponível'}
+                        Conectado em {new Date(friend.createdAt).toLocaleDateString('pt-BR')}
                     </Text>
                 </View>
 
@@ -675,12 +590,12 @@ export function HomeScreen() {
         <View style={styles.requestCard}>
             <View style={styles.userCardHeader}>
                 <View style={styles.avatarContainer}>
-                    {request.connectedUser?.image ? (
-                        <Image source={{ uri: request.connectedUser.image }} style={styles.avatar} />
+                    {request.requester?.image ? (
+                        <Image source={{ uri: request.requester.image }} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatar, styles.avatarPlaceholder]}>
                             <Text style={styles.avatarText}>
-                                {request.connectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
+                                {request.requester?.fullName?.charAt(0)?.toUpperCase() || '?'}
                             </Text>
                         </View>
                     )}
@@ -688,22 +603,22 @@ export function HomeScreen() {
 
                 <View style={styles.userInfo}>
                     <Text style={styles.userName} numberOfLines={1}>
-                        {request.connectedUser?.fullName || 'Usuário não encontrado'}
+                        {request.requester?.fullName || 'Usuário não encontrado'}
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
                             <MaterialIcons 
-                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'} 
+                                name={request.requester?.role === UserRole.MENTOR ? 'school' : 'person'} 
                                 size={16} 
                                 color="#6B7280" 
                             />
                             <Text style={styles.roleText}>
-                                {request.connectedUser?.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
+                                {request.requester?.role === UserRole.MENTOR ? 'Mentor' : 'Mentee'}
                             </Text>
                         </View>
                     </View>
                     <Text style={styles.requestDate}>
-                        {chatUtils.formatMessageTime(request.createdAt) || 'Data não disponível'}
+                        {new Date(request.createdAt).toLocaleDateString('pt-BR')}
                     </Text>
                 </View>
             </View>
@@ -716,73 +631,18 @@ export function HomeScreen() {
                     <>
                         <TouchableOpacity
                             style={[styles.actionButton, styles.rejectButton]}
-                            onPress={() => handleRejectRequest(request.id, request.connectedUser?.uid)}
+                            onPress={() => handleRejectRequest(request.id, request.requester?.uid)}
                         >
                             <Feather name="x" size={16} color="white" />
                         </TouchableOpacity>
                         
                         <TouchableOpacity
                             style={[styles.actionButton, styles.acceptButton]}
-                            onPress={() => handleAcceptRequest(request.id, request.connectedUser?.uid)}
+                            onPress={() => handleAcceptRequest(request.id, request.requester?.uid)}
                         >
                             <Feather name="check" size={16} color="white" />
                         </TouchableOpacity>
                     </>
-                )}
-            </View>
-        </View>
-    );
-
-    // Sent Request Card with Cancel functionality
-    const renderSentRequestCard = ({ item: request }: { item: IConnectionResponse }) => (
-        <View style={styles.requestCard}>
-            <View style={styles.userCardHeader}>
-                <View style={styles.avatarContainer}>
-                    {request.connectedUser?.image ? (
-                        <Image source={{ uri: request.connectedUser.image }} style={styles.avatar} />
-                    ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                            <Text style={styles.avatarText}>
-                                {request.connectedUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.userInfo}>
-                    <Text style={styles.userName} numberOfLines={1}>
-                        {request.connectedUser?.fullName || 'Usuário não encontrado'}
-                    </Text>
-                    <View style={styles.userMeta}>
-                        <View style={styles.roleContainer}>
-                            <MaterialIcons 
-                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'} 
-                                size={16} 
-                                color="#6B7280" 
-                            />
-                            <Text style={styles.roleText}>
-                                {request.connectedUser?.role === UserRole.MENTOR ? 'Mentor' : 'Mentee'}
-                            </Text>
-                        </View>
-                    </View>
-                    <Text style={styles.requestDate}>
-                        Enviado {chatUtils.formatMessageTime(request.createdAt) || 'Data não disponível'}
-                    </Text>
-                </View>
-            </View>
-
-            {/* Cancel Button */}
-            <View style={styles.requestActions}>
-                {processingRequests.has(request.id) ? (
-                    <ActivityIndicator size="small" color="#4F46E5" />
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.cancelButton]}
-                        onPress={() => handleCancelRequest(request.id)}
-                    >
-                        <Feather name="x" size={16} color="white" />
-                        <Text style={styles.cancelButtonText}>Cancelar</Text>
-                    </TouchableOpacity>
                 )}
             </View>
         </View>
@@ -806,11 +666,6 @@ export function HomeScreen() {
                 title: 'Nenhuma solicitação',
                 subtitle: 'Você não possui solicitações pendentes',
             },
-            sent: {
-                icon: 'send',
-                title: 'Nenhuma solicitação enviada',
-                subtitle: 'Conecte-se com novos usuários na aba Descobrir',
-            },
         };
 
         const state = emptyStates[activeTab];
@@ -824,8 +679,8 @@ export function HomeScreen() {
         );
     };
 
-    // Loading State - only show if truly loading and no data
-    if (isLoading && availableUsers.length === 0 && friends.length === 0 && receivedRequests.length === 0) {
+    // Loading State
+    if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
                 {renderHeader()}
@@ -838,7 +693,7 @@ export function HomeScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             {renderHeader()}
             {renderTabNavigation()}
             
@@ -853,22 +708,13 @@ export function HomeScreen() {
             )}
 
             {/* Content */}
-            <FlatList<ListItemData>
+            <FlatList
                 data={filteredData}
-                renderItem={({ item, index }) => {
-                    switch (activeTab) {
-                        case 'discover':
-                            return renderUserCard({ item: item as EnhancedUser });
-                        case 'friends':
-                            return renderFriendCard({ item: item as IConnectionResponse });
-                        case 'requests':
-                            return renderRequestCard({ item: item as IConnectionResponse });
-                        case 'sent':
-                            return renderSentRequestCard({ item: item as IConnectionResponse });
-                        default:
-                            return null;
-                    }
-                }}
+                renderItem={
+                    activeTab === 'discover' ? renderUserCard :
+                    activeTab === 'friends' ? renderFriendCard :
+                    renderRequestCard
+                }
                 keyExtractor={(item: any) => 
                     activeTab === 'discover' ? item.uid : item.id
                 }
@@ -877,7 +723,7 @@ export function HomeScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}
-                        onRefresh={() => loadData(true)} // Manual refresh
+                        onRefresh={() => loadData(true)}
                         colors={['#4F46E5']}
                         tintColor="#4F46E5"
                     />
@@ -933,7 +779,7 @@ export function HomeScreen() {
                     });
                 }}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -942,11 +788,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
+    headerContainer: {
+        backgroundColor: '#4F46E5',
     },
     headerGradient: {
-        paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10,
-        paddingBottom: 20,
+        paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight || 0,
     },
     headerContent: {
         paddingHorizontal: 20,
@@ -1037,7 +884,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
         paddingVertical: 8,
         marginHorizontal: 16,
-        marginTop: -22,
+        marginTop: -12,
         borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
@@ -1253,21 +1100,6 @@ const styles = StyleSheet.create({
     rejectButton: {
         backgroundColor: '#EF4444',
     },
-    cancelButton: {
-        backgroundColor: '#F59E0B',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 12,
-        width: 'auto',
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    cancelButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-        marginLeft: 4,
-    },
     separator: {
         height: 12,
     },
@@ -1346,4 +1178,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default HomeScreen;
+export { EnhancedHomeScreen };

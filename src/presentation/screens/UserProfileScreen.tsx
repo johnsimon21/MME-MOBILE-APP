@@ -44,7 +44,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
         getUserFriends,
         getConnectionStatus
     } = useConnections();
-    const { getSessions, getSessionStats } = useSessions();
+    const { getSessions, getUserSessions, getSessionStats } = useSessions();
     const { createChat, getUserChats } = useChat();
 
     // State
@@ -61,6 +61,26 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
     useEffect(() => {
         loadUserProfile();
     }, [userId]);
+
+    // Helper function to determine if sessions tab should be shown
+    const shouldShowSessions = () => {
+        if (!userData) return false;
+        
+        // Coordinators can always see sessions
+        if (isCoordinator) return true;
+        
+        // Users viewing their own profile can see their sessions
+        if (userId === currentUser?.uid) return true;
+        
+        // Mentors can see sessions with their mentees
+        if (isMentor && userData.role === UserRole.MENTEE) return true;
+        
+        // Mentees can see sessions with their mentors
+        if (isMentee && userData.role === UserRole.MENTOR) return true;
+        
+        // No access for other combinations
+        return false;
+    };
 
     const loadUserProfile = async () => {
         try {
@@ -81,15 +101,38 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
             console.log('connections', connections)
             setUserConnections(connections.connections);
 
-            // Load sessions data based on user role
-            if (currentUser?.role === UserRole.MENTOR) {
-                const sessions = await getSessions({ mentorId: userId });
+            // Load sessions data based on current user role and target user
+            if (isCoordinator) {
+                // Coordinators can see any user's session data
+                const sessions = await getUserSessions(userId);
                 setUserSessions(sessions.sessions);
 
                 const stats = await getSessionStats({
-                    mentorId: user.role === UserRole.MENTOR ? userId : undefined
+                    mentorId: userData?.role === UserRole.MENTOR ? userId : undefined
                 });
                 setSessionStats(stats);
+            } else if (userId === currentUser?.uid) {
+                // Users viewing their own profile - show their sessions
+                const sessions = await getSessions();
+                setUserSessions(sessions.sessions);
+
+                const stats = await getSessionStats();
+                setSessionStats(stats);
+            } else {
+                // Regular users viewing other profiles - show limited or no session data
+                if (isMentor && userData?.role === UserRole.MENTEE) {
+                    // Mentors can see sessions with their mentees
+                    const sessions = await getSessions({ menteeId: userId });
+                    setUserSessions(sessions.sessions);
+                } else if (isMentee && userData?.role === UserRole.MENTOR) {
+                    // Mentees can see sessions with their mentors
+                    const sessions = await getSessions({ mentorId: userId });
+                    setUserSessions(sessions.sessions);
+                } else {
+                    // No session access for other role combinations
+                    setUserSessions([]);
+                    setSessionStats(null);
+                }
             }
 
         } catch (error: any) {
@@ -516,7 +559,8 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                             <View style={tw`flex-row bg-gray-100 rounded-xl p-1`}>
                                 {[
                                     { key: 'overview', label: 'Visão Geral', icon: 'user' },
-                                    { key: 'sessions', label: 'Sessões', icon: 'calendar' },
+                                    // Only show sessions tab if user has access to session data
+                                    ...(shouldShowSessions() ? [{ key: 'sessions', label: 'Sessões', icon: 'calendar' }] : []),
                                     { key: 'connections', label: 'Conexões', icon: 'users' }
                                 ].map((tab) => (
                                     <TouchableOpacity
@@ -604,7 +648,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                                                 <View style={tw`space-y-3`}>
                                                     {userData.maxMenteeNumber && (
                                                         <View style={tw`flex-row items-center justify-between`}>
-                                                            <Text style={tw`text-gray-600`}>Máximo de Mentees</Text>
+                                                            <Text style={tw`text-gray-600`}>Máximo de Mentorados</Text>
                                                             <Text style={tw`font-medium text-gray-800`}>
                                                                 {userData.maxMenteeNumber}
                                                             </Text>
@@ -639,7 +683,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                                         {userData.role === UserRole.MENTEE && (
                                             <View style={tw`bg-white rounded-xl p-4 mb-4`}>
                                                 <Text style={tw`text-lg font-semibold text-gray-800 mb-4`}>
-                                                    Informações do Mentee
+                                                    Informações do Mentorado
                                                 </Text>
 
                                                 <View style={tw`space-y-3`}>
@@ -749,7 +793,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                                     </View>
                                 )}
 
-                                {activeTab === 'sessions' && (
+                                {activeTab === 'sessions' && shouldShowSessions() && (
                                     <View>
                                         {userSessions.length > 0 ? (
                                             <View>
