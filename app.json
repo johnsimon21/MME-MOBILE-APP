@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MME",
+    "name": "MME - Meu Mentor Eiffel",
     "slug": "MME",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,8 +8,23 @@
     "scheme": "mme",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.johnsimon.mme",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este aplicativo usa a câmera para permitir que você tire fotos e as compartilhe em conversas.",
+        "NSMicrophoneUsageDescription": "Este aplicativo usa o microfone para chamadas de voz e gravação de áudio.",
+        "NSPhotoLibraryUsageDescription": "Este aplicativo acessa sua biblioteca de fotos para permitir que você compartilhe imagens."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +32,16 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.johnsimon.MME"
+      "package": "com.johnsimon.mme",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,6 +57,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O aplicativo acessa sua biblioteca de fotos para permitir que você compartilhe imagens.",
+          "cameraPermission": "O aplicativo usa a câmera para permitir que você tire fotos."
         }
       ]
     ],

@@ -4,7 +4,7 @@ import { ENV } from '../config/env';
 
 const api = axios.create({
   baseURL: ENV.API_BASE_URL,
-  timeout: 15000,
+  timeout: ENV.DEBUG_MODE ? 15000 : 30000, // Longer timeout for production
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,18 +19,20 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
       
-      // Debug logging
-      console.log('🔄 API Request:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`,
-        headers: {
-          Authorization: config.headers.Authorization ? 'Bearer [TOKEN]' : 'No token',
-          'Content-Type': config.headers['Content-Type']
-        },
-        data: config.data
-      });
+      // Debug logging (only in development)
+      if (ENV.ENABLE_LOGGING) {
+        console.log('🔄 API Request:', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          baseURL: config.baseURL,
+          fullURL: `${config.baseURL}${config.url}`,
+          headers: {
+            Authorization: config.headers.Authorization ? 'Bearer [TOKEN]' : 'No token',
+            'Content-Type': config.headers['Content-Type']
+          },
+          data: config.data
+        });
+      }
       
       return config;
     } catch (error) {
@@ -47,12 +49,14 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.config.url,
-      data: response.data
-    });
+    if (ENV.ENABLE_LOGGING) {
+      console.log('✅ API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.config.url,
+        data: response.data
+      });
+    }
     return response;
   },
   (error) => {

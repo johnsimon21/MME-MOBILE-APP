@@ -1,24 +1,27 @@
-// Environment configuration
-const IP = '192.168.1.103' // '192.168.1.11' //  '192.168.101.92'; 
-
+// Environment configuration using Expo environment variables
 export const ENV = {
   // 🔥 FRONTEND Firebase Config (Web App Config)
   FIREBASE_CONFIG: {
-    apiKey: "AIzaSyDutAFOSxYSaq6ZaxKg3MCLe9mscz4SWE4",
-    authDomain: "meu-mentor-eiffel.firebaseapp.com",
-    projectId: "meu-mentor-eiffel", 
-    storageBucket: "meu-mentor-eiffel.firebasestorage.app",
-    messagingSenderId: "522028357639",
-    appId: "1:522028357639:web:f0085373a46e341cd3f2a2",
-    measurementId: "G-EY91NW9C3T"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || "AIzaSyDutAFOSxYSaq6ZaxKg3MCLe9mscz4SWE4",
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || "meu-mentor-eiffel.firebaseapp.com",
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || "meu-mentor-eiffel", 
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || "meu-mentor-eiffel.firebasestorage.app",
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "522028357639",
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "1:522028357639:web:f0085373a46e341cd3f2a2",
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-EY91NW9C3T"
   },
 
   // API Configuration
-  API_BASE_URL: __DEV__
-    ? `http://${IP}:3000/api`
-    : 'https://your-production-domain.com/',
+  API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || (__DEV__
+    ? 'http://192.168.1.103:3000/api'
+    : 'https://mme-api.onrender.com/api'),
 
   // Other environment variables
-  DEBUG_MODE: __DEV__,
-  ENABLE_LOGGING: __DEV__,
+  DEBUG_MODE: process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__,
+  ENABLE_LOGGING: process.env.EXPO_PUBLIC_ENABLE_LOGGING === 'true' || __DEV__,
+  
+  // App Configuration
+  APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'MME - Meu Mentor Eiffel',
+  APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
+  ENVIRONMENT: process.env.EXPO_PUBLIC_ENVIRONMENT || (__DEV__ ? 'development' : 'production'),
 };
