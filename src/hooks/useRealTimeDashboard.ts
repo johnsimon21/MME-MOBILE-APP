@@ -22,7 +22,21 @@ export const useRealTimeDashboard = (refreshInterval: number = 30000) => {
   // Update last update time when real-time stats change
   useEffect(() => {
     if (realTimeStats) {
-      setLastUpdate(new Date(realTimeStats.lastUpdated));
+      try {
+        const updateTime = typeof realTimeStats.lastUpdated === 'string' 
+          ? new Date(realTimeStats.lastUpdated)
+          : realTimeStats.lastUpdated;
+        
+        if (updateTime && !isNaN(updateTime.getTime())) {
+          setLastUpdate(updateTime);
+        } else {
+          console.warn('Invalid lastUpdated time in realTimeStats:', realTimeStats.lastUpdated);
+          setLastUpdate(new Date());
+        }
+      } catch (error) {
+        console.error('Error parsing lastUpdated time:', error);
+        setLastUpdate(new Date());
+      }
     }
   }, [realTimeStats]);
 

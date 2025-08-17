@@ -13,7 +13,7 @@ export interface IDashboardStats {
   sessionTrends: number[]; // Last 7 days session counts
   averageSessionDuration: number;
   totalHoursLogged: number;
-  lastUpdated: Date;
+  lastUpdated: string; // Changed to string for consistency
 }
 
 export interface IUserAnalytics {
@@ -24,14 +24,14 @@ export interface IUserAnalytics {
   school: string;
   profileImage?: string;
   isOnline: boolean;
-  lastActive: Date;
-  joinedDate: Date;
+  lastActive: string; // Changed to string for consistency
+  joinedDate: string; // Changed to string for consistency
   sessionsCount: number;
   completedSessions: number;
   completionRate: number;
   averageRating?: number;
   totalHours?: number;
-  lastSessionDate?: Date;
+  lastSessionDate?: string; // Changed to string for consistency
 }
 
 export interface ISessionAnalytics {
@@ -52,7 +52,7 @@ export interface IRecentActivity {
   description: string;
   userId: string;
   userName: string;
-  timestamp: Date;
+  timestamp: string; // Changed to string for consistency
   metadata?: Record<string, any>;
 }
 
@@ -108,7 +108,7 @@ export interface IRealTimeStats {
   errorRate: number;
   uptime: number;
   memoryUsage: number;
-  lastUpdated: Date;
+  lastUpdated: string; // Changed to string for consistency
 }
 
 // Query interfaces

@@ -127,7 +127,7 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
         setIsConnected(false);
       });
 
-      // Dashboard data events
+      // Dashboard data events with consistent date handling
       newSocket.on('dashboard-stats', (data: IDashboardStats) => {
         console.log('📊 Dashboard stats updated:', data);
         setDashboardStats(data);
