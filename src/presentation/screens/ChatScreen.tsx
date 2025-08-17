@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { View, Text, TextInput, ScrollView, Image, TouchableOpacity, Animated, Platform, KeyboardAvoidingView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, ScrollView, Image, TouchableOpacity, Animated, Platform, KeyboardAvoidingView, Alert, ActivityIndicator, Modal } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import tw from "twrnc";
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -15,9 +15,12 @@ import { useRouter } from "expo-router";
 import { useChatContext } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { IChatResponse, IMessageResponse, MessageType } from "../../interfaces/chat.interface";
+import { IChatResponse, IMessageResponse, MessageType, ChatType } from "../../interfaces/chat.interface";
 import { chatUtils } from "../../utils/chatUtils";
 import { useCall } from "../../hooks/useCall";
+import { useAuthState } from "../../hooks/useAuthState";
+import { useSessions } from "../../hooks/useSessions";
+import { useConnections } from "../../hooks/useConnections";
 
 type RootStackParamList = {
     ChatScreen: {
@@ -32,6 +35,9 @@ export function ChatScreen({ route, navigation }: Props) {
     const { chat, startSession } = route.params;
     const router = useRouter();
     const { user } = useAuth();
+    const { isMentor, isMentee } = useAuthState();
+    const { getSessionById, addParticipant, endSession } = useSessions();
+    const { getUserFriends } = useConnections();
     const { 
         currentChat, 
         messages, 
@@ -62,6 +68,12 @@ export function ChatScreen({ route, navigation }: Props) {
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
     const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
+    
+    // Session-specific state
+    const [sessionData, setSessionData] = useState<any>(null);
+    const [isLoadingSession, setIsLoadingSession] = useState(false);
+    const [showMenteeSelection, setShowMenteeSelection] = useState(false);
+    const [availableMentees, setAvailableMentees] = useState<any[]>([]);
 
     // Refs
     const scrollViewRef = useRef<ScrollView>(null);
@@ -84,6 +96,25 @@ export function ChatScreen({ route, navigation }: Props) {
             };
         }
     }, [chat.id, user?.uid]);
+
+    // Load session data if this is a session chat
+    useEffect(() => {
+        const loadSessionData = async () => {
+            if (chat.type === ChatType.SESSION && chat.sessionId) {
+                try {
+                    setIsLoadingSession(true);
+                    const session = await getSessionById(chat.sessionId);
+                    setSessionData(session);
+                } catch (error) {
+                    console.error('Error loading session data:', error);
+                } finally {
+                    setIsLoadingSession(false);
+                }
+            }
+        };
+
+        loadSessionData();
+    }, [chat.sessionId, chat.type]);
 
     // Rejoin chat when connection is restored
     useEffect(() => {
@@ -119,7 +150,7 @@ export function ChatScreen({ route, navigation }: Props) {
 
             return () => clearTimeout(timer);
         }
-    }, [messages.length, handleMarkAsRead]);
+    }, [messages.length]);
 
     // Handle typing indicators
     const handleTypingStart = useCallback(() => {
@@ -350,9 +381,103 @@ export function ChatScreen({ route, navigation }: Props) {
         setRecordingTimer(null);
     }, [recording, recordingDuration, recordingTimer, sendFileMessage]);
 
+    // Session management functions
+    const handleSessionManagement = async () => {
+        if (!sessionData) {
+            Alert.alert('Erro', 'Dados da sessão não carregados');
+            return;
+        }
+
+        Alert.alert(
+            'Gerenciar Sessão',
+            `Sessão: ${sessionData.title}`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Adicionar Mentee',
+                    onPress: () => handleAddMentee()
+                },
+                {
+                    text: 'Finalizar Sessão',
+                    style: 'destructive',
+                    onPress: () => handleEndSession()
+                }
+            ]
+        );
+    };
+
+    const handleAddMentee = async () => {
+        try {
+            // Load available mentees (friends who are mentees and not already in session)
+            const friendsResponse = await getUserFriends(user?.uid || '');
+            const mentees = friendsResponse.connections
+                ?.filter(conn => conn.connectedUser.role === 'mentee')
+                ?.filter(conn => !sessionData?.participants.some((p: any) => p.uid === conn.connectedUser.uid))
+                || [];
+
+            if (mentees.length === 0) {
+                Alert.alert('Aviso', 'Não há mentees disponíveis para adicionar à sessão');
+                return;
+            }
+
+            setAvailableMentees(mentees);
+            setShowMenteeSelection(true);
+        } catch (error: any) {
+            Alert.alert('Erro', 'Falha ao carregar mentees disponíveis');
+        }
+    };
+
+    const handleSelectMentee = async (mentee: any) => {
+        try {
+            if (!sessionData) return;
+
+            await addParticipant(sessionData.id, { menteeId: mentee.connectedUser.uid });
+            
+            // Refresh session data
+            const updatedSession = await getSessionById(sessionData.id);
+            setSessionData(updatedSession);
+            
+            setShowMenteeSelection(false);
+            Alert.alert('Sucesso', `${mentee.connectedUser.fullName} foi adicionado à sessão`);
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Falha ao adicionar mentee à sessão');
+        }
+    };
+
+    const handleEndSession = async () => {
+        if (!sessionData) return;
+
+        Alert.alert(
+            'Finalizar Sessão',
+            'Tem certeza que deseja finalizar esta sessão? Esta ação marcará a sessão como concluída.',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Finalizar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await endSession(sessionData.id);
+                            Alert.alert('Sucesso', 'Sessão finalizada com sucesso!');
+                            
+                            // Refresh session data
+                            if (chat.sessionId) {
+                                const updatedSession = await getSessionById(chat.sessionId);
+                                setSessionData(updatedSession);
+                            }
+                        } catch (error: any) {
+                            Alert.alert('Erro', error.message || 'Falha ao finalizar sessão');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // Render message content
     const renderMessageContent = useCallback((message: IMessageResponse) => {
         const isSent = message.sender.uid === user?.uid;
+        const isMentorMessage = sessionData?.mentor?.uid === message.sender.uid;
 
         switch (message.type) {
             case MessageType.IMAGE:
@@ -364,7 +489,10 @@ export function ChatScreen({ route, navigation }: Props) {
                             resizeMode="cover"
                         />
                         {message.content && (
-                            <Text style={tw`mt-2 ${isSent ? 'text-white' : 'text-gray-800'}`}>
+                            <Text style={tw`mt-2 ${isSent 
+                                ? 'text-white' 
+                                : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
+                            }`}>
                                 {message.content}
                             </Text>
                         )}
@@ -381,16 +509,25 @@ export function ChatScreen({ route, navigation }: Props) {
                             <Feather name="file" size={20} color="#4F46E5" />
                         </View>
                         <View style={tw`ml-3 flex-1`}>
-                            <Text style={tw`font-medium ${isSent ? 'text-white' : 'text-gray-800'}`} numberOfLines={1}>
+                            <Text style={tw`font-medium ${isSent 
+                                ? 'text-white' 
+                                : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
+                            }`} numberOfLines={1}>
                                 {message.fileName || 'Arquivo'}
                             </Text>
                             {message.fileSize && (
-                                <Text style={tw`text-xs ${isSent ? 'text-white opacity-80' : 'text-gray-600'}`}>
+                                <Text style={tw`text-xs ${isSent 
+                                    ? 'text-white opacity-80' 
+                                    : (isMentorMessage ? 'text-purple-600' : 'text-gray-600')
+                                }`}>
                                     {Math.round(message.fileSize / 1024)} KB
                                 </Text>
                             )}
                             {message.content && (
-                                <Text style={tw`text-sm mt-1 ${isSent ? 'text-white opacity-90' : 'text-gray-700'}`}>
+                                <Text style={tw`text-sm mt-1 ${isSent 
+                                    ? 'text-white opacity-90' 
+                                    : (isMentorMessage ? 'text-purple-700' : 'text-gray-700')
+                                }`}>
                                     {message.content}
                                 </Text>
                             )}
@@ -401,12 +538,15 @@ export function ChatScreen({ route, navigation }: Props) {
 
             default:
                 return (
-                    <Text style={tw`${isSent ? 'text-white' : 'text-gray-800'}`}>
+                    <Text style={tw`${isSent 
+                        ? 'text-white' 
+                        : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
+                    }`}>
                         {message.content}
                     </Text>
                 );
         }
-    }, [user?.uid]);
+    }, [user?.uid, sessionData]);
 
     if (isLoadingMessages && messages.length === 0) {
         return (
@@ -433,7 +573,7 @@ export function ChatScreen({ route, navigation }: Props) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={tw`flex-row items-center flex-1 ml-2`}
+                    style={tw`flex-row items-center flex-1`}
                     onPress={() => {/* Navigate to profile */}}
                 >
                     {otherParticipant?.image ? (
@@ -441,13 +581,20 @@ export function ChatScreen({ route, navigation }: Props) {
                     ) : (
                         <View style={tw`w-10 h-10 rounded-full bg-indigo-100 items-center justify-center`}>
                             <Text style={tw`text-lg font-bold text-indigo-600`}>
-                                {chatTitle[0]?.toUpperCase()}
+                               <Feather name="users" size={20} color="#8B5CF6" />
                             </Text>
                         </View>
                     )}
 
-                    <View style={tw`ml-3`}>
-                        <Text style={tw`font-bold text-gray-800`}>{chatTitle}</Text>
+                    <View style={tw`ml-2`}>
+                        <View style={tw`flex-row items-center`}>
+                            <Text style={tw`font-bold text-gray-800 max-w-38`} numberOfLines={1}>{chatTitle}</Text>
+                            {/* {chat.type === ChatType.SESSION && (
+                                <View style={tw`ml-1 bg-purple-100 px-2 py-1 rounded-full`}>
+                                    <Text style={tw`text-xs font-medium text-purple-600`}>Sessão</Text>
+                                </View>
+                            )} */}
+                        </View>
                         {isTyping ? (
                             <Text style={tw`text-xs text-green-600`}>Digitando...</Text>
                         ) : (
@@ -456,6 +603,11 @@ export function ChatScreen({ route, navigation }: Props) {
                                 <Text style={tw`text-xs text-gray-500`}>
                                     {isOnline ? 'Online' : 'Offline'}
                                 </Text>
+                                {chat.type === ChatType.SESSION && sessionData && (
+                                    <Text style={tw`text-xs text-purple-600 ml-2 flex`}  numberOfLines={1}>
+                                        • Mentor: {sessionData.mentor?.fullName?.split(' ')[0] || 'Carregando...'}
+                                    </Text>
+                                )}
                             </View>
                         )}
                     </View>
@@ -466,7 +618,6 @@ export function ChatScreen({ route, navigation }: Props) {
                     <TouchableOpacity 
                         style={tw`bg-orange-100 px-3 py-1 rounded-full mr-2`}
                         onPress={() => {
-                            console.log('🔄 Manual reconnection requested');
                             connect();
                         }}
                     >
@@ -476,13 +627,44 @@ export function ChatScreen({ route, navigation }: Props) {
                     </TouchableOpacity>
                 )}
 
-                <View style={tw`flex-row items-center`}>
-                    <TouchableOpacity
+                <View style={tw`flex-row items-center`}>                                     
+                    {/* Session status indicator */}
+                    {chat.type === ChatType.SESSION && sessionData && (
+                        <View style={tw`mr-2`}>
+                            <View style={tw`${
+                                sessionData.status === 'active' ? 'bg-green-100' :
+                                sessionData.status === 'scheduled' ? 'bg-blue-100' :
+                                sessionData.status === 'completed' ? 'bg-gray-100' : 'bg-red-100'
+                            } px-2 py-1 rounded-full`}>
+                                <Text style={tw`text-xs font-medium ${
+                                    sessionData.status === 'active' ? 'text-green-700' :
+                                    sessionData.status === 'scheduled' ? 'text-blue-700' :
+                                    sessionData.status === 'completed' ? 'text-gray-700' : 'text-red-700'
+                                }`}>
+                                    {sessionData.status === 'active' ? 'Ativa' :
+                                     sessionData.status === 'scheduled' ? 'Agendada' :
+                                     sessionData.status === 'completed' ? 'Finalizada' : 'Cancelada'}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+
+                       {/* Session-specific actions */}
+                    {chat.type === ChatType.SESSION && isMentor && sessionData && (
+                        <TouchableOpacity
+                            onPress={handleSessionManagement}
+                            style={tw`p-2 mr-1`}
+                        >
+                            <Feather name="users" size={20} color="#8B5CF6" />
+                        </TouchableOpacity>
+                    )}
+                    
+                    {/* <TouchableOpacity
                         onPress={handleVoiceCall}
                         style={tw`p-2 mr-1`}
                     >
                         <Feather name="phone" size={20} color="#222222" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
             </View>
 
@@ -498,13 +680,50 @@ export function ChatScreen({ route, navigation }: Props) {
                 >
                     {messages.map((message) => {
                         const isSent = message.sender.uid === user?.uid;
+                        const isSessionChat = chat.type === ChatType.SESSION;
+                        const isMentorMessage = sessionData?.mentor?.uid === message.sender.uid;
                         
                         return (
                             <View key={message.id} style={tw`${isSent ? 'self-end' : 'self-start'} max-w-3/4 mb-3`}>
+                                {/* Show sender info for session chats (received messages only) */}
+                                {isSessionChat && !isSent && (
+                                    <View style={tw`flex-row items-center mb-1 ${isSent ? 'justify-end' : 'justify-start'}`}>
+                                        {/* Sender Avatar */}
+                                        <View style={tw`w-6 h-6 rounded-full mr-2 ${isMentorMessage ? 'bg-purple-100 border-2 border-purple-400' : 'bg-indigo-100'} items-center justify-center`}>
+                                            {message.sender.image ? (
+                                                <Image 
+                                                    source={{ uri: message.sender.image }} 
+                                                    style={tw`w-6 h-6 rounded-full`} 
+                                                />
+                                            ) : (
+                                                <Text style={tw`text-xs font-bold ${isMentorMessage ? 'text-purple-600' : 'text-indigo-600'}`}>
+                                                    {message.sender.fullName.charAt(0).toUpperCase()}
+                                                </Text>
+                                            )}
+                                        </View>
+                                        
+                                        {/* Sender Name with Mentor Badge */}
+                                        <View style={tw`flex-row items-center`}>
+                                            <Text style={tw`text-xs font-medium ${isMentorMessage ? 'text-purple-700' : 'text-gray-600'}`}>
+                                                {message.sender.fullName.split(' ')[0]}
+                                            </Text>
+                                            {isMentorMessage && (
+                                                <View style={tw`ml-1 bg-purple-500 px-1.5 py-0.5 rounded-full`}>
+                                                    <Text style={tw`text-xs font-bold text-white`}>MENTOR</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                )}
+
                                 <View style={tw`
                                     ${isSent
-                                        ? 'bg-indigo-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl'
-                                        : 'bg-white border border-gray-200 rounded-tl-xl rounded-tr-xl rounded-br-xl'} 
+                                        ? isMentorMessage 
+                                            ? 'bg-purple-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl' 
+                                            : 'bg-indigo-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl'
+                                        : isMentorMessage
+                                            ? 'bg-purple-50 border-2 border-purple-200 rounded-tl-xl rounded-tr-xl rounded-br-xl'
+                                            : 'bg-white border border-gray-200 rounded-tl-xl rounded-tr-xl rounded-br-xl'} 
                                     p-3 shadow-sm
                                 `}>
                                     {renderMessageContent(message)}
@@ -640,6 +859,64 @@ export function ChatScreen({ route, navigation }: Props) {
                     <Text style={tw`text-red-700 text-sm`}>{error}</Text>
                 </View>
             )}
+
+            {/* Mentee Selection Modal */}
+            <Modal
+                visible={showMenteeSelection}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowMenteeSelection(false)}
+            >
+                <View style={tw`flex-1 bg-black bg-opacity-50 justify-end`}>
+                    <View style={tw`bg-white rounded-t-3xl p-6 max-h-3/4`}>
+                        <View style={tw`flex-row items-center justify-between mb-4`}>
+                            <Text style={tw`text-xl font-bold text-gray-800`}>Adicionar Mentee</Text>
+                            <TouchableOpacity onPress={() => setShowMenteeSelection(false)}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={tw`text-gray-600 mb-4`}>
+                            Selecione um mentee para adicionar à sessão:
+                        </Text>
+
+                        <ScrollView style={tw`max-h-96`} showsVerticalScrollIndicator={false}>
+                            {availableMentees.map((mentee) => (
+                                <TouchableOpacity
+                                    key={mentee.connectedUser.uid}
+                                    onPress={() => handleSelectMentee(mentee)}
+                                    style={tw`flex-row items-center p-4 border-b border-gray-100`}
+                                >
+                                    <View style={tw`w-12 h-12 bg-indigo-100 rounded-full items-center justify-center mr-3`}>
+                                        <Text style={tw`text-indigo-600 font-bold text-lg`}>
+                                            {mentee.connectedUser.fullName.charAt(0).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <View style={tw`flex-1`}>
+                                        <Text style={tw`font-medium text-gray-800`}>
+                                            {mentee.connectedUser.fullName}
+                                        </Text>
+                                        <Text style={tw`text-gray-600 text-sm`}>
+                                            {mentee.connectedUser.email}
+                                        </Text>
+                                        <Text style={tw`text-gray-500 text-xs`}>
+                                            {mentee.connectedUser.school}
+                                        </Text>
+                                    </View>
+                                    <Feather name="plus-circle" size={20} color="#10B981" />
+                                </TouchableOpacity>
+                            ))}
+
+                            {availableMentees.length === 0 && (
+                                <View style={tw`items-center py-8`}>
+                                    <Ionicons name="people-outline" size={48} color="#D1D5DB" />
+                                    <Text style={tw`text-gray-500 mt-2`}>Nenhum mentee disponível</Text>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }

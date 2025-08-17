@@ -88,6 +88,7 @@ function RootLayoutContent() {
   const shouldShowSettings = user &&
     !hideSettingsOn.includes(pathname) &&
     !pathname.includes('/ChatScreen') &&
+    !pathname.includes('/Mensagens') &&
     !pathname.includes('/auth/');
 
   return (

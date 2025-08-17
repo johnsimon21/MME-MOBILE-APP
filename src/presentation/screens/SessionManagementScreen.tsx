@@ -27,6 +27,7 @@ import {
 } from "react-native";
 import tw from "twrnc";
 import { RenderSessionItem } from "../components/SessionItem";
+import { UserRole } from "@/src/interfaces/index.interface";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -40,6 +41,8 @@ interface FilterState {
 export function SessionManagementScreen() {
     const navigation = useNavigation();
     const { user } = useAuth();
+    const isMentor = user?.role === UserRole.MENTOR;
+    const isCoordinator = user?.role === UserRole.COORDINATOR;
 
     const {
         sessions,
@@ -79,7 +82,7 @@ export function SessionManagementScreen() {
 
     // Load initial data
     useEffect(() => {
-        if (user?.role === 'mentor' || user?.role === 'coordinator') {
+        if (user?.role === UserRole.MENTOR || user?.role === UserRole.COORDINATOR) {
             loadInitialData();
         }
     }, [user?.role]);
@@ -87,7 +90,7 @@ export function SessionManagementScreen() {
     // Refresh sessions when screen comes into focus
     useFocusEffect(
         useCallback(() => {
-            if (user?.role === 'mentor' || user?.role === 'coordinator') {
+            if (user?.role === UserRole.MENTOR || user?.role === UserRole.COORDINATOR) {
                 // Clear any stuck loading state and refresh
                 clearError();
                 loadInitialData();
@@ -1245,7 +1248,7 @@ export function SessionManagementScreen() {
     );
 
     // Access control
-    if (user?.role !== 'mentor' && user?.role !== 'coordinator') {
+    if (user?.role !== UserRole.MENTOR && user?.role !== UserRole.COORDINATOR) {
         return (
             <SafeAreaView style={tw`flex-1 bg-gray-50`}>
                 <View style={tw`flex-1 items-center justify-center px-6`}>
@@ -1393,6 +1396,7 @@ export function SessionManagementScreen() {
                             <RenderSessionItem
                                 item={item}
                                 onStartSession={handleStartSession}
+                                isMentor={isMentor}
                                 onEndSession={handleEndSession}
                                 onDeleteSession={handleDeleteSession}
                                 onOpenChat={handleJoinSessionChat}

@@ -7,8 +7,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useChatContext } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
+import { useAuthState } from "../../hooks/useAuthState";
+import { useConnections } from "../../hooks/useConnections";
+import { useSessions } from "../../hooks/useSessions";
 import { IChatResponse, ChatType } from "../../interfaces/chat.interface";
 import { chatUtils } from "../../utils/chatUtils";
+import { UserRole } from "@/src/interfaces/index.interface";
+import { SessionType } from "../../interfaces/sessions.interface";
 
 type RootStackParamList = {
   ChatScreen: { chat: IChatResponse };
@@ -19,12 +24,19 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export function MessagesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<"all" | "unread" | "read">("all");
+  const [selectedChatType, setSelectedChatType] = useState<"all" | "general" | "session">("all");
   const navigation = useNavigation<NavigationProp>();
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
   const [hideHeader, setHideHeader] = useState(false);
 
   const { user } = useAuth();
+  const isMentor = user?.role === UserRole.MENTOR;
+  const { getUserFriends } = useConnections();
+  const { createSession } = useSessions();
+  
+  // State for friends list
+  const [friends, setFriends] = useState<any[]>([]);
   const {
     chats,
     isLoading,
@@ -34,10 +46,25 @@ export function MessagesScreen() {
     markAsRead,
     onlineUsers,
     clearError,
-    refreshChats
+    refreshChats,
+    isUserTyping,
+    createChat
   } = useChatContext();
 
-  // Load chats when component mounts (removed - ChatContext handles this)
+  // Load friends when component mounts
+  useEffect(() => {
+    const loadFriends = async () => {
+      if (user?.uid) {
+        try {
+          const friendsResponse = await getUserFriends(user.uid);
+          setFriends(friendsResponse.connections || []);
+        } catch (error) {
+          console.error('Error loading friends:', error);
+        }
+      }
+    };
+    loadFriends();
+  }, [user?.uid ]);
 
   // Clear error after 5 seconds
   useEffect(() => {
@@ -52,7 +79,7 @@ export function MessagesScreen() {
   const handleChatOpen = async (chat: IChatResponse) => {
     try {
       selectChat(chat);
-      
+
       // Mark messages as read if there are unread messages
       if (chat.unreadCount > 0) {
         await markAsRead(chat.id);
@@ -65,11 +92,105 @@ export function MessagesScreen() {
     }
   };
 
+  const lastSender = (senderId: string | undefined) => {
+   if(senderId && user && senderId === user?.uid) return 'Você: ';
+   return "";
+  };
+
+  // Start a new general chat with a user
+  const handleStartNewChat = async (participant: any) => {
+  try {
+  // Create a general chat
+  const newChat = await createChat({
+  type: ChatType.GENERAL,
+  participantId: participant.uid
+  });
+
+  // Navigate to the chat
+  navigation.navigate('ChatScreen', { chat: newChat });
+  } catch (error: any) {
+  console.error('Error starting new chat:', error);
+  Alert.alert('Erro', 'Falha ao iniciar conversa');
+  }
+  };
+
+  // Start a new session (mentors only)
+  const handleStartNewSession = async () => {
+    try {
+      if (!isMentor) {
+        Alert.alert('Erro', 'Apenas mentores podem criar sessões');
+        return;
+      }
+
+      // Show session creation options
+      Alert.alert(
+        'Nova Sessão',
+        'Que tipo de sessão deseja criar?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Individual',
+            onPress: () => createSessionWithType(SessionType.INDIVIDUAL)
+          },
+          {
+            text: 'Grupo',
+            onPress: () => createSessionWithType(SessionType.GROUP)
+          }
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Erro', 'Falha ao criar sessão');
+    }
+  };
+
+  // Create session with specific type
+  const createSessionWithType = async (sessionType: SessionType) => {
+    try {
+      // Get available mentees from friends
+      const mentees = friends.filter(friend => friend.connectedUser.role === UserRole.MENTEE);
+      
+      if (mentees.length === 0) {
+        Alert.alert('Aviso', 'Você precisa ter conexões com mentees para criar uma sessão');
+        return;
+      }
+
+      // For now, create with first mentee - TODO: Show selection modal
+      const firstMentee = mentees[0].connectedUser;
+      
+      const sessionData = {
+        title: `Sessão ${sessionType === SessionType.INDIVIDUAL ? 'Individual' : 'em Grupo'}`,
+        description: 'Sessão criada pelo chat',
+        type: sessionType,
+        duration: 60, // Default 60 minutes
+        scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
+        menteeIds: [firstMentee.uid]
+      };
+
+      const newSession = await createSession(sessionData);
+      
+      // Create session chat
+      const sessionChat = await createChat({
+        type: ChatType.SESSION,
+        participantId: firstMentee.uid,
+        sessionId: newSession.id,
+        title: `Sessão: ${newSession.title}`
+      });
+
+      // Navigate to session chat
+      navigation.navigate('ChatScreen', { chat: sessionChat });
+      
+      Alert.alert('Sucesso', 'Sessão criada com sucesso!');
+    } catch (error: any) {
+      console.error('Error creating session:', error);
+      Alert.alert('Erro', error.message || 'Falha ao criar sessão');
+    }
+  };
+
   useEffect(() => {
     const listener = scrollY.addListener(({ value }) => {
       setHideHeader(value > 20);
     });
-
+    
     return () => {
       scrollY.removeListener(listener);
     };
@@ -78,21 +199,25 @@ export function MessagesScreen() {
   const getUnreadCount = (chat: IChatResponse) => {
     return chat.unreadCount;
   };
-  // Filter chats based on search query and filter selection
+  // Filter chats based on search query, filter selection, and chat type
   const filteredChats = chats.filter(chat => {
     const otherParticipant = chatUtils.getOtherParticipant(chat, user?.uid || '');
     const chatTitle = chatUtils.getChatTitle(chat, user?.uid || '');
-    
-    const matchesSearch = chatTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (chat.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase()) || false);
 
-    
+    const matchesSearch = chatTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (chat.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase()) || false);
+
     const matchesFilter =
       selectedFilter === "all" ||
       (selectedFilter === "unread" && getUnreadCount(chat) > 0) ||
       (selectedFilter === "read" && getUnreadCount(chat) === 0);
 
-    return matchesSearch && matchesFilter;
+    const matchesChatType =
+      selectedChatType === "all" ||
+      (selectedChatType === "general" && chat.type === ChatType.GENERAL) ||
+      (selectedChatType === "session" && chat.type === ChatType.SESSION);
+
+    return matchesSearch && matchesFilter && matchesChatType;
   });
 
   // Get status indicator color
@@ -101,19 +226,39 @@ export function MessagesScreen() {
     return isOnline ? "bg-green-500" : "bg-gray-400";
   };
 
-  // Get active participants for horizontal scroll (deduplicated)
-  const activeParticipants = chats
-    .map(chat => chatUtils.getOtherParticipant(chat, user?.uid || ''))
-    .filter(participant => participant && onlineUsers.includes(participant.uid))
-    .reduce((unique: any[], participant) => {
-      // Only add if not already in the array (deduplicate by uid)
-      const exists = unique.some(p => p?.uid === participant?.uid);
-      if (!exists) {
-        unique.push(participant);
-      }
-      return unique;
-    }, [])
-    .slice(0, 10); // Limit to 10 active users
+  // Get comprehensive active users list: includes chat participants AND all friends
+  const activeParticipants = React.useMemo(() => {
+    // Get participants from existing chats
+    const chatParticipants = chats
+      .map(chat => chatUtils.getOtherParticipant(chat, user?.uid || ''))
+      .filter(participant => participant);
+
+    // Get friends from connections
+    const friendUsers = friends.map(friend => friend.connectedUser);
+
+    // Combine and deduplicate by uid
+    const allUsers = [...chatParticipants, ...friendUsers]
+      .reduce((unique: any[], participant) => {
+        if (participant && !unique.some(p => p?.uid === participant.uid)) {
+          unique.push(participant);
+        }
+        return unique;
+      }, []);
+
+    // Show online users first, then offline friends (but only if mentor is also online for active status)
+    return allUsers
+      .filter(participant => {
+        const isOnline = onlineUsers.includes(participant.uid);
+        // For mentors: show online status only when mentor is also online
+        // For mentees: show all friends regardless of mentor status
+        if (isMentor) {
+          return isOnline; // Mentors see only online users
+        } else {
+          return true; // Mentees see all friends (both online and offline)
+        }
+      })
+      .slice(0, 15); // Limit to 15 users
+  }, [chats, friends, onlineUsers, user?.uid, isMentor]);
 
   const handleRefresh = useCallback(async () => {
     try {
@@ -162,7 +307,11 @@ export function MessagesScreen() {
 
         {/* Active Users */}
         {activeParticipants.length > 0 && (
-          <Animated.View style={tw`bg-white overflow-hidden`}>
+          <View style={tw`bg-white`}>
+            <Text style={tw`text-sm font-medium text-gray-600 mx-5 mb-2`}>
+              {isMentor ? 'Usuários Online' : 'Amigos'}
+            </Text>
+            <Animated.View style={tw`bg-white overflow-hidden`}>
             <Animated.ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -177,11 +326,18 @@ export function MessagesScreen() {
                 <TouchableOpacity
                   key={`active-${participant!.uid}-${index}`}
                   style={tw`items-center mr-2`}
-                  onPress={() => {
-                    const chat = chats.find(c => 
+                  onPress={async () => {
+                    const existingChat = chats.find(c =>
                       chatUtils.getOtherParticipant(c, user?.uid || '')?.uid === participant!.uid
                     );
-                    if (chat) handleChatOpen(chat);
+                    
+                    if (existingChat) {
+                      // Open existing chat
+                      handleChatOpen(existingChat);
+                    } else {
+                      // Start new general chat
+                      await handleStartNewChat(participant);
+                    }
                   }}
                 >
                   <View style={tw`relative`}>
@@ -209,6 +365,7 @@ export function MessagesScreen() {
               style={tw`absolute right-0 top-0 bottom-0 w-10`}
             />
           </Animated.View>
+          </View>
         )}
 
         {/* Search Bar */}
@@ -228,31 +385,62 @@ export function MessagesScreen() {
         </View>
 
         {/* Filter Tabs */}
-        <View style={tw`flex-row mt-4 mx-5`}>
-          <TouchableOpacity
-            style={tw`mr-4 pb-2 ${selectedFilter === "all" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("all")}
-          >
-            <Text style={tw`${selectedFilter === "all" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Todas
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`mr-4 pb-2 ${selectedFilter === "unread" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("unread")}
-          >
-            <Text style={tw`${selectedFilter === "unread" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Não lidas
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={tw`pb-2 ${selectedFilter === "read" ? "border-b-2 border-indigo-600" : ""}`}
-            onPress={() => setSelectedFilter("read")}
-          >
-            <Text style={tw`${selectedFilter === "read" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
-              Lidas
-            </Text>
-          </TouchableOpacity>
+        <View style={tw`flex-row justify-between mt-4 mx-5`}>
+          {/* Chat Type Tabs */}
+          <View style={tw`flex-row justify-start`}>
+            <TouchableOpacity
+              style={tw`mr-4 pb-2 ${selectedChatType === "all" ? "border-b-2 border-indigo-600" : ""}`}
+              onPress={() => setSelectedChatType("all")}
+            >
+              <Text style={tw`${selectedChatType === "all" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+                Todas
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`mr-4 pb-2 ${selectedChatType === "general" ? "border-b-2 border-indigo-600" : ""}`}
+              onPress={() => setSelectedChatType("general")}
+            >
+              <Text style={tw`${selectedChatType === "general" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+                Geral
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`mr-4 pb-2 ${selectedChatType === "session" ? "border-b-2 border-indigo-600" : ""}`}
+              onPress={() => setSelectedChatType("session")}
+            >
+              <Text style={tw`${selectedChatType === "session" ? "text-indigo-600 font-medium" : "text-gray-500"}`}>
+                Sessões
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Read Status Tabs */}
+          <View style={tw`flex-row justify-end`}>
+            <TouchableOpacity
+              style={tw`mr-4 pb-2 ${selectedFilter === "all" ? "border-b-2 border-green-500" : ""}`}
+              onPress={() => setSelectedFilter("all")}
+            >
+              <Text style={tw`${selectedFilter === "all" ? "text-green-600 font-medium" : "text-gray-500"}`}>
+                Todas
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`mr-4 pb-2 ${selectedFilter === "unread" ? "border-b-2 border-orange-500" : ""}`}
+              onPress={() => setSelectedFilter("unread")}
+            >
+              <Text style={tw`${selectedFilter === "unread" ? "text-orange-600 font-medium" : "text-gray-500"}`}>
+                Não lidas
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={tw`pb-2 ${selectedFilter === "read" ? "border-b-2 border-gray-500" : ""}`}
+              onPress={() => setSelectedFilter("read")}
+            >
+              <Text style={tw`${selectedFilter === "read" ? "text-gray-600 font-medium" : "text-gray-500"}`}>
+                Lidas
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Error Message */}
@@ -287,7 +475,8 @@ export function MessagesScreen() {
               const chatTitle = chatUtils.getChatTitle(chat, user?.uid || '');
               const lastMessagePreview = chatUtils.getLastMessagePreview(chat);
               const isOnline = otherParticipant ? onlineUsers.includes(otherParticipant.uid) : false;
-
+              const isOtherUserTyping = otherParticipant ? isUserTyping(chat.id, otherParticipant.uid) : false;
+            
               return (
                 <TouchableOpacity
                   key={chat.id}
@@ -306,7 +495,7 @@ export function MessagesScreen() {
                           </Text>
                         </View>
                       )}
-                      <View style={tw`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 border-white`} />
+                     {chat.type === ChatType.GENERAL && <View style={tw`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 border-white`} />}
                     </View>
 
                     {/* Message Content */}
@@ -321,7 +510,7 @@ export function MessagesScreen() {
                       </View>
 
                       <View style={tw`flex-row items-center mt-1`}>
-                        {chat.lastMessage?.senderId === user?.uid && (
+                        {chat.lastMessage?.senderId === user?.uid && chat.unreadCount > 0 && (
                           <Ionicons
                             name="checkmark-done"
                             size={16}
@@ -333,12 +522,21 @@ export function MessagesScreen() {
                           style={tw`text-gray-600 flex-1`}
                           numberOfLines={1}
                         >
-                          {lastMessagePreview}
+                          {isOtherUserTyping ? 'Digitando...' : lastSender(chat.lastMessage?.senderId) + lastMessagePreview}
                         </Text>
 
-                        {getUnreadCount(chat) > 0 && (
+                        {/* Typing indicator */}
+                        {isOtherUserTyping && (
+                          <View style={tw`flex-row items-center mr-2`}>
+                            <View style={tw`w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse`} />
+                            <View style={tw`w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse delay-150`} />
+                            <View style={tw`w-2 h-2 bg-green-500 rounded-full animate-pulse delay-300`} />
+                          </View>
+                        )}
+
+                        {!isOtherUserTyping && getUnreadCount(chat) > 0 && (
                           <View style={tw`bg-indigo-600 min-w-5 h-5 rounded-full flex items-center justify-center ml-2`}>
-                            <Text style={tw`text-white text-xs font-medium`}>{getUnreadCount(chat)}</Text>
+                            <Text style={tw`text-white text-xs font-medium`}>{String(getUnreadCount(chat))}</Text>
                           </View>
                         )}
                       </View>
@@ -382,6 +580,16 @@ export function MessagesScreen() {
           )}
         </ScrollView>
       </Animated.ScrollView>
+
+      {/* Floating Action Button for Session Chat (Mentors Only) */}
+      {isMentor && selectedChatType === 'session' && (
+        <TouchableOpacity
+          style={tw`absolute bottom-22 right-6 w-14 h-14 bg-purple-600 rounded-full shadow-lg items-center justify-center`}
+          onPress={handleStartNewSession}
+        >
+          <Feather name="users" size={24} color="white" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

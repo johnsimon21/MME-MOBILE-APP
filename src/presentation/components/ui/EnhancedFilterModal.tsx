@@ -75,8 +75,8 @@ export const EnhancedFilterModal: React.FC<FilterModalProps> = ({
 
     const userTypeOptions = [
         { value: null, label: 'Todos', icon: 'users' },
-        { value: 'Mentor', label: 'Mentores', icon: 'user-check' },
-        { value: 'Mentee', label: 'Mentees', icon: 'user' },
+        { value: 'mentor', label: 'Mentores', icon: 'user-check' },
+        { value: 'mentee', label: 'Mentorados', icon: 'user' },
     ];
 
     const statusOptions = [

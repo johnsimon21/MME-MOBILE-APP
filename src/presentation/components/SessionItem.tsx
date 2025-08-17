@@ -7,6 +7,7 @@ interface SessionItemProps {
     item: ISessionResponse;
     onStartSession?: (sessionId: string, type: 'chat' | 'voice') => void;
     onEndSession?: (sessionId: string) => void;
+    isMentor: boolean;
     onDeleteSession?: (sessionId: string) => void;
     onOpenChat?: (session: ISessionResponse) => void;
 }
@@ -62,17 +63,18 @@ const getStatusConfig = (status: SessionStatus) => {
 };
 
 export const RenderSessionItem = ({
+    isMentor,
     item: session,
     onStartSession,
     onEndSession,
     onDeleteSession,
     onOpenChat
 }: SessionItemProps) => {
-    const canStart = session.status === SessionStatus.SCHEDULED;
+    const canStart = session.status === SessionStatus.SCHEDULED && isMentor;
     const isActive = session.status === SessionStatus.ACTIVE;
     const isCompleted = session.status === SessionStatus.COMPLETED;
     const isCancelled = session.status === SessionStatus.CANCELLED;
-    const canDelete = (session.status === SessionStatus.COMPLETED || session.status === SessionStatus.SCHEDULED);
+    const canDelete = (session.status === SessionStatus.COMPLETED || session.status === SessionStatus.SCHEDULED) && isMentor;
 
     const scheduledDate =
         session.scheduledAt && typeof (session.scheduledAt as any).toDate === 'function'
@@ -80,6 +82,7 @@ export const RenderSessionItem = ({
             : new Date(session.scheduledAt);
 
     const participantNames = session.participants.map(p => p.fullName).join(', ') || 'Nenhum participante';
+    const mentorName = session.mentor.fullName || 'Nenhum mentor';
     const statusConfig = getStatusConfig(session.status);
     console.log("Schedule Date")
     console.log(session.scheduledAt)
@@ -180,10 +183,18 @@ export const RenderSessionItem = ({
 
                 {/* Session Info */}
                 <View style={styles.infoSection}>
+                    
+                    {!isMentor && <View style={styles.infoRow}>
+                        <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+                        <Text style={[styles.infoText, {color: '#5988e6ff'}]} numberOfLines={1}>
+                            Mentor: {mentorName}
+                        </Text>
+                    </View>}
+                    
                     <View style={styles.infoRow}>
                         <Ionicons name="people-outline" size={14} color="#9CA3AF" />
                         <Text style={styles.infoText} numberOfLines={1}>
-                            {participantNames}
+                            Mentorados: {participantNames}
                         </Text>
                     </View>
 

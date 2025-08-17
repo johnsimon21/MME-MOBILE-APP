@@ -38,10 +38,38 @@ export default function NotificationScreen() {
         getFilteredNotifications,
     } = useNotificationContext();
 
+    // Debug logs for notification visibility
+    useEffect(() => {
+        console.log('🔔 Notifications Screen Debug:', {
+            notificationsCount: notifications.length,
+            isLoading,
+            isRefreshing,
+            error,
+            unreadCount,
+            isSocketConnected,
+        });
+    }, [notifications, isLoading, isRefreshing, error, unreadCount, isSocketConnected]);
+
     const [filter, setFilter] = useState<'all' | 'unread' | NotificationCategory>('all');
+
+    // Force load notifications on screen focus
+    useEffect(() => {
+        console.log('🔔 NotificationScreen mounted, forcing load...');
+        loadNotifications();
+    }, []);
 
     // Get filtered notifications based on current filter
     const filteredNotifications = React.useMemo(() => {
+        console.log('🔔 Filtering notifications:', { 
+            filter, 
+            totalNotifications: notifications.length,
+            filteredCount: filter === 'all' 
+                ? notifications.length 
+                : filter === 'unread' 
+                ? notifications.filter(n => !n.isRead).length
+                : notifications.filter(n => n.category === filter).length
+        });
+        
         if (filter === 'all') return notifications;
         if (filter === 'unread') return notifications.filter(n => !n.isRead);
         return notifications.filter(n => n.category === filter);

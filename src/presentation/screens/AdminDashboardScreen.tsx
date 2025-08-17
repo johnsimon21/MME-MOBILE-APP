@@ -627,12 +627,12 @@ export function AdminDashboardScreen() {
                     </View>
                 )}
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     onPress={() => setIsSettingsVisible(true)}
                     style={tw`bg-gray-100 p-2 rounded-lg ml-2`}
                 >
                     <MaterialIcons name="settings" size={20} color="#6B7280" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
 
             <ScrollView
@@ -741,7 +741,7 @@ export function AdminDashboardScreen() {
                                 <Text style={tw`text-2xl font-bold text-green-600`}>
                                     {dashboardStats.usersByRole.mentees || 0}
                                 </Text>
-                                <Text style={tw`text-gray-600 text-sm`}>Mentees</Text>
+                                <Text style={tw`text-gray-600 text-sm`}>Mentorados</Text>
                                 <View style={tw`w-full mt-2`}>
                                     <ProgressBar
                                         progress={dashboardStats.totalUsers > 0 ?
@@ -932,12 +932,12 @@ export function AdminDashboardScreen() {
             {/* Modals */}
             <UserDetailsModal />
             <PhotoViewerModal />
-            <DashboardSettingsComponent
+            {/* <DashboardSettingsComponent
                 visible={isSettingsVisible}
                 onClose={() => setIsSettingsVisible(false)}
                 currentSettings={dashboardSettings}
                 onSettingsChange={setDashboardSettings}
-            />
+            /> */}
         </View>
     );
 }

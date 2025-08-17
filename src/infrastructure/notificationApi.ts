@@ -16,10 +16,16 @@ export class NotificationAPI {
     userId: string,
     params: QueryNotificationsRequest = {}
   ): Promise<NotificationsListResponse> {
+    console.log('📱 API: getUserNotifications called', { userId, params });
     const { data } = await api.get<NotificationsListResponse>(
       `/notifications/users/${userId}`,
       { params }
     );
+    console.log('📱 API: getUserNotifications response', { 
+      count: data.notifications?.length || 0, 
+      total: data.total, 
+      unreadCount: data.unreadCount 
+    });
     return data;
   }
 

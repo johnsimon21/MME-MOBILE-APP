@@ -29,15 +29,19 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthState } from '@/src/hooks/useAuthState';
 import { useConnections } from '@/src/hooks/useConnections';
 import { useUsers } from '@/src/hooks/useUsers';
+import { useChatContext } from '@/src/context/ChatContext';
+import { useNotificationContextSafe } from "@/src/context/NotificationContext";
 
 // Interfaces
 import { UserRole } from '@/src/interfaces/index.interface';
 import { IUser } from '@/src/interfaces/user.interface';
 import { IConnectionResponse } from '@/src/interfaces/connections.interface';
+import { ChatType } from '@/src/interfaces/chat.interface';
 
 // Components
 import { EnhancedFilterModal } from '@/src/presentation/components/ui/EnhancedFilterModal';
 import { useAuth } from '@/src/context/AuthContext';
+import { useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH > 768;
@@ -62,9 +66,13 @@ interface TabItem {
 
 export function HomeScreen() {
     const navigation = useNavigation();
+    const router = useRouter();
+    const notificationContext = useNotificationContextSafe();
     const { user } = useAuth();
     const isMentor = user?.role === UserRole.MENTOR;
     const { getAvailableUsers } = useUsers();
+    const { createChat } = useChatContext();
+
     const {
         sendConnectionRequest,
         cancelConnectionRequest,
@@ -81,21 +89,21 @@ export function HomeScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    
+
     // Simple loading guard
     const isLoadingRef = useRef(false);
-    
+
     // Data State
     const [availableUsers, setAvailableUsers] = useState<EnhancedUser[]>([]);
     const [friends, setFriends] = useState<IConnectionResponse[]>([]);
     const [receivedRequests, setReceivedRequests] = useState<IConnectionResponse[]>([]);
     const [sentRequests, setSentRequests] = useState<IConnectionResponse[]>([]);
-    
+
     // UI State
     const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
     const [filterModalVisible, setFilterModalVisible] = useState(false);
-    
+
     // Filters
     const [filters, setFilters] = useState({
         userType: null as "Mentor" | "Mentorado" | null,
@@ -111,6 +119,14 @@ export function HomeScreen() {
     const handleViewProfile = (userId: string) => {
         // @ts-ignore
         navigation.navigate('Profile', { userId });
+    };
+
+    // Get notification count from context
+    const notificationCount = notificationContext?.unreadCount || 0;
+
+
+    const navigateToNotifications = () => {
+        router.push('/notifications');
     };
 
     // Tab configuration
@@ -147,11 +163,11 @@ export function HomeScreen() {
             console.log('🚫 Already loading, skipping...');
             return;
         }
-        
+
         try {
             console.log('🔄 Starting data load...', { refresh, userId: user?.uid });
             isLoadingRef.current = true;
-            
+
             if (refresh) {
                 setIsRefreshing(true);
             } else {
@@ -166,19 +182,19 @@ export function HomeScreen() {
             // Load data sequentially with minimal delays
             console.log('📡 Loading available users...');
             const availableResponse = await getAvailableUsers(user.uid, { page: 1, limit: 20 });
-            
+
             console.log('📡 Loading user friends...');
             const friendsResponse = await getUserFriends(user.uid);
-            
+
             console.log('📡 Loading received requests...');
             const requestsResponse = await getReceivedRequests();
-            
+
             console.log('📡 Loading sent requests...');
             const sentResponse = await getSentRequests();
 
             // Process available users
             console.log(`✅ Processing ${availableResponse.users.length} available users`);
-            
+
             const enhancedUsers: EnhancedUser[] = availableResponse.users.map((user: IUser): EnhancedUser => ({
                 ...user,
                 connectionStatus: 'none',
@@ -190,7 +206,7 @@ export function HomeScreen() {
             setFriends(friendsResponse.connections || []);
             setReceivedRequests(requestsResponse.connections || []);
             setSentRequests(sentResponse.connections || []);
-            
+
             console.log('✅ Data loaded successfully!', {
                 users: enhancedUsers.length,
                 friends: friendsResponse.connections?.length || 0,
@@ -211,7 +227,7 @@ export function HomeScreen() {
 
     // Initial load - only once when component mounts and user is available
     const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
-    
+
     useEffect(() => {
         if (user?.uid && !hasInitiallyLoaded) {
             console.log('🚀 Initial data load triggered for user:', user.uid);
@@ -232,12 +248,12 @@ export function HomeScreen() {
     const loadConnectionStatus = async (targetUserId: string) => {
         try {
             const status = await getConnectionStatus(targetUserId);
-            
-            setAvailableUsers(prev => 
-                prev.map(user => 
-                    user.uid === targetUserId 
-                        ? { 
-                            ...user, 
+
+            setAvailableUsers(prev =>
+                prev.map(user =>
+                    user.uid === targetUserId
+                        ? {
+                            ...user,
                             connectionStatus: status.status as any,
                             connectionType: status.type as any,
                             connectionId: status.connectionId,
@@ -258,15 +274,15 @@ export function HomeScreen() {
             if (Platform.OS === 'ios') {
                 Vibration.vibrate(10);
             }
-            
+
             setProcessingRequests(prev => new Set([...prev, targetUserId]));
-            
+
             await sendConnectionRequest(targetUserId);
-            
+
             // Update user status locally for immediate UI feedback
-            setAvailableUsers(prev => 
-                prev.map(user => 
-                    user.uid === targetUserId 
+            setAvailableUsers(prev =>
+                prev.map(user =>
+                    user.uid === targetUserId
                         ? { ...user, connectionStatus: 'pending', connectionType: 'sent', canCancel: true }
                         : user
                 )
@@ -287,9 +303,9 @@ export function HomeScreen() {
     const handleAcceptRequest = async (connectionId: string, requesterId: string) => {
         try {
             setProcessingRequests(prev => new Set([...prev, connectionId]));
-            
+
             await acceptConnectionRequest(connectionId);
-            
+
             // Move from requests to friends
             const acceptedRequest = receivedRequests.find(req => req.id === connectionId);
             if (acceptedRequest) {
@@ -312,9 +328,9 @@ export function HomeScreen() {
     const handleRejectRequest = async (connectionId: string, requesterId: string) => {
         try {
             setProcessingRequests(prev => new Set([...prev, connectionId]));
-            
+
             await rejectConnectionRequest(connectionId);
-            
+
             setReceivedRequests(prev => prev.filter(req => req.id !== connectionId));
 
             Alert.alert('Sucesso', 'Solicitação rejeitada');
@@ -332,9 +348,9 @@ export function HomeScreen() {
     const handleCancelRequest = async (connectionId: string) => {
         try {
             setProcessingRequests(prev => new Set([...prev, connectionId]));
-            
+
             await cancelConnectionRequest(connectionId);
-            
+
             setSentRequests(prev => prev.filter(req => req.id !== connectionId));
 
             Alert.alert('Sucesso', 'Solicitação cancelada');
@@ -349,6 +365,23 @@ export function HomeScreen() {
         }
     };
 
+    // Start a general chat with a connected user
+    const handleStartChat = async (userId: string, userName: string) => {
+        try {
+            // Create a general chat
+            const newChat = await createChat({
+                type: ChatType.GENERAL,
+                participantId: userId
+            });
+
+            // Navigate to the chat
+            // @ts-ignore
+            navigation.navigate('ChatScreen', { chat: newChat });
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Falha ao iniciar conversa');
+        }
+    };
+
     // Apply filters to available users
     const applyUserFilters = useCallback((users: EnhancedUser[]) => {
         return users.filter(user => {
@@ -357,12 +390,12 @@ export function HomeScreen() {
                 const targetRole = filters.userType === 'Mentor' ? UserRole.MENTOR : UserRole.MENTEE;
                 if (user.role !== targetRole) return false;
             }
-            
+
             // Location filter
             if (filters.location && user.province !== filters.location) {
                 return false;
             }
-            
+
             return true;
         });
     }, [filters]);
@@ -370,33 +403,33 @@ export function HomeScreen() {
     // Filter data based on search and active tab
     const filteredData = useMemo(() => {
         let data: any[] = [];
-        
+
         switch (activeTab) {
             case 'discover':
                 let filteredUsers = applyUserFilters(availableUsers);
-                data = filteredUsers.filter(user => 
+                data = filteredUsers.filter(user =>
                     user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     user.school.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     user.municipality.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 break;
             case 'friends':
-                data = friends.filter(friend => 
+                data = friends.filter(friend =>
                     friend.connectedUser?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 break;
             case 'requests':
-                data = receivedRequests.filter(request => 
+                data = receivedRequests.filter(request =>
                     request.connectedUser?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 break;
             case 'sent':
-                data = sentRequests.filter(request => 
+                data = sentRequests.filter(request =>
                     request.connectedUser?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 break;
         }
-        
+
         return data;
     }, [activeTab, availableUsers, friends, receivedRequests, sentRequests, searchQuery, applyUserFilters]);
 
@@ -420,16 +453,16 @@ export function HomeScreen() {
                                 Conecte-se com outros {isMentor ? 'mentees' : 'mentores'}
                             </Text>
                         </View>
-                        
+
                         <TouchableOpacity
                             style={styles.notificationButton}
-                            onPress={() => {/* TODO: Navigate to notifications */}}
+                            onPress={() => navigateToNotifications()}
                         >
                             <Ionicons name="notifications-outline" size={24} color="white" />
-                            {receivedRequests.length > 0 && (
+                            {notificationCount > 0 && (
                                 <View style={styles.notificationBadge}>
                                     <Text style={styles.notificationBadgeText}>
-                                        {String(receivedRequests.length)}
+                                        {notificationCount > 9 ? '9+' : notificationCount.toString()}
                                     </Text>
                                 </View>
                             )}
@@ -454,7 +487,7 @@ export function HomeScreen() {
                                 </TouchableOpacity>
                             )}
                         </View>
-                        
+
                         <TouchableOpacity
                             style={styles.filterButton}
                             onPress={() => setFilterModalVisible(true)}
@@ -537,10 +570,10 @@ export function HomeScreen() {
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
-                            <MaterialIcons 
-                                name={user.role === UserRole.MENTOR ? 'school' : 'person'} 
-                                size={16} 
-                                color="#6B7280" 
+                            <MaterialIcons
+                                name={user.role === UserRole.MENTOR ? 'school' : 'person'}
+                                size={16}
+                                color="#6B7280"
                             />
                             <Text style={styles.roleText}>
                                 {user.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
@@ -580,7 +613,7 @@ export function HomeScreen() {
                                         return; // Don't send request if already connected/pending
                                     }
                                 }
-                                
+
                                 // Only send request if status is 'none'
                                 if (user.connectionStatus === 'none') {
                                     handleSendConnectionRequest(user.uid);
@@ -590,13 +623,13 @@ export function HomeScreen() {
                         >
                             <Feather
                                 name={
-                                    user.connectionStatus === 'pending' ? 'clock' : 
-                                    user.connectionStatus === 'accepted' ? 'check' : 'user-plus'
+                                    user.connectionStatus === 'pending' ? 'clock' :
+                                        user.connectionStatus === 'accepted' ? 'check' : 'user-plus'
                                 }
                                 size={16}
                                 color={
                                     user.connectionStatus === 'pending' ? '#F59E0B' :
-                                    user.connectionStatus === 'accepted' ? '#10B981' : 'white'
+                                        user.connectionStatus === 'accepted' ? '#10B981' : 'white'
                                 }
                             />
                         </TouchableOpacity>
@@ -645,10 +678,10 @@ export function HomeScreen() {
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
-                            <MaterialIcons 
-                                name={friend.connectedUser.role === UserRole.MENTOR ? 'school' : 'person'} 
-                                size={16} 
-                                color="#6B7280" 
+                            <MaterialIcons
+                                name={friend.connectedUser.role === UserRole.MENTOR ? 'school' : 'person'}
+                                size={16}
+                                color="#6B7280"
                             />
                             <Text style={styles.roleText}>
                                 {friend.connectedUser.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
@@ -662,7 +695,7 @@ export function HomeScreen() {
 
                 <TouchableOpacity
                     style={styles.messageButton}
-                    onPress={() => {/* TODO: Start chat */}}
+                    onPress={() => handleStartChat(friend.connectedUser.uid, friend.connectedUser.fullName)}
                 >
                     <Feather name="message-circle" size={20} color="#4F46E5" />
                 </TouchableOpacity>
@@ -692,10 +725,10 @@ export function HomeScreen() {
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
-                            <MaterialIcons 
-                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'} 
-                                size={16} 
-                                color="#6B7280" 
+                            <MaterialIcons
+                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'}
+                                size={16}
+                                color="#6B7280"
                             />
                             <Text style={styles.roleText}>
                                 {request.connectedUser?.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
@@ -720,7 +753,7 @@ export function HomeScreen() {
                         >
                             <Feather name="x" size={16} color="white" />
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity
                             style={[styles.actionButton, styles.acceptButton]}
                             onPress={() => handleAcceptRequest(request.id, request.connectedUser?.uid)}
@@ -755,13 +788,13 @@ export function HomeScreen() {
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
-                            <MaterialIcons 
-                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'} 
-                                size={16} 
-                                color="#6B7280" 
+                            <MaterialIcons
+                                name={request.connectedUser?.role === UserRole.MENTOR ? 'school' : 'person'}
+                                size={16}
+                                color="#6B7280"
                             />
                             <Text style={styles.roleText}>
-                                {request.connectedUser?.role === UserRole.MENTOR ? 'Mentor' : 'Mentee'}
+                                {request.connectedUser?.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
                             </Text>
                         </View>
                     </View>
@@ -814,7 +847,7 @@ export function HomeScreen() {
         };
 
         const state = emptyStates[activeTab];
-        
+
         return (
             <View style={styles.emptyState}>
                 <Feather name={state.icon as any} size={64} color="#D1D5DB" />
@@ -841,7 +874,7 @@ export function HomeScreen() {
         <SafeAreaView style={styles.container}>
             {renderHeader()}
             {renderTabNavigation()}
-            
+
             {/* Error Message */}
             {error && (
                 <View style={styles.errorContainer}>
@@ -869,7 +902,7 @@ export function HomeScreen() {
                             return null;
                     }
                 }}
-                keyExtractor={(item: any) => 
+                keyExtractor={(item: any) =>
                     activeTab === 'discover' ? item.uid : item.id
                 }
                 contentContainerStyle={styles.listContainer}

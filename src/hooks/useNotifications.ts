@@ -150,7 +150,7 @@ export const useNotifications = () => {
     refresh: boolean = false
   ) => {
     if (!isAuthenticated || !user?.uid) {
-      console.log('📱 Skipping loadNotifications - not authenticated');
+      console.log('📱 Skipping loadNotifications - not authenticated', { isAuthenticated, userUid: user?.uid });
       return;
     }
 
@@ -163,6 +163,8 @@ export const useNotifications = () => {
     lastFetchTime.current = now;
 
     try {
+      console.log('📱 Loading notifications:', { page, filters, socketConnected: socket.isConnected });
+      
       setState(prev => ({
         ...prev,
         isLoading: page === 1 && !refresh,
@@ -178,9 +180,12 @@ export const useNotifications = () => {
 
       // Try socket first, fallback to API
       if (socket.isConnected && page === 1 && Object.keys(filters).length === 0) {
+        console.log('📱 Using socket to get notifications');
         socket.getNotifications(params);
       } else {
+        console.log('📱 Using API to get notifications');
         const data = await NotificationAPI.getUserNotifications(user.uid, params);
+        console.log('📱 API response:', { count: data.notifications.length, total: data.total, unreadCount: data.unreadCount });
         setState(prev => ({
           ...prev,
           notifications: page === 1 ? data.notifications : [...prev.notifications, ...data.notifications],
@@ -432,13 +437,18 @@ export const useNotifications = () => {
     const initializeNotifications = async () => {
       if (isAuthenticated && user?.uid && mounted) {
         console.log('📱 Initializing notifications for user:', user.uid);
+        console.log('📱 Socket connected:', socket.isConnected);
+        console.log('📱 Current notifications count:', state.notifications.length);
         try {
           await loadNotifications();
           await loadStats();
           await loadPreferences();
+          console.log('📱 Notifications initialized successfully');
         } catch (error) {
           console.error('❌ Failed to initialize notifications:', error);
         }
+      } else {
+        console.log('📱 Skipping notification initialization:', { isAuthenticated, userUid: user?.uid, mounted });
       }
     };
 
