@@ -41,7 +41,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
-      ]
+      ],
+      "useNextNotificationsApi": true
     },
     "web": {
       "bundler": "metro",
