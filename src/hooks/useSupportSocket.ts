@@ -74,7 +74,7 @@ export interface SupportSocketCallbacks {
 
 export const useSupportSocket = (callbacks: SupportSocketCallbacks = {}) => {
   const { user, isAuthenticated } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<typeof Socket | null>(null);
   
   const [state, setState] = useState<SupportSocketState>({
     isConnected: false,

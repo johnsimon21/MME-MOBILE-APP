@@ -36,7 +36,7 @@ export interface ITicketAttachment {
   fileSize: number;
   mimeType: string;
   uploadedBy: string;
-  uploadedAt: Date;
+  uploadedAt: string; // Changed to string for consistency
 }
 
 export interface ITicketMessage {
@@ -47,7 +47,7 @@ export interface ITicketMessage {
   senderType: 'user' | 'admin';
   message: string;
   attachments: ITicketAttachment[];
-  timestamp: Date;
+  timestamp: string; // Changed to string for consistency
   isInternal: boolean;
 }
 
@@ -75,11 +75,11 @@ export interface ITicket {
     message: string;
     senderName: string;
     senderType: 'user' | 'admin';
-    timestamp: Date;
+    timestamp: string; // Changed to string for consistency
   };
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt?: Date;
+  createdAt: string; // Changed to string for consistency
+  updatedAt: string; // Changed to string for consistency
+  resolvedAt?: string; // Changed to string for consistency
 }
 
 export interface ITicketDetails extends ITicket {
@@ -166,7 +166,7 @@ export interface ISupportChatMessage {
     senderType: 'user' | 'admin' | 'system';
   };
   message: string;
-  timestamp: Date;
+  timestamp: string; // Changed to string for consistency
   readBy: string[];
   attachments: Array<{
     id: string;
@@ -193,15 +193,15 @@ export interface ISupportChatSession {
   status: ChatSessionStatus;
   priority: ChatPriority;
   subject?: string;
-  startedAt: Date;
-  endedAt?: Date;
-  lastActivity: Date;
+  startedAt: string; // Changed to string for consistency
+  endedAt?: string; // Changed to string for consistency
+  lastActivity: string; // Changed to string for consistency
   messagesCount: number;
   lastMessage?: {
     message: string;
     senderName: string;
     senderType: 'user' | 'admin' | 'system';
-    timestamp: Date;
+    timestamp: string; // Changed to string for consistency
   };
   waitTime?: number;
   responseTime?: number;
@@ -262,8 +262,8 @@ export interface IFAQ {
     uid: string;
     fullName: string;
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Changed to string for consistency
+  updatedAt: string; // Changed to string for consistency
   userVote?: boolean; // true if helpful, false if not helpful, undefined if not voted
 }
 

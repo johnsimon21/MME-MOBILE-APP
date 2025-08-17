@@ -96,7 +96,7 @@ export default function ChatSupportScreen() {
                 </View>
                 <View style={tw`flex-row items-center mt-1 ${isUser ? 'flex-row-reverse' : ''}`}>
                     <Text style={tw`text-xs text-gray-500`}>
-                        {message.sender.fullName} • {formatTime(message.timestamp)}
+                        {message.sender.fullName} • {formatTime(new Date(message.timestamp))}
                     </Text>
                 </View>
             </View>

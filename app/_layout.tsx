@@ -78,7 +78,8 @@ function RootLayoutContent() {
     '/notifications',
     '/+not-found',
     '/support',
-    '/auth/LoginScreen',
+    '/my-tickets',
+    '/ticket-details/[id]',
     '/faq',
     '/chat-support',
     '/create-ticket',
@@ -107,6 +108,7 @@ function RootLayoutContent() {
           <Stack.Screen name="faq" options={{ headerShown: false }} />
           <Stack.Screen name="chat-support" options={{ headerShown: false }} />
           <Stack.Screen name="my-tickets" options={{ headerShown: false }} />
+          <Stack.Screen name="ticket-details" options={{ headerShown: false }} />
           <Stack.Screen name="create-ticket" options={{ headerShown: false }} />
           <Stack.Screen
             name="voice-call"

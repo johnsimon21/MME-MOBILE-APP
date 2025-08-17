@@ -22,7 +22,7 @@ interface SessionSocketEvents {
 
 export const useSessionSocket = () => {
   const { user, isAuthenticated } = useAuth();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [socket, setSocket] = useState<typeof Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const eventListeners = useRef<Map<string, Function[]>>(new Map());
 

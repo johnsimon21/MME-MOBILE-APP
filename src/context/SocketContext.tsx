@@ -5,7 +5,7 @@ import { IChatSocketEvents } from '../interfaces/chat.interface';
 import { ENV } from '../config/env';
 
 interface SocketContextType {
-    socket: Socket | null;
+    socket: typeof Socket | null;
     isConnected: boolean;
     connectionError: string | null;
     on: <K extends keyof IChatSocketEvents>(event: K, callback: IChatSocketEvents[K]) => void;
@@ -22,7 +22,7 @@ interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
-    const [socket, setSocket] = useState<Socket | null>(null);
+    const [socket, setSocket] = useState<typeof Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const { user, getIdToken } = useAuth();

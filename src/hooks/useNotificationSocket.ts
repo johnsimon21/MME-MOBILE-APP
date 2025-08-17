@@ -45,7 +45,7 @@ export interface NotificationSocketCallbacks {
 
 export const useNotificationSocket = (callbacks: NotificationSocketCallbacks = {}) => {
   const { user, isAuthenticated } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<typeof Socket | null>(null);
   
   const [state, setState] = useState<NotificationSocketState>({
     isConnected: false,

@@ -118,7 +118,7 @@ export function HomeScreen() {
 
     const handleViewProfile = (userId: string) => {
         // @ts-ignore
-        navigation.navigate('Profile', { userId });
+        navigation.navigate('UserProfile', { userId });
     };
 
     // Get notification count from context
@@ -539,23 +539,23 @@ export function HomeScreen() {
     );
 
     // User Card for Discover Tab
-    const renderUserCard = ({ item: user }: { item: EnhancedUser }) => (
+    const renderUserCard = ({ item }: { item: EnhancedUser }) => (
         <Pressable
             style={({ pressed }) => [
                 styles.userCard,
                 pressed && styles.userCardPressed,
             ]}
-            onPress={() => handleViewProfile(user.uid)}
+            onPress={() => handleViewProfile(item.uid)}
         >
             <View style={styles.userCardHeader}>
                 {/* Avatar */}
                 <View style={styles.avatarContainer}>
-                    {user.image ? (
-                        <Image source={{ uri: user.image }} style={styles.avatar} />
+                    {item.image ? (
+                        <Image source={{ uri: item.image }} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatar, styles.avatarPlaceholder]}>
                             <Text style={styles.avatarText}>
-                                {user.fullName.charAt(0).toUpperCase()}
+                                {item.fullName.charAt(0).toUpperCase()}
                             </Text>
                         </View>
                     )}
@@ -566,70 +566,70 @@ export function HomeScreen() {
                 {/* User Info */}
                 <View style={styles.userInfo}>
                     <Text style={styles.userName} numberOfLines={1}>
-                        {user.fullName}
+                        {item.fullName}
                     </Text>
                     <View style={styles.userMeta}>
                         <View style={styles.roleContainer}>
                             <MaterialIcons
-                                name={user.role === UserRole.MENTOR ? 'school' : 'person'}
+                                name={item.role === UserRole.MENTOR ? 'school' : 'person'}
                                 size={16}
                                 color="#6B7280"
                             />
                             <Text style={styles.roleText}>
-                                {user.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
+                                {item.role === UserRole.MENTOR ? 'Mentor' : 'Mentorado'}
                             </Text>
                         </View>
                         <View style={styles.locationContainer}>
                             <Feather name="map-pin" size={14} color="#6B7280" />
                             <Text style={styles.locationText} numberOfLines={1}>
-                                {user.municipality}
+                                {item.municipality}
                             </Text>
                         </View>
                     </View>
-                    {user.school && (
+                    {item.school && (
                         <Text style={styles.schoolText} numberOfLines={1}>
-                            {user.school}
+                            {item.school}
                         </Text>
                     )}
                 </View>
 
                 {/* Connection Action Button */}
                 <View style={styles.actionContainer}>
-                    {processingRequests.has(user.uid) ? (
+                    {processingRequests.has(item.uid) ? (
                         <ActivityIndicator size="small" color="#4F46E5" />
                     ) : (
                         <TouchableOpacity
                             style={[
                                 styles.actionButton,
-                                user.connectionStatus === 'pending' && styles.actionButtonPending,
+                                item.connectionStatus === 'pending' && styles.actionButtonPending,
                             ]}
                             onPress={async () => {
                                 // First, check actual connection status if not already checked
-                                if (user.connectionStatus === 'none') {
-                                    await loadConnectionStatus(user.uid);
+                                if (item.connectionStatus === 'none') {
+                                    await loadConnectionStatus(item.uid);
                                     // After loading status, check if we can still send request
-                                    const updatedUser = availableUsers.find(u => u.uid === user.uid);
+                                    const updatedUser = availableUsers.find(u => u.uid === item.uid);
                                     if (updatedUser?.connectionStatus !== 'none') {
                                         return; // Don't send request if already connected/pending
                                     }
                                 }
 
                                 // Only send request if status is 'none'
-                                if (user.connectionStatus === 'none') {
-                                    handleSendConnectionRequest(user.uid);
+                                if (item.connectionStatus === 'none') {
+                                    handleSendConnectionRequest(item.uid);
                                 }
                             }}
-                            disabled={user.connectionStatus === 'pending' || user.connectionStatus === 'accepted'}
+                            disabled={item.connectionStatus === 'pending' || item.connectionStatus === 'accepted'}
                         >
                             <Feather
                                 name={
-                                    user.connectionStatus === 'pending' ? 'clock' :
-                                        user.connectionStatus === 'accepted' ? 'check' : 'user-plus'
+                                    item.connectionStatus === 'pending' ? 'clock' :
+                                        item.connectionStatus === 'accepted' ? 'check' : 'user-plus'
                                 }
                                 size={16}
                                 color={
-                                    user.connectionStatus === 'pending' ? '#F59E0B' :
-                                        user.connectionStatus === 'accepted' ? '#10B981' : 'white'
+                                    item.connectionStatus === 'pending' ? '#F59E0B' :
+                                        item.connectionStatus === 'accepted' ? '#10B981' : 'white'
                                 }
                             />
                         </TouchableOpacity>
@@ -638,11 +638,11 @@ export function HomeScreen() {
             </View>
 
             {/* Additional Info */}
-            {user.mutualConnections && user.mutualConnections > 0 && (
+            {item.mutualConnections && item.mutualConnections > 0 && (
                 <View style={styles.mutualConnectionsContainer}>
                     <Feather name="users" size={14} color="#6B7280" />
                     <Text style={styles.mutualConnectionsText}>
-                        {user.mutualConnections} conexões em comum
+                        {item.mutualConnections} conexões em comum
                     </Text>
                 </View>
             )}

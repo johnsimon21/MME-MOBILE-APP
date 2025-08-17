@@ -54,7 +54,7 @@ interface DashboardProviderProps {
 
 export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
   // Socket state
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [socket, setSocket] = useState<typeof Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 

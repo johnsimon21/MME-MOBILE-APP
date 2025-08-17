@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { AdminDashboardScreen } from "@/src/presentation/screens/AdminDashboardScreen";
 import { AdminReportsScreen } from "@/src/presentation/screens/AdminReportsScreen";
 import { UserProfileScreen } from "@/src/presentation/screens/UserProfileScreen";
+import { UserManagementScreen } from "@/src/presentation/screens/UserManagementScreen";
 import { SupportScreen } from "@/src/presentation/screens/SupportScreen";
 import SettingsScreen from "@/src/presentation/screens/SettingsScreen";
 import { AuthGuard } from "@/src/components/auth/AuthGuard";
@@ -108,14 +109,14 @@ function AdminTabNavigator() {
           } else if (route.name === "Sessões Admin") {
             iconName = "people";
             label = "Sessões";
-            badge = 3; // Example badge
+            badge = undefined; // Example badge
           } else if (route.name === "Relatórios") {
             iconName = "document-text";
             label = "Relatórios";
           } else if (route.name === "Support") {
             iconName = "help-circle";
             label = "Suporte";
-            badge = 1; // Example badge
+            badge = undefined; // Example badge
           }
 
           return (
@@ -197,7 +198,7 @@ function UserTabNavigator() {
           } else if (route.name === "Gerenciamento de sessões" && isMentor) {
             iconName = "calendar";
             label = "Sessões";
-            badge = 2;
+            badge = undefined;
           } else if (route.name === "Recursos educacionais") {
             iconName = "library";
             label = "Recursos";
@@ -267,6 +268,7 @@ function MainStack() {
         />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen as React.ComponentType<any>} />
+        <Stack.Screen name="UserManagement" component={UserManagementScreen as React.ComponentType<any>} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{headerShown: false}} />
         <Stack.Screen 
           name="ChatScreen" 

@@ -65,19 +65,19 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
     // Helper function to determine if sessions tab should be shown
     const shouldShowSessions = () => {
         if (!userData) return false;
-        
+
         // Coordinators can always see sessions
         if (isCoordinator) return true;
-        
+
         // Users viewing their own profile can see their sessions
         if (userId === currentUser?.uid) return true;
-        
+
         // Mentors can see sessions with their mentees
         if (isMentor && userData.role === UserRole.MENTEE) return true;
-        
+
         // Mentees can see sessions with their mentors
         if (isMentee && userData.role === UserRole.MENTOR) return true;
-        
+
         // No access for other combinations
         return false;
     };
@@ -218,7 +218,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
             if (existingChat) {
                 // Navigate to existing chat
                 // @ts-ignore
-                navigation.navigate('ChatScreen', { 
+                navigation.navigate('ChatScreen', {
                     chat: existingChat
                 });
             } else {
@@ -229,7 +229,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                 });
 
                 // @ts-ignore
-                navigation.navigate('ChatScreen', { 
+                navigation.navigate('ChatScreen', {
                     chat: newChat
                 });
             }
@@ -445,12 +445,20 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                                     ]}
                                     activeOpacity={0.8}
                                 >
-                                    <Image
+                                    {userData.image ? <Image
                                         source={{
-                                            uri: userData.image || 'https://via.placeholder.com/150/cccccc/000000?text=No+Image'
+                                            uri: userData.image
                                         }}
-                                        style={tw`w-20 h-20 rounded-full border-4 border-white`}
-                                    />
+                                        style={tw`w-20 h-20 rounded-full border-4 bg-gray-200 border-white`}
+                                    /> : <View style={tw`w-20 h-20 rounded-full bg-gray-200 border-4 border-white border-t-transparent items-center justify-center`}>
+                                        <Feather
+                                            name="user"
+                                            size={35}
+                                            color={"#4F46E5"}
+                                        />
+                                    </View>
+                                    }
+
                                     <View
                                         style={[
                                             tw`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white`,
@@ -491,24 +499,25 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                         {!isOwnProfile && (
                             <View style={tw`px-4 mt-4`}>
                                 <View style={tw`flex-row`}>
-                                    <TouchableOpacity
-                                        onPress={buttonConfig.onPress}
-                                        disabled={buttonConfig.disabled}
-                                        style={[
-                                            tw`flex-1 py-3 px-4 rounded-xl border flex-row items-center justify-center`,
-                                            buttonConfig.style
-                                        ]}
-                                    >
-                                        <Feather
-                                            name={connectionStatus === 'accepted' ? 'user-check' : 'user-plus'}
-                                            size={16}
-                                            color={typeof buttonConfig.textStyle.color === 'string' ? buttonConfig.textStyle.color : '#FFFFFF'}
-                                        />
-                                        <Text style={[tw`ml-2 font-medium`, buttonConfig.textStyle]}>
-                                            {buttonConfig.text}
-                                        </Text>
-                                    </TouchableOpacity>
-
+                                    {connectionStatus !== 'accepted' &&
+                                        <TouchableOpacity
+                                            onPress={buttonConfig.onPress}
+                                            disabled={buttonConfig.disabled}
+                                            style={[
+                                                tw`flex-1 py-3 px-4 rounded-xl border flex-row items-center justify-center`,
+                                                buttonConfig.style
+                                            ]}
+                                        >
+                                            <Feather
+                                                name={connectionStatus === 'accepted' ? 'user-check' : 'user-plus'}
+                                                size={16}
+                                                color={typeof buttonConfig.textStyle.color === 'string' ? buttonConfig.textStyle.color : '#FFFFFF'}
+                                            />
+                                            <Text style={[tw`ml-2 font-medium`, buttonConfig.textStyle]}>
+                                                {buttonConfig.text}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    }
                                     {buttonConfig.secondaryButton && (
                                         <TouchableOpacity
                                             onPress={buttonConfig.secondaryButton.onPress}
@@ -588,7 +597,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                         </View>
 
                         {/* Tab Content for Overview and Sessions */}
-                            {activeTab !== 'connections' && (
+                        {activeTab !== 'connections' && (
                             <View style={tw`px-4 mt-6`}>
                                 {activeTab === 'overview' && (
                                     <View>
@@ -906,19 +915,25 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
                             </View>
                         )}
                     </View>
-                )}
+                )
+                }
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         onPress={() => handleViewProfile(item.connectedUser.uid)}
                         style={tw`bg-white rounded-xl p-4 mb-3 mx-4 flex-row items-center`}
                     >
-                        <Image
-                            source={{
-                                uri: (item.connectedUser.image) ||
-                                    'https://via.placeholder.com/150/cccccc/000000?text=No+Image'
-                            }}
-                            style={tw`w-12 h-12 rounded-full`}
-                        />
+                        {item.connectedUser.image ? (
+                            <Image
+                                source={{
+                                    uri: item.connectedUser.image
+                                }}
+                                style={tw`w-12 h-12 rounded-full`}
+                            />
+                        ) : (
+                            <View style={tw`w-12 h-12 rounded-full bg-gray-200 justify-center items-center`}>
+                                <Feather name="user" size={24} color="#A1A1AA" />
+                            </View>
+                        )}
 
                         <View style={tw`flex-1 ml-3`}>
                             <Text style={tw`font-semibold text-gray-800`}>
@@ -964,15 +979,17 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = () => {
             <PhotoViewerModal />
 
             {/* Loading Overlay */}
-            {isProcessing && (
-                <View style={tw`absolute inset-0 bg-black bg-opacity-50 justify-center items-center`}>
-                    <View style={tw`bg-white rounded-xl p-6 items-center`}>
-                        <ActivityIndicator size="large" color="#3B82F6" />
-                        <Text style={tw`mt-4 text-gray-600`}>Processando...</Text>
+            {
+                isProcessing && (
+                    <View style={tw`absolute inset-0 bg-black bg-opacity-50 justify-center items-center`}>
+                        <View style={tw`bg-white rounded-xl p-6 items-center`}>
+                            <ActivityIndicator size="large" color="#3B82F6" />
+                            <Text style={tw`mt-4 text-gray-600`}>Processando...</Text>
+                        </View>
                     </View>
-                </View>
-            )}
-        </View>
+                )
+            }
+        </View >
     );
 
 };

@@ -28,6 +28,8 @@ import {
     IUserAnalytics,
     ActivityType
 } from '../../interfaces/dashboard.interface';
+import { roleLabel } from '@/src/utils';
+import { useAuth } from '@/src/context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -37,6 +39,7 @@ export function AdminDashboardScreen() {
     const [selectedUser, setSelectedUser] = useState<IUserAnalytics | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const {user: currentUser} = useAuth();
 
     // Dashboard context
     const {
@@ -721,7 +724,7 @@ export function AdminDashboardScreen() {
                             fontSize: 12,
                             color: '#9CA3AF',
                             textTransform: 'capitalize',
-                        }}>{item.role}</Text>
+                        }}>{roleLabel[item.role as keyof typeof roleLabel]}</Text>
                         <Text style={{
                             fontSize: 12,
                             color: '#D1D5DB',
@@ -1225,7 +1228,7 @@ export function AdminDashboardScreen() {
                         </View>
                     ) : userAnalytics?.users && userAnalytics.users.length > 0 ? (
                         <FlatList
-                            data={userAnalytics.users.slice(0, 8)} // Show first 8 users for better performance
+                            data={userAnalytics.users.slice(0, 8).filter(user => user.userId !== currentUser?.uid)} // Show first 8 users for better performance
                             renderItem={({ item }) => <UserItem item={item} />}
                             keyExtractor={(item) => item.userId}
                             scrollEnabled={false}
@@ -1241,7 +1244,6 @@ export function AdminDashboardScreen() {
                                             alignItems: 'center',
                                         }}
                                         onPress={() => {
-                                            // Navigate to full user list
                                             // @ts-ignore
                                             navigation.navigate('UserManagement');
                                         }}
@@ -1270,8 +1272,8 @@ export function AdminDashboardScreen() {
                     )}
                 </View>
 
-                {/* Simplified System Performance - only if really needed */}
-                {realTimeStats && realTimeStats.systemLoad && (
+                {/* System Performance - only show if we have meaningful data */}
+                {realTimeStats && (realTimeStats.systemLoad > 0 || realTimeStats.errorRate > 0 || realTimeStats.memoryUsage > 0) && (
                     <View style={{
                         marginHorizontal: 20,
                         marginTop: 24,
@@ -1292,32 +1294,34 @@ export function AdminDashboardScreen() {
                         }}>Performance do Sistema</Text>
 
                         <View style={{ gap: 16 }}>
-                            <View>
-                                <View style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: 8,
-                                }}>
-                                    <Text style={{
-                                        fontSize: 14,
-                                        color: '#6B7280',
-                                        fontWeight: '500',
-                                    }}>Carga do Sistema</Text>
-                                    <Text style={{
-                                        fontSize: 14,
-                                        color: '#1F2937',
-                                        fontWeight: '600',
-                                    }}>{realTimeStats.systemLoad?.toFixed(1) || 0}%</Text>
+                            {realTimeStats.systemLoad > 0 && (
+                                <View>
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: 8,
+                                    }}>
+                                        <Text style={{
+                                            fontSize: 14,
+                                            color: '#6B7280',
+                                            fontWeight: '500',
+                                        }}>Carga do Sistema</Text>
+                                        <Text style={{
+                                            fontSize: 14,
+                                            color: '#1F2937',
+                                            fontWeight: '600',
+                                        }}>{realTimeStats.systemLoad.toFixed(1)}%</Text>
+                                    </View>
+                                    <ProgressBar
+                                        progress={realTimeStats.systemLoad}
+                                        color={realTimeStats.systemLoad > 80 ? "#EF4444" :
+                                            realTimeStats.systemLoad > 60 ? "#F59E0B" : "#10B981"}
+                                    />
                                 </View>
-                                <ProgressBar
-                                    progress={realTimeStats.systemLoad || 0}
-                                    color={realTimeStats.systemLoad > 80 ? "#EF4444" :
-                                        realTimeStats.systemLoad > 60 ? "#F59E0B" : "#10B981"}
-                                />
-                            </View>
+                            )}
 
-                            {realTimeStats.errorRate !== undefined && (
+                            {realTimeStats.errorRate > 0 && (
                                 <View>
                                     <View style={{
                                         flexDirection: 'row',
@@ -1334,12 +1338,39 @@ export function AdminDashboardScreen() {
                                             fontSize: 14,
                                             color: '#1F2937',
                                             fontWeight: '600',
-                                        }}>{realTimeStats.errorRate?.toFixed(2) || 0}%</Text>
+                                        }}>{realTimeStats.errorRate.toFixed(2)}%</Text>
                                     </View>
                                     <ProgressBar
-                                        progress={realTimeStats.errorRate || 0}
+                                        progress={realTimeStats.errorRate}
                                         color={realTimeStats.errorRate > 5 ? "#EF4444" :
                                             realTimeStats.errorRate > 2 ? "#F59E0B" : "#10B981"}
+                                    />
+                                </View>
+                            )}
+
+                            {realTimeStats.memoryUsage > 0 && (
+                                <View>
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: 8,
+                                    }}>
+                                        <Text style={{
+                                            fontSize: 14,
+                                            color: '#6B7280',
+                                            fontWeight: '500',
+                                        }}>Uso de Memória</Text>
+                                        <Text style={{
+                                            fontSize: 14,
+                                            color: '#1F2937',
+                                            fontWeight: '600',
+                                        }}>{realTimeStats.memoryUsage.toFixed(1)}%</Text>
+                                    </View>
+                                    <ProgressBar
+                                        progress={realTimeStats.memoryUsage}
+                                        color={realTimeStats.memoryUsage > 85 ? "#EF4444" :
+                                            realTimeStats.memoryUsage > 70 ? "#F59E0B" : "#10B981"}
                                     />
                                 </View>
                             )}

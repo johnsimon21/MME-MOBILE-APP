@@ -37,10 +37,10 @@ export function useSupport() {
                     message: ticketData.description || '',
                     senderName: user?.firebaseClaims.name || 'Usuário',
                     senderType: 'user',
-                    timestamp: new Date()
+                    timestamp: new Date().toISOString()
                 },
-                createdAt: new Date(),
-                updatedAt: new Date()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
 
             setTickets(prev => [newTicket, ...prev]);

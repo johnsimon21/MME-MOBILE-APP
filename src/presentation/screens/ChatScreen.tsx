@@ -38,9 +38,9 @@ export function ChatScreen({ route, navigation }: Props) {
     const { isMentor, isMentee } = useAuthState();
     const { getSessionById, addParticipant, endSession } = useSessions();
     const { getUserFriends } = useConnections();
-    const { 
-        currentChat, 
-        messages, 
+    const {
+        currentChat,
+        messages,
         isLoadingMessages,
         error,
         selectChat,
@@ -68,7 +68,7 @@ export function ChatScreen({ route, navigation }: Props) {
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
     const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
-    
+
     // Session-specific state
     const [sessionData, setSessionData] = useState<any>(null);
     const [isLoadingSession, setIsLoadingSession] = useState(false);
@@ -83,6 +83,11 @@ export function ChatScreen({ route, navigation }: Props) {
     const chatTitle = chatUtils.getChatTitle(chat, user?.uid || '');
     const isOnline = otherParticipant ? isUserOnline(otherParticipant.uid) : false;
     const isTyping = otherParticipant ? isUserTyping(chat.id, otherParticipant.uid) : false;
+
+    const handleViewProfile = (userId: string) => {
+        // @ts-ignore
+        navigation.navigate('UserProfile', { userId });
+    };
 
     // Initialize chat when component mounts
     useEffect(() => {
@@ -157,13 +162,13 @@ export function ChatScreen({ route, navigation }: Props) {
         if (typingTimer) {
             clearTimeout(typingTimer);
         }
-        
+
         startTyping(chat.id);
-        
+
         const timer = setTimeout(() => {
             stopTyping(chat.id);
         }, 3000) as unknown as NodeJS.Timeout;
-        
+
         setTypingTimer(timer);
     }, [chat.id, typingTimer]);
 
@@ -178,7 +183,7 @@ export function ChatScreen({ route, navigation }: Props) {
     // Handle text input changes
     const handleTextChange = useCallback((text: string) => {
         setNewMessage(text);
-        
+
         if (text.length > 0) {
             handleTypingStart();
         } else {
@@ -212,10 +217,10 @@ export function ChatScreen({ route, navigation }: Props) {
             Alert.alert('Erro', 'Não é possível iniciar chamada no momento');
             return;
         }
-        
+
         try {
             await startCall(chat.id, otherParticipant.uid, false); // false = audio only
-            
+
             // Navigate to call screen
             router.push({
                 pathname: '/normal-call',
@@ -394,7 +399,7 @@ export function ChatScreen({ route, navigation }: Props) {
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Adicionar Mentee',
+                    text: 'Adicionar Mentorado',
                     onPress: () => handleAddMentee()
                 },
                 {
@@ -432,11 +437,11 @@ export function ChatScreen({ route, navigation }: Props) {
             if (!sessionData) return;
 
             await addParticipant(sessionData.id, { menteeId: mentee.connectedUser.uid });
-            
+
             // Refresh session data
             const updatedSession = await getSessionById(sessionData.id);
             setSessionData(updatedSession);
-            
+
             setShowMenteeSelection(false);
             Alert.alert('Sucesso', `${mentee.connectedUser.fullName} foi adicionado à sessão`);
         } catch (error: any) {
@@ -459,7 +464,7 @@ export function ChatScreen({ route, navigation }: Props) {
                         try {
                             await endSession(sessionData.id);
                             Alert.alert('Sucesso', 'Sessão finalizada com sucesso!');
-                            
+
                             // Refresh session data
                             if (chat.sessionId) {
                                 const updatedSession = await getSessionById(chat.sessionId);
@@ -482,17 +487,17 @@ export function ChatScreen({ route, navigation }: Props) {
         switch (message.type) {
             case MessageType.IMAGE:
                 return (
-                    <TouchableOpacity onPress={() => {/* Open image viewer */}}>
+                    <TouchableOpacity onPress={() => {/* Open image viewer */ }}>
                         <Image
                             source={{ uri: message.fileUrl }}
                             style={tw`w-60 h-60 rounded-lg`}
                             resizeMode="cover"
                         />
                         {message.content && (
-                            <Text style={tw`mt-2 ${isSent 
-                                ? 'text-white' 
+                            <Text style={tw`mt-2 ${isSent
+                                ? 'text-white'
                                 : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
-                            }`}>
+                                }`}>
                                 {message.content}
                             </Text>
                         )}
@@ -503,31 +508,31 @@ export function ChatScreen({ route, navigation }: Props) {
                 return (
                     <TouchableOpacity
                         style={tw`flex-row items-center bg-opacity-20 ${isSent ? 'bg-white' : 'bg-indigo-100'} p-3 rounded-lg`}
-                        onPress={() => {/* Download/open file */}}
+                        onPress={() => {/* Download/open file */ }}
                     >
                         <View style={tw`w-10 h-10 rounded-lg ${isSent ? 'bg-white' : 'bg-indigo-100'} items-center justify-center`}>
                             <Feather name="file" size={20} color="#4F46E5" />
                         </View>
                         <View style={tw`ml-3 flex-1`}>
-                            <Text style={tw`font-medium ${isSent 
-                                ? 'text-white' 
+                            <Text style={tw`font-medium ${isSent
+                                ? 'text-white'
                                 : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
-                            }`} numberOfLines={1}>
+                                }`} numberOfLines={1}>
                                 {message.fileName || 'Arquivo'}
                             </Text>
                             {message.fileSize && (
-                                <Text style={tw`text-xs ${isSent 
-                                    ? 'text-white opacity-80' 
+                                <Text style={tw`text-xs ${isSent
+                                    ? 'text-white opacity-80'
                                     : (isMentorMessage ? 'text-purple-600' : 'text-gray-600')
-                                }`}>
+                                    }`}>
                                     {Math.round(message.fileSize / 1024)} KB
                                 </Text>
                             )}
                             {message.content && (
-                                <Text style={tw`text-sm mt-1 ${isSent 
-                                    ? 'text-white opacity-90' 
+                                <Text style={tw`text-sm mt-1 ${isSent
+                                    ? 'text-white opacity-90'
                                     : (isMentorMessage ? 'text-purple-700' : 'text-gray-700')
-                                }`}>
+                                    }`}>
                                     {message.content}
                                 </Text>
                             )}
@@ -538,10 +543,10 @@ export function ChatScreen({ route, navigation }: Props) {
 
             default:
                 return (
-                    <Text style={tw`${isSent 
-                        ? 'text-white' 
+                    <Text style={tw`${isSent
+                        ? 'text-white'
                         : (isMentorMessage ? 'text-purple-800' : 'text-gray-800')
-                    }`}>
+                        }`}>
                         {message.content}
                     </Text>
                 );
@@ -574,14 +579,14 @@ export function ChatScreen({ route, navigation }: Props) {
 
                 <TouchableOpacity
                     style={tw`flex-row items-center flex-1`}
-                    onPress={() => {/* Navigate to profile */}}
+                    onPress={() => handleViewProfile(otherParticipant?.uid || '')}
                 >
                     {otherParticipant?.image ? (
                         <Image source={{ uri: otherParticipant.image }} style={tw`w-10 h-10 rounded-full`} />
                     ) : (
                         <View style={tw`w-10 h-10 rounded-full bg-indigo-100 items-center justify-center`}>
                             <Text style={tw`text-lg font-bold text-indigo-600`}>
-                               <Feather name="users" size={20} color="#8B5CF6" />
+                                <Feather name={chat.type === ChatType.GENERAL ? "users" : "user"} size={20} color="#8B5CF6" />
                             </Text>
                         </View>
                     )}
@@ -604,7 +609,7 @@ export function ChatScreen({ route, navigation }: Props) {
                                     {isOnline ? 'Online' : 'Offline'}
                                 </Text>
                                 {chat.type === ChatType.SESSION && sessionData && (
-                                    <Text style={tw`text-xs text-purple-600 ml-2 flex`}  numberOfLines={1}>
+                                    <Text style={tw`text-xs text-purple-600 ml-2 flex`} numberOfLines={1}>
                                         • Mentor: {sessionData.mentor?.fullName?.split(' ')[0] || 'Carregando...'}
                                     </Text>
                                 )}
@@ -615,7 +620,7 @@ export function ChatScreen({ route, navigation }: Props) {
 
                 {/* Connection status */}
                 {!isConnected && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={tw`bg-orange-100 px-3 py-1 rounded-full mr-2`}
                         onPress={() => {
                             connect();
@@ -627,29 +632,27 @@ export function ChatScreen({ route, navigation }: Props) {
                     </TouchableOpacity>
                 )}
 
-                <View style={tw`flex-row items-center`}>                                     
+                <View style={tw`flex-row items-center`}>
                     {/* Session status indicator */}
                     {chat.type === ChatType.SESSION && sessionData && (
                         <View style={tw`mr-2`}>
-                            <View style={tw`${
-                                sessionData.status === 'active' ? 'bg-green-100' :
-                                sessionData.status === 'scheduled' ? 'bg-blue-100' :
-                                sessionData.status === 'completed' ? 'bg-gray-100' : 'bg-red-100'
-                            } px-2 py-1 rounded-full`}>
-                                <Text style={tw`text-xs font-medium ${
-                                    sessionData.status === 'active' ? 'text-green-700' :
-                                    sessionData.status === 'scheduled' ? 'text-blue-700' :
-                                    sessionData.status === 'completed' ? 'text-gray-700' : 'text-red-700'
-                                }`}>
+                            <View style={tw`${sessionData.status === 'active' ? 'bg-green-100' :
+                                    sessionData.status === 'scheduled' ? 'bg-blue-100' :
+                                        sessionData.status === 'completed' ? 'bg-gray-100' : 'bg-red-100'
+                                } px-2 py-1 rounded-full`}>
+                                <Text style={tw`text-xs font-medium ${sessionData.status === 'active' ? 'text-green-700' :
+                                        sessionData.status === 'scheduled' ? 'text-blue-700' :
+                                            sessionData.status === 'completed' ? 'text-gray-700' : 'text-red-700'
+                                    }`}>
                                     {sessionData.status === 'active' ? 'Ativa' :
-                                     sessionData.status === 'scheduled' ? 'Agendada' :
-                                     sessionData.status === 'completed' ? 'Finalizada' : 'Cancelada'}
+                                        sessionData.status === 'scheduled' ? 'Agendada' :
+                                            sessionData.status === 'completed' ? 'Finalizada' : 'Cancelada'}
                                 </Text>
                             </View>
                         </View>
                     )}
 
-                       {/* Session-specific actions */}
+                    {/* Session-specific actions */}
                     {chat.type === ChatType.SESSION && isMentor && sessionData && (
                         <TouchableOpacity
                             onPress={handleSessionManagement}
@@ -658,7 +661,7 @@ export function ChatScreen({ route, navigation }: Props) {
                             <Feather name="users" size={20} color="#8B5CF6" />
                         </TouchableOpacity>
                     )}
-                    
+
                     {/* <TouchableOpacity
                         onPress={handleVoiceCall}
                         style={tw`p-2 mr-1`}
@@ -682,7 +685,7 @@ export function ChatScreen({ route, navigation }: Props) {
                         const isSent = message.sender.uid === user?.uid;
                         const isSessionChat = chat.type === ChatType.SESSION;
                         const isMentorMessage = sessionData?.mentor?.uid === message.sender.uid;
-                        
+
                         return (
                             <View key={message.id} style={tw`${isSent ? 'self-end' : 'self-start'} max-w-3/4 mb-3`}>
                                 {/* Show sender info for session chats (received messages only) */}
@@ -691,9 +694,9 @@ export function ChatScreen({ route, navigation }: Props) {
                                         {/* Sender Avatar */}
                                         <View style={tw`w-6 h-6 rounded-full mr-2 ${isMentorMessage ? 'bg-purple-100 border-2 border-purple-400' : 'bg-indigo-100'} items-center justify-center`}>
                                             {message.sender.image ? (
-                                                <Image 
-                                                    source={{ uri: message.sender.image }} 
-                                                    style={tw`w-6 h-6 rounded-full`} 
+                                                <Image
+                                                    source={{ uri: message.sender.image }}
+                                                    style={tw`w-6 h-6 rounded-full`}
                                                 />
                                             ) : (
                                                 <Text style={tw`text-xs font-bold ${isMentorMessage ? 'text-purple-600' : 'text-indigo-600'}`}>
@@ -701,7 +704,7 @@ export function ChatScreen({ route, navigation }: Props) {
                                                 </Text>
                                             )}
                                         </View>
-                                        
+
                                         {/* Sender Name with Mentor Badge */}
                                         <View style={tw`flex-row items-center`}>
                                             <Text style={tw`text-xs font-medium ${isMentorMessage ? 'text-purple-700' : 'text-gray-600'}`}>
@@ -718,8 +721,8 @@ export function ChatScreen({ route, navigation }: Props) {
 
                                 <View style={tw`
                                     ${isSent
-                                        ? isMentorMessage 
-                                            ? 'bg-purple-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl' 
+                                        ? isMentorMessage
+                                            ? 'bg-purple-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl'
                                             : 'bg-indigo-600 rounded-tl-xl rounded-tr-xl rounded-bl-xl'
                                         : isMentorMessage
                                             ? 'bg-purple-50 border-2 border-purple-200 rounded-tl-xl rounded-tr-xl rounded-br-xl'
@@ -821,8 +824,8 @@ export function ChatScreen({ route, navigation }: Props) {
                             onBlur={handleTypingStop}
                             multiline
                         />
-                        <TouchableOpacity 
-                            style={tw`ml-2`} 
+                        <TouchableOpacity
+                            style={tw`ml-2`}
                             onPress={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
                             <Feather name="smile" size={22} color={showEmojiPicker ? "#4F46E5" : "gray"} />
@@ -870,7 +873,7 @@ export function ChatScreen({ route, navigation }: Props) {
                 <View style={tw`flex-1 bg-black bg-opacity-50 justify-end`}>
                     <View style={tw`bg-white rounded-t-3xl p-6 max-h-3/4`}>
                         <View style={tw`flex-row items-center justify-between mb-4`}>
-                            <Text style={tw`text-xl font-bold text-gray-800`}>Adicionar Mentee</Text>
+                            <Text style={tw`text-xl font-bold text-gray-800`}>Adicionar Mentorado</Text>
                             <TouchableOpacity onPress={() => setShowMenteeSelection(false)}>
                                 <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>

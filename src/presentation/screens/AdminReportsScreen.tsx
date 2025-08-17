@@ -243,7 +243,7 @@ export function AdminReportsScreen() {
                                 <Text style={tw`font-semibold text-gray-800`}>{metrics.activeMentors}</Text>
                             </View>
                             <View style={tw`flex-row justify-between items-center py-2 border-b border-gray-100`}>
-                                <Text style={tw`text-gray-600`}>Mentees Ativos</Text>
+                                <Text style={tw`text-gray-600`}>Mentorados Ativos</Text>
                                 <Text style={tw`font-semibold text-gray-800`}>{metrics.activeMentees}</Text>
                             </View>
 
