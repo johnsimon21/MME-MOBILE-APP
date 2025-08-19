@@ -14,11 +14,11 @@ export const ENV = {
   // API Configuration
   API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || (__DEV__
     ? 'http://192.168.1.103:3000/api'
-    : 'https://mme-api.onrender.com/api'),
+    : 'https://jsonplaceholder.typicode.com'), // Fallback API for testing
 
   // Other environment variables
-  DEBUG_MODE: process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__,
-  ENABLE_LOGGING: process.env.EXPO_PUBLIC_ENABLE_LOGGING === 'true' || __DEV__,
+  DEBUG_MODE: process.env.EXPO_PUBLIC_DEBUG_MODE === 'true' || __DEV__ || true, // Enable debug for crash diagnosis
+  ENABLE_LOGGING: process.env.EXPO_PUBLIC_ENABLE_LOGGING === 'true' || __DEV__ || true, // Enable logging for crash diagnosis
   
   // App Configuration
   APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'MME - Meu Mentor Eiffel',

@@ -5,9 +5,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { use, useEffect } from 'react';
 import 'react-native-reanimated';
+import { Alert } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { FloatingButtonProvider } from '@/src/context/FloatingButtonContext';
 import { SupportProvider } from '@/src/context/SupportContext';
 import { FloatingOptionsButton } from '@/src/presentation/components/ui/FloatingUnfoldVerticalButton';
@@ -146,11 +147,20 @@ class SocketErrorBoundary extends React.Component<
 
   static getDerivedStateFromError(error: any) {
     console.error('Socket Error Boundary caught an error:', error);
+    // Show user-friendly error in production
+    if (!__DEV__) {
+      Alert.alert(
+        'Conexão Error',
+        'Problema de conexão. Verifique sua internet e tente novamente.',
+        [{ text: 'OK' }]
+      );
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error: any, errorInfo: any) {
     console.error('Socket Error Boundary:', error, errorInfo);
+    console.error('Error Info:', errorInfo);
   }
 
   render() {
@@ -193,14 +203,69 @@ const ConditionalSocketProvider = ({ children }: { children: React.ReactNode }) 
   );
 };
 
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    console.error('App Error Boundary caught an error:', error);
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('App crashed:', error);
+    console.error('Error info:', errorInfo);
+    
+    // Show user-friendly error
+    setTimeout(() => {
+      Alert.alert(
+        'Erro na Aplicação',
+        `Algo deu errado. Detalhes: ${error.message}`,
+        [
+          { text: 'Fechar App', onPress: () => {} },
+          { text: 'Tentar Novamente', onPress: () => this.setState({ hasError: false, error: undefined }) }
+        ]
+      );
+    }, 100);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Return simple fallback UI
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 48, marginBottom: 20 }}>⚠️</Text>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' }}>
+              App Error
+            </Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 }}>
+              {this.state.error?.message || 'Unknown error occurred'}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ConditionalSocketProvider>
-        <FloatingButtonProvider>
-          <RootLayoutContent />
-        </FloatingButtonProvider>
-      </ConditionalSocketProvider>
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <ConditionalSocketProvider>
+          <FloatingButtonProvider>
+            <RootLayoutContent />
+          </FloatingButtonProvider>
+        </ConditionalSocketProvider>
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 }
